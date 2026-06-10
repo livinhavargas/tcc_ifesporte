@@ -34,15 +34,10 @@ export default function Register() {
 
   return (
     <div
-      style={{
-        backgroundImage: "url('/images/salao.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        minHeight: '100vh',
-      }}
+      className="bg-primary d-flex align-items-center justify-content-center"
+      style={{ minHeight: '100vh' }}
     >
-      <div id="login" className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-        <div className="container">
+      <div className="container">
           <div id="login-row" className="row justify-content-center align-items-center">
             <div id="login-column" className="col-md-6">
               <div
@@ -51,7 +46,7 @@ export default function Register() {
                 style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '8px' }}
               >
                 <form id="login-form" className="form" onSubmit={handleRegister}>
-                  <h3 className="text-center text-info">Registro</h3>
+                  <h3 className="text-center text-primary">IFEsporte - Registro</h3>
 
                   {mensagem && <p className="text-danger">{mensagem}</p>}
 
@@ -109,7 +104,6 @@ export default function Register() {
           </div>
         </div>
       </div>
-    </div>
   );
 
 }
