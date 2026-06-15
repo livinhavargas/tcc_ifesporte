@@ -4,6 +4,7 @@ export default function Register() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [tipo, setTipo] = useState('treinador');
   const [mensagem, setMensagem] = useState('');
 
   const handleRegister = async (e) => {
@@ -11,22 +12,26 @@ export default function Register() {
     setMensagem('');
 
     try {
-      const response = await fetch('http://localhost:7777/api/users/register', {
+      const response = await fetch('/api/users/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, email, senha }),
+        body: JSON.stringify({ nome, email, senha, tipo }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        return setMensagem(data.message || 'Erro ao registrar');
+        return setMensagem(data.mensagem || 'Erro ao registrar');
       }
 
-      setMensagem('Usuário registrado com sucesso!');
+      setMensagem('Usuário registrado com sucesso! Redirecionando para login...');
       setNome('');
       setEmail('');
       setSenha('');
+      setTipo('treinador');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1200);
     } catch (error) {
       setMensagem('Erro ao conectar com o servidor');
     }
@@ -87,6 +92,21 @@ export default function Register() {
                       onChange={(e) => setSenha(e.target.value)}
                       required
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="tipo" className="text-info">Tipo de usuário:</label><br />
+                    <select
+                      name="tipo"
+                      id="tipo"
+                      className="form-control"
+                      value={tipo}
+                      onChange={(e) => setTipo(e.target.value)}
+                      required
+                    >
+                      <option value="treinador">Treinador</option>
+                      <option value="admin">Professor (Admin)</option>
+                    </select>
                   </div>
 
                   <div className="form-group d-flex justify-content-between mt-4">

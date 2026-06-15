@@ -13,7 +13,7 @@ const Alunos = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('http://localhost:7777/api/students', {
+      const response = await fetch('/api/students', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

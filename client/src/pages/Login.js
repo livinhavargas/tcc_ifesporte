@@ -14,7 +14,7 @@ export default function Login({ onLogin }) {
     setMensagem('');
 
     try {
-      const response = await fetch('http://localhost:7777/api/users/login', {
+      const response = await fetch('/api/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, senha: password }),
@@ -28,8 +28,9 @@ export default function Login({ onLogin }) {
       }
 
       localStorage.setItem('token', data.token);
-      onLogin(data.token);
-      navigate('/home');
+      localStorage.setItem('tipo', data.tipo);
+      onLogin(data.token, data.tipo);
+      navigate('/');
     } catch (error) {
       setMensagem('Erro na conexão com o servidor');
     }

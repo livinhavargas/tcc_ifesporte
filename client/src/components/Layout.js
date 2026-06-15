@@ -37,6 +37,13 @@ const Layout = ({ children }) => {
                   <i className="bi bi-trophy me-2"></i> Esportes
                 </Link>
               </li>
+              {localStorage.getItem('tipo') === 'admin' && (
+                <li className="nav-item">
+                  <Link className="nav-link text-warning" to="/admin">
+                    <i className="bi bi-shield-lock me-2"></i> Área do Servidor
+                  </Link>
+                </li>
+              )}
             </ul>
             <hr className="bg-light" />
             <div className="mt-auto">
