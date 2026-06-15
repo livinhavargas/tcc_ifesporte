@@ -1,8 +1,9 @@
 // Exportando variáveis do .env
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 module.exports = {
   JWT_SECRET: process.env.JWT_SECRET,
   MONGO_URI: process.env.MONGO_URI,
-  PORT: process.env.PORT,
+  PORT: process.env.PORT || 7777,
 };

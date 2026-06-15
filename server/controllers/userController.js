@@ -6,8 +6,14 @@ const { JWT_SECRET } = require('../config');
 // Realizar login
 const loginUser = async (req, res) => {
   const { email, senha } = req.body;
+  console.log(`Tentativa de login: ${email}`);
 
   try {
+    if (!JWT_SECRET) {
+      console.error("ERRO: JWT_SECRET não definida no arquivo .env");
+      return res.status(500).json({ mensagem: 'Erro de configuração do servidor (JWT)' });
+    }
+
     const usuario = await User.findOne({ email });
 
     if (!usuario) {
@@ -28,22 +34,30 @@ const loginUser = async (req, res) => {
 
     res.json({ mensagem: 'Login bem-sucedido', token, tipo: usuario.tipo });
   } catch (erro) {
-    console.error(erro);
-    res.status(500).json({ mensagem: 'Erro no servidor' });
+    console.error("ERRO NO LOGIN:", erro);
+    res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
   }
 };
 
 //Realizar registro
 const registerUser = async (req, res) => {
   const { nome, email, senha, tipo } = req.body;
+  console.log(`[Registro] Tentativa para: ${email}`);
 
   try {
+    // Verificar se o mongoose está conectado
+    if (require('mongoose').connection.readyState !== 1) {
+      console.error("ERRO: Banco de dados não está conectado!");
+      return res.status(500).json({ mensagem: 'Banco de dados offline. Tente novamente em instantes.' });
+    }
+
     const userExistente = await User.findOne({ email });
 
     if (userExistente) {
       return res.status(400).json({ mensagem: 'Usuário já cadastrado' });
     }
 
+    console.log("Gerando hash da senha...");
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash(senha, salt);
 
@@ -55,11 +69,14 @@ const registerUser = async (req, res) => {
     });
 
     await novoUsuario.save();
+    console.log(`✅ Usuário ${email} cadastrado com sucesso!`);
 
     res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso' });
   } catch (erro) {
-    console.error(erro);
-    res.status(500).json({ mensagem: 'Erro no servidor' });
+    console.error("!!! ERRO CRÍTICO NO REGISTRO !!!");
+    console.error("Mensagem:", erro.message);
+    console.error("Stack:", erro.stack);
+    res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
   }
 };
 
