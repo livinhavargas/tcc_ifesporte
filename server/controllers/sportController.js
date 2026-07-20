@@ -49,10 +49,92 @@ const deleteSport = async (req, res) => {
   }
 };
 
+// Inicializar modalidades padrão
+const initializeSports = async (req, res) => {
+  try {
+    const defaultSports = [
+      // Modalidades Individuais
+      {
+        nome: 'Atletismo',
+        tipo: 'individual',
+        subcategorias: [
+          'Corridas - 100 metros rasos',
+          'Corridas - 200 metros rasos',
+          'Corridas - 400 metros rasos',
+          'Corridas - 800 metros meio-fundo',
+          'Corridas - 1500 metros meio-fundo',
+          'Corridas - 3000 metros meio-fundo',
+          'Corridas - 5000 metros meio-fundo',
+          'Corridas - Revezamento',
+          'Saltos - Salto em altura',
+          'Saltos - Salto em distância',
+          'Saltos - Salto triplo',
+          'Saltos - Triátlo',
+          'Lançamentos e Arremessos - Disco',
+          'Lançamentos e Arremessos - Dardo',
+          'Lançamentos e Arremessos - Arremesso de peso'
+        ]
+      },
+      {
+        nome: 'Tênis de Mesa',
+        tipo: 'individual',
+        subcategorias: ['Simples Masculino', 'Simples Feminino', 'Duplas Mistas']
+      },
+      {
+        nome: 'Xadrez',
+        tipo: 'individual',
+        subcategorias: ['Clássico', 'Rápido', 'Relâmpago']
+      },
+      // Modalidades Coletivas
+      {
+        nome: 'Futsal',
+        tipo: 'coletivo',
+        subcategorias: ['Masculino', 'Feminino', 'Misto']
+      },
+      {
+        nome: 'Handebol',
+        tipo: 'coletivo',
+        subcategorias: ['Masculino', 'Feminino']
+      },
+      {
+        nome: 'Basquete',
+        tipo: 'coletivo',
+        subcategorias: ['Masculino', 'Feminino']
+      },
+      {
+        nome: 'Vôlei',
+        tipo: 'coletivo',
+        subcategorias: ['Masculino', 'Feminino', 'Misto']
+      },
+      {
+        nome: 'Vôlei de Praia',
+        tipo: 'coletivo',
+        subcategorias: ['Masculino', 'Feminino', 'Misto']
+      }
+    ];
+
+    // Verificar quais esportes já existem e adicionar apenas os novos
+    for (const sportData of defaultSports) {
+      const existingFlag = await Sport.findOne({ nome: sportData.nome });
+      if (!existingFlag) {
+        await Sport.create(sportData);
+        console.log(`✅ Modalidade ${sportData.nome} criada`);
+      } else {
+        console.log(`⚠️  Modalidade ${sportData.nome} já existe`);
+      }
+    }
+
+    res.json({ mensagem: 'Modalidades inicializadas com sucesso' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllSports,
   createSport,
   getSportById,
   updateSport,
-  deleteSport
+  deleteSport,
+  initializeSports
 };

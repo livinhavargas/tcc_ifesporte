@@ -32,7 +32,7 @@ const loginUser = async (req, res) => {
       { expiresIn: '2h' }
     );
 
-    res.json({ mensagem: 'Login bem-sucedido', token, tipo: usuario.tipo });
+    res.json({ mensagem: 'Login bem-sucedido', token, tipo: usuario.tipo, nome: usuario.nome, id: usuario._id });
   } catch (erro) {
     console.error("ERRO NO LOGIN:", erro);
     res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
@@ -41,7 +41,7 @@ const loginUser = async (req, res) => {
 
 //Realizar registro
 const registerUser = async (req, res) => {
-  const { nome, email, senha, tipo } = req.body;
+  const { nome, email, senha, tipo, matricula } = req.body;
   console.log(`[Registro] Tentativa para: ${email}`);
 
   try {
@@ -57,6 +57,14 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ mensagem: 'Usuário já cadastrado' });
     }
 
+    // Verificar matrícula duplicada para estudantes
+    if (tipo === 'estudante' && matricula) {
+      const matriculaExistente = await User.findOne({ matricula });
+      if (matriculaExistente) {
+        return res.status(400).json({ mensagem: 'Matrícula já cadastrada' });
+      }
+    }
+
     console.log("Gerando hash da senha...");
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash(senha, salt);
@@ -66,6 +74,7 @@ const registerUser = async (req, res) => {
       email,
       senha: senhaHash,
       tipo,
+      matricula: tipo === 'estudante' ? matricula : undefined,
     });
 
     await novoUsuario.save();
@@ -80,8 +89,26 @@ const registerUser = async (req, res) => {
   }
 };
 
+// Buscar usuário por ID
+const getUserById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const usuario = await User.findById(id).select('-senha');
+
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+    }
+
+    res.json(usuario);
+  } catch (erro) {
+    console.error("ERRO AO BUSCAR USUÁRIO:", erro);
+    res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
+  }
+};
 
 module.exports = {
   loginUser,
   registerUser,
+  getUserById,
 };

@@ -2,7 +2,7 @@ const Analysis = require('../models/Analysis');
 
 const getAllAnalyses = async (req, res) => {
   try {
-    const analyses = await Analysis.find().populate('aluno').sort({ data: -1 });
+    const analyses = await Analysis.find().populate('aluno').sort({ createdAt: -1 });
     res.json(analyses);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -21,7 +21,7 @@ const createAnalysis = async (req, res) => {
 
 const getAnalysisByStudent = async (req, res) => {
   try {
-    const analyses = await Analysis.find({ aluno: req.params.studentId }).sort({ data: -1 });
+    const analyses = await Analysis.find({ aluno: req.params.studentId }).sort({ createdAt: -1 });
     res.json(analyses);
   } catch (error) {
     res.status(500).json({ message: error.message });

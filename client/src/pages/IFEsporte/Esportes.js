@@ -4,54 +4,107 @@ import Layout from '../../components/Layout';
 
 const Esportes = () => {
   const [sports, setSports] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const defaultSports = [
-    { nome: 'Atletismo', tipo: 'individual', alunos: 15 },
-    { nome: 'Badminton', tipo: 'individual', alunos: 8 },
-    { nome: 'Xadrez', tipo: 'individual', alunos: 12 },
-    { nome: 'Basquete', tipo: 'coletivo', alunos: 20 },
-    { nome: 'Handebol', tipo: 'coletivo', alunos: 18 },
-    { nome: 'Futsal', tipo: 'coletivo', alunos: 25 },
-  ];
-
   useEffect(() => {
-    // In a real scenario, fetch from API.
-    // For now, I'll use the default list to ensure the UI looks good as per prompt.
-    setSports(defaultSports);
+    fetchSports();
   }, []);
 
+  const fetchSports = async () => {
+    try {
+      const response = await fetch('/api/sports', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSports(data);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Erro ao buscar modalidades:', error);
+      setLoading(false);
+    }
+  };
+
   const renderSportCard = (sport) => (
-    <div className="col-md-4 mb-4" key={sport.nome}>
+    <div className="col-md-4 mb-4" key={sport._id || sport.nome}>
       <div 
         className="card shadow-sm border-0 h-100 sport-card" 
-        onClick={() => navigate(`/esportes/${sport.nome.toLowerCase()}`)}
-        style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+        onClick={() => navigate(`/esportes/${sport._id}`)}
+        style={{ 
+          cursor: 'pointer', 
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          backgroundColor: sport.tipo === 'individual' ? '#e8f4f8' : '#fff4e6'
+        }}
+        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
       >
         <div className="card-body text-center d-flex flex-column justify-content-center">
           <div className="mb-3">
-            <i className={`bi bi-${sport.tipo === 'individual' ? 'person' : 'people'} fs-1 text-primary`}></i>
+            <i className={`bi bi-${sport.tipo === 'individual' ? 'person-fill' : 'people-fill'} fs-1`} style={{ color: sport.tipo === 'individual' ? '#1e5ba8' : '#f4a942' }}></i>
           </div>
-          <h4 className="card-title">{sport.nome}</h4>
-          <p className="text-muted mb-0">{sport.alunos} alunos cadastrados</p>
+          <h4 className="card-title text-dark">{sport.nome}</h4>
+          <p className="text-muted mb-2">{sport.tipo === 'individual' ? 'Individual' : 'Em Equipe'}</p>
+          {sport.subcategorias && sport.subcategorias.length > 0 && (
+            <p className="text-muted small">{sport.subcategorias.length} subesportes</p>
+          )}
         </div>
       </div>
     </div>
   );
 
+  if (loading) {
+    return (
+      <Layout>
+        <div className="text-center py-5">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Carregando...</span>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const individualSports = sports.filter(s => s.tipo === 'individual');
+  const teamSports = sports.filter(s => s.tipo === 'coletivo');
+
   return (
     <Layout>
-      <h2 className="mb-4">Modalidades Esportivas</h2>
+      <div className="mb-4">
+        <h2>Modalidades Esportivas</h2>
+        <p className="text-muted">Explore e gerencie todas as modalidades do IFEsporte</p>
+      </div>
       
-      <h4 className="mb-3">Modalidades Individuais</h4>
-      <div className="row mb-4">
-        {sports.filter(s => s.tipo === 'individual').map(renderSportCard)}
-      </div>
+      {individualSports.length > 0 && (
+        <>
+          <h4 className="mb-3 text-primary">
+            <i className="bi bi-person-fill me-2"></i>Modalidades Individuais
+          </h4>
+          <div className="row mb-5">
+            {individualSports.map(renderSportCard)}
+          </div>
+        </>
+      )}
 
-      <h4 className="mb-3">Modalidades em Equipe</h4>
-      <div className="row">
-        {sports.filter(s => s.tipo === 'coletivo').map(renderSportCard)}
-      </div>
+      {teamSports.length > 0 && (
+        <>
+          <h4 className="mb-3 text-warning">
+            <i className="bi bi-people-fill me-2"></i>Modalidades em Equipe
+          </h4>
+          <div className="row">
+            {teamSports.map(renderSportCard)}
+          </div>
+        </>
+      )}
+
+      {sports.length === 0 && (
+        <div className="alert alert-info">
+          Nenhuma modalidade cadastrada. Contacte o administrador para adicionar modalidades.
+        </div>
+      )}
     </Layout>
   );
 };

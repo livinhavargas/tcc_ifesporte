@@ -1,0 +1,1 @@
+MONGO_URI=mongodb://livia_db_user:12345@ac-ktdfoke-shard-00-00.hmncgbd.mongodb.net:27017,ac-ktdfoke-shard-00-01.hmncgbd.mongodb.net:27017,ac-ktdfoke-shard-00-02.hmncgbd.mongodb.net:27017/?ssl=true&replicaSet=ac-ktdfoke-sha&authSource=admin&appName=Cluster0fofis

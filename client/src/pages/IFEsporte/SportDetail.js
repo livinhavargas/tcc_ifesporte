@@ -1,149 +1,203 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 
 const SportDetail = () => {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState('alunos');
-  
-  const isAtletismo = id.toLowerCase() === 'atletismo';
+  const navigate = useNavigate();
+  const [sport, setSport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('detalhes');
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
 
-  const atletismoSubcats = [
-    '100 metros rasos', '200 metros rasos', '400 metros rasos',
-    '800 metros', '1500 metros', '3000 metros', '5000 metros'
-  ];
+  useEffect(() => {
+    fetchSport();
+  }, [id]);
+
+  const fetchSport = async () => {
+    try {
+      const response = await fetch(`/api/sports/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSport(data);
+      } else {
+        navigate('/esportes');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar modalidade:', error);
+      navigate('/esportes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="text-center py-5">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Carregando...</span>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!sport) {
+    return (
+      <Layout>
+        <div className="alert alert-danger">Modalidade não encontrada</div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="mb-4">
-        <h2 className="text-capitalize">{id}</h2>
-        <nav aria-label="breadcrumb">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><a href="/esportes">Esportes</a></li>
-            <li className="breadcrumb-item active" aria-current="page">{id}</li>
-          </ol>
-        </nav>
+        <button className="btn btn-outline-secondary mb-3" onClick={() => navigate('/esportes')}>
+          <i className="bi bi-arrow-left me-2"></i>Voltar
+        </button>
+        <h2 className="text-capitalize">{sport.nome}</h2>
+        <p className="text-muted">
+          {sport.tipo === 'individual' ? '🏃 Modalidade Individual' : '👥 Modalidade em Equipe'}
+        </p>
       </div>
 
       <ul className="nav nav-tabs mb-4">
         <li className="nav-item">
           <button 
+            className={`nav-link ${activeTab === 'detalhes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('detalhes')}
+          >
+            <i className="bi bi-info-circle me-2"></i>Detalhes
+          </button>
+        </li>
+        <li className="nav-item">
+          <button 
             className={`nav-link ${activeTab === 'alunos' ? 'active' : ''}`}
             onClick={() => setActiveTab('alunos')}
           >
-            Alunos
-          </button>
-        </li>
-        <li className="nav-item">
-          <button 
-            className={`nav-link ${activeTab === 'analises' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analises')}
-          >
-            Análises
-          </button>
-        </li>
-        <li className="nav-item">
-          <button 
-            className={`nav-link ${activeTab === 'cronogramas' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cronogramas')}
-          >
-            Cronogramas
+            <i className="bi bi-people me-2"></i>Alunos
           </button>
         </li>
       </ul>
 
-      {activeTab === 'alunos' && (
-        <div>
-          {isAtletismo && (
-            <div className="mb-3">
-              <h6>Filtrar por prova:</h6>
-              <select className="form-select w-auto">
-                <option>Todas as provas</option>
-                {atletismoSubcats.map(sub => <option key={sub}>{sub}</option>)}
-              </select>
+      {activeTab === 'detalhes' && (
+        <div className="row">
+          <div className="col-md-8">
+            <div className="card shadow-sm border-0 mb-4">
+              <div className="card-header bg-primary text-white">
+                <h5 className="mb-0">Informações da Modalidade</h5>
+              </div>
+              <div className="card-body">
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <h6 className="text-muted">Nome</h6>
+                    <p className="fs-5">{sport.nome}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <h6 className="text-muted">Tipo</h6>
+                    <p className="fs-5">
+                      <span className={`badge ${sport.tipo === 'individual' ? 'bg-info' : 'bg-warning'}`}>
+                        {sport.tipo === 'individual' ? 'Individual' : 'Em Equipe'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-          <div className="alert alert-light border shadow-sm">
-            <p>Lista de alunos inscritos em <strong>{id}</strong> aparecerá aqui.</p>
-          </div>
-        </div>
-      )}
 
-      {activeTab === 'analises' && (
-        <div>
-          <div className="d-flex justify-content-between mb-3">
-            <h4>Histórico de Análises</h4>
-            <button className="btn btn-success" data-bs-toggle="collapse" data-bs-target="#newAnalysisForm">Nova Análise</button>
+            {sport.subcategorias && sport.subcategorias.length > 0 && (
+              <div className="card shadow-sm border-0">
+                <div className="card-header bg-secondary text-white">
+                  <h5 className="mb-0">Subesportes / Categorias</h5>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    {sport.subcategorias.map((sub, index) => (
+                      <div key={index} className="col-md-6 mb-3">
+                        <div className="p-3 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
+                          <i className="bi bi-arrow-right me-2 text-primary"></i>
+                          <strong>{sub}</strong>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="collapse mb-4" id="newAnalysisForm">
-            <div className="card card-body border-success shadow-sm">
-              <h5>Registrar Desempenho</h5>
-              <div className="row g-3">
-                <div className="col-md-4">
-                  <label className="form-label">Aluno Avaliado</label>
-                  <select className="form-select">
-                    <option>Selecione um aluno...</option>
-                    <option>João Silva</option>
-                    <option>Maria Oliveira</option>
-                  </select>
+          <div className="col-md-4">
+            <div className="card shadow-sm border-0">
+              <div className="card-header bg-info text-white">
+                <h5 className="mb-0">Estatísticas</h5>
+              </div>
+              <div className="card-body">
+                <div className="mb-3">
+                  <h6 className="text-muted">Total de Subesportes</h6>
+                  <p className="fs-4 fw-bold text-primary">
+                    {sport.subcategorias ? sport.subcategorias.length : 0}
+                  </p>
                 </div>
-                <div className="col-md-4">
-                  <label className="form-label">Tipo</label>
-                  <select className="form-select">
-                    <option>Treino</option>
-                    <option>Avaliação</option>
-                  </select>
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label">Categoria</label>
-                  <input type="text" className="form-control" placeholder="Ex: Ataque, Goleiro..." />
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label">Passes Certos</label>
-                  <input type="number" className="form-control" defaultValue="0" />
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label">Passes Errados</label>
-                  <input type="number" className="form-control" defaultValue="0" />
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label">Contra-ataques</label>
-                  <input type="number" className="form-control" defaultValue="0" />
-                </div>
-                <div className="col-md-3">
-                  <label className="form-label">Situações de Jogo</label>
-                  <input type="number" className="form-control" defaultValue="0" />
-                </div>
-                <div className="col-md-3">
-                  <label className="form-label">Desemp. Defensivo</label>
-                  <input type="number" className="form-control" defaultValue="0" />
-                </div>
-                <div className="col-12 text-end mt-3">
-                  <button className="btn btn-success">Salvar Análise</button>
+                <div>
+                  <h6 className="text-muted">Tipo de Modalidade</h6>
+                  <p className="fs-5">
+                    {sport.tipo === 'individual' ? 'Individual' : 'Em Equipe'}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-
-          <div className="card shadow-sm border-0">
-            <div className="card-body">
-              <p className="text-muted">Nenhuma análise registrada para esta modalidade ainda.</p>
-            </div>
-          </div>
         </div>
       )}
 
-      {activeTab === 'cronogramas' && (
-        <div>
-          <div className="d-flex justify-content-between mb-3">
-            <h4>Planejamento de Treinos</h4>
-            <button className="btn btn-primary">Gerar Novo Cronograma</button>
+      {activeTab === 'alunos' && (
+        <div className="card shadow-sm border-0">
+          <div className="card-header bg-primary text-white">
+            <h5 className="mb-0">Alunos Inscritos em {sport.nome}</h5>
           </div>
-          <div className="card shadow-sm border-0">
-            <div className="card-body">
-              <p className="text-muted">Utilize o gerador para criar uma estrutura de treinamento automática.</p>
-            </div>
+          <div className="card-body">
+            {studentsLoading ? (
+              <div className="text-center py-3">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Carregando alunos...</span>
+                </div>
+              </div>
+            ) : students.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table table-hover">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Nome</th>
+                      <th>Matrícula</th>
+                      <th>Série</th>
+                      <th>Idade</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.map(student => (
+                      <tr key={student._id}>
+                        <td><strong>{student.nome}</strong></td>
+                        <td>{student.matricula}</td>
+                        <td>{student.serie}</td>
+                        <td>{student.idade}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="alert alert-info">
+                <i className="bi bi-info-circle me-2"></i>
+                Nenhum aluno inscrito nesta modalidade no momento.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -152,3 +206,4 @@ const SportDetail = () => {
 };
 
 export default SportDetail;
+

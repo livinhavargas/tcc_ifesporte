@@ -29,6 +29,8 @@ export default function Login({ onLogin }) {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('tipo', data.tipo);
+      localStorage.setItem('userName', data.nome);
+      localStorage.setItem('userId', data.id);
       onLogin(data.token, data.tipo);
       navigate('/');
     } catch (error) {
@@ -44,33 +46,38 @@ export default function Login({ onLogin }) {
       <div className="container">
           <div id="login-row" className="row justify-content-center align-items-center">
             <div id="login-column" className="col-md-6">
-              <div id="login-box" className="col-md-12 p-4" style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '8px' }}>
+              <div id="login-box" className="col-md-12 p-4" style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '12px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
                 <form id="login-form" className="form" onSubmit={handleSubmit}>
-                  <h3 className="text-center text-primary">IFEsporte</h3>
-                  <p className="text-center text-muted">Gerenciamento Esportivo IFC</p>
+                  <div className="text-center mb-4">
+                    <img src="/logo.svg" alt="IFEsporte" style={{ height: '80px', marginBottom: '15px' }} />
+                  </div>
+                  <h3 className="text-center text-dark mb-2">Bem-vindo de volta!</h3>
+                  <p className="text-center text-muted mb-4">Faça login para acessar sua conta</p>
 
-                  {mensagem && <p className="text-danger">{mensagem}</p>}
+                  {mensagem && <p className="text-danger text-center mb-3">{mensagem}</p>}
 
-                  <div className="form-group">
-                    <label htmlFor="username" className="text-info">Usuário:</label><br />
+                  <div className="form-group mb-3">
+                    <label htmlFor="username" className="form-label fw-bold">Usuário ou Email:</label>
                     <input
                       type="text"
                       name="username"
                       id="username"
                       className="form-control"
+                      placeholder="Digite seu usuário ou e-mail"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="password" className="text-info">Senha:</label><br />
+                  <div className="form-group mb-4">
+                    <label htmlFor="password" className="form-label fw-bold">Senha:</label>
                     <input
                       type="password"
                       name="password"
                       id="password"
                       className="form-control"
+                      placeholder="Digite sua senha"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -81,11 +88,11 @@ export default function Login({ onLogin }) {
                     <input
                       type="submit"
                       name="submit"
-                      className="btn btn-info btn-md"
-                      value="Enviar"
+                      className="btn btn-primary btn-md px-5"
+                      value="Entrar"
                     />
-                    <a href="/register" className="btn btn-secondary btn-md ms-5">
-                      Registre-se
+                    <a href="/register" className="btn btn-outline-secondary btn-md px-5">
+                      Criar conta
                     </a>
                   </div>
                 </form>
