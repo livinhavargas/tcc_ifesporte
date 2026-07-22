@@ -28,8 +28,19 @@ const getAnalysisByStudent = async (req, res) => {
   }
 };
 
+const deleteAnalysis = async (req, res) => {
+  try {
+    const analysis = await Analysis.findByIdAndDelete(req.params.id);
+    if (!analysis) return res.status(404).json({ message: 'Análise não encontrada' });
+    res.json({ message: 'Análise removida com sucesso' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllAnalyses,
   createAnalysis,
-  getAnalysisByStudent
+  getAnalysisByStudent,
+  deleteAnalysis
 };

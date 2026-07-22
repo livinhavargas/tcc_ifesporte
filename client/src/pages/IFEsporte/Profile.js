@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
+import React, { useState, useEffect, useRef } from 'react';
+import Layout from '../../components/Layout';
+import ModalidadesSelector from '../../components/ModalidadesSelector';
 
-const Perfil = () => {
+const Profile = () => {
   const userId = localStorage.getItem('userId');
   const userType = localStorage.getItem('tipo');
   
@@ -22,16 +23,7 @@ const Perfil = () => {
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
   
-  const modalidadesDisponiveis = [
-    'Basquete', 'Futsal', 'Futebol', 'Handebol', 'Vôlei de Quadra', 'Vôlei de Praia', 
-    'Badminton', 'Xadrez',
-    'Atletismo - Corridas - 100 metros rasos', 'Atletismo - Corridas - 200 metros rasos', 'Atletismo - Corridas - 400 metros rasos',
-    'Atletismo - Corridas - 800 metros meio-fundo', 'Atletismo - Corridas - 1500 metros meio-fundo', 'Atletismo - Corridas - 3000 metros', 
-    'Atletismo - Corridas - 5000 metros', 'Atletismo - Corridas - Revezamento',
-    'Atletismo - Saltos - Distância', 'Atletismo - Saltos - Altura', 'Atletismo - Saltos - Triplo',
-    'Atletismo - Lançamentos - Peso', 'Atletismo - Lançamentos - Disco', 'Atletismo - Lançamentos - Dardo',
-    'Tênis de Mesa - Individual', 'Tênis de Mesa - Dupla'
-  ];
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchProfile();
@@ -67,14 +59,15 @@ const Perfil = () => {
     setProfileData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleModalidadeToggle = (mod) => {
-    setProfileData(prev => {
-      const isSelected = prev.esportes.includes(mod);
-      if (isSelected) {
-        return { ...prev, esportes: prev.esportes.filter(m => m !== mod) };
-      }
-      return { ...prev, esportes: [...prev.esportes, mod] };
-    });
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileData(prev => ({ ...prev, foto: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleLogout = () => {
@@ -97,6 +90,7 @@ const Perfil = () => {
       if (response.ok) {
         setMensagem('✅ Perfil atualizado com sucesso!');
         localStorage.setItem('userName', profileData.nome);
+        if (profileData.foto) localStorage.setItem('foto', profileData.foto);
         setTimeout(() => setMensagem(''), 3000);
       } else {
         setMensagem('Erro ao atualizar perfil.');
@@ -111,7 +105,6 @@ const Perfil = () => {
       <div className="card-flat p-5 mx-auto" style={{ maxWidth: '800px' }}>
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="fw-bold text-blue-dark mb-0">Meu Perfil</h2>
-          <button className="btn btn-danger px-4 rounded-3 fw-bold" onClick={handleLogout}>Sair</button>
         </div>
 
         {mensagem && <div className={`alert ${mensagem.includes('✅') ? 'alert-success' : 'alert-danger'}`}>{mensagem}</div>}
@@ -123,15 +116,19 @@ const Perfil = () => {
             <div className="row g-4">
               
               <div className="col-12 text-center mb-3">
-                 <div className="d-inline-block position-relative">
+                 <div className="d-inline-block position-relative cursor-pointer" onClick={() => fileInputRef.current.click()}>
                    {profileData.foto ? (
-                     <img src={profileData.foto} alt="Perfil" className="rounded-circle bg-light border" style={{width: '120px', height: '120px', objectFit: 'cover'}} />
+                     <img src={profileData.foto} alt="Perfil" className="rounded-circle bg-light border shadow-sm" style={{width: '120px', height: '120px', objectFit: 'cover'}} />
                    ) : (
-                     <div className="rounded-circle bg-blue-dark text-white d-flex align-items-center justify-content-center fw-bold fs-1 mx-auto" style={{width: '120px', height: '120px'}}>
+                     <div className="rounded-circle bg-blue-dark text-white d-flex align-items-center justify-content-center fw-bold fs-1 mx-auto shadow-sm" style={{width: '120px', height: '120px'}}>
                        {profileData.nome ? profileData.nome.charAt(0).toUpperCase() : 'U'}
                      </div>
                    )}
+                   <div className="position-absolute bottom-0 end-0 bg-orange text-white rounded-circle d-flex align-items-center justify-content-center" style={{width: '35px', height: '35px', border: '3px solid white', transform: 'translate(10%, 10%)'}}>
+                     <i className="bi bi-camera-fill"></i>
+                   </div>
                  </div>
+                 <input type="file" className="d-none" ref={fileInputRef} onChange={handleFileChange} accept="image/*" />
               </div>
 
               <div className="col-md-6">
@@ -175,27 +172,22 @@ const Perfil = () => {
                   </div>
 
                   <div className="col-12 mt-4">
-                    <label className="form-label text-muted small fw-bold mb-3">Modalidades (MultiSelect)</label>
-                    <div className="d-flex flex-wrap gap-2">
-                      {modalidadesDisponiveis.map(mod => {
-                        const isSelected = profileData.esportes.includes(mod);
-                        return (
-                          <div 
-                            key={mod} 
-                            onClick={() => handleModalidadeToggle(mod)}
-                            className={`cursor-pointer px-3 py-2 rounded-pill small border ${isSelected ? 'bg-orange-active border-orange text-blue-dark fw-bold' : 'bg-light text-muted'}`}
-                          >
-                            {mod}
-                          </div>
-                        )
-                      })}
-                    </div>
+                    <label className="form-label text-muted small fw-bold mb-3">Modalidades de Interesse</label>
+                    <ModalidadesSelector 
+                      selected={profileData.esportes} 
+                      onChange={(novos) => setProfileData({...profileData, esportes: novos})} 
+                    />
                   </div>
                 </>
               )}
 
-              <div className="col-12 text-end mt-5">
-                <button type="submit" className="btn btn-primary px-5 py-3 rounded-3 fw-bold">Salvar Alterações</button>
+              <div className="col-12 d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                <button type="button" className="btn btn-outline-danger px-4 rounded-3 fw-bold" onClick={handleLogout}>
+                  <i className="bi bi-box-arrow-left me-2"></i> Sair da Conta
+                </button>
+                <button type="submit" className="btn btn-primary px-5 py-3 rounded-3 fw-bold shadow-sm">
+                  Salvar Alterações
+                </button>
               </div>
             </div>
           </form>
@@ -205,4 +197,4 @@ const Perfil = () => {
   );
 };
 
-export default Perfil;
+export default Profile;

@@ -1,180 +1,114 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 
-export default function Home() {
+const Home = () => {
   const [events, setEvents] = useState([]);
-  const [studentCount, setStudentCount] = useState(0);
-  const [sportCount, setSportCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      try {
-        // Fetch Events
-        const eventsRes = await fetch('/api/events', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        // Se o token estiver expirado/inválido
-        if (eventsRes.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          return;
-        }
-
-        if (eventsRes.ok) {
-          const eventsData = await eventsRes.json();
-          setEvents(eventsData);
-        }
-
-        // Fetch Students
-        const studentsRes = await fetch('/api/students', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (studentsRes.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          return;
-        }
-        if (studentsRes.ok) {
-          const studentsData = await studentsRes.json();
-          setStudentCount(studentsData.length);
-        }
-
-        // Fetch Sports
-        const sportsRes = await fetch('/api/sports', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (sportsRes.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          return;
-        }
-        if (sportsRes.ok) {
-          const sportsData = await sportsRes.json();
-          setSportCount(sportsData.length);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados da Home:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchEvents();
   }, []);
 
-  // Filter treinos vs other events
-  const treinos = events.filter(e => e.tipo === 'treino').slice(0, 5);
-  const outrosEventos = events.filter(e => e.tipo !== 'treino').slice(0, 5);
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch('/api/events', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+      // Filtrar apenas eventos futuros ou de hoje
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Considerar do início do dia
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="text-center py-5">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Carregando...</span>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+      const futuros = data.filter(ev => new Date(ev.data) >= now);
+      
+      // Ordenar por data
+      futuros.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+      setEvents(futuros);
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
+
+  const formatarData = (dataString) => {
+    const data = new Date(dataString);
+    const diasSemana = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+    const diaStr = diasSemana[data.getUTCDay()];
+    const dia = String(data.getUTCDate()).padStart(2, '0');
+    const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
+    return `${diaStr} (${dia}/${mes})`;
+  };
+
+  const formatarHora = (horaString) => {
+    return horaString;
+  };
+
+  const treinos = events.filter(e => e.tipo === 'Treino' || e.tipo === 'treino');
+  const proximos = events.filter(e => e.tipo === 'Amistoso' || e.tipo === 'Campeonato' || e.tipo === 'amistoso' || e.tipo === 'competição');
 
   return (
     <Layout>
-      <div className="row mb-4">
-        <div className="col-12">
-          <h1>Olá, Treinador!</h1>
-          <p className="text-muted">Bem-vindo ao IFEsporte. Aqui está o resumo das atividades esportivas do IFC.</p>
-        </div>
-      </div>
+      {loading ? (
+        <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+      ) : (
+        <div className="row g-4 mt-1">
+          {/* Coluna Treinos Hoje */}
+          <div className="col-lg-6">
+            <div className="card-flat p-4 h-100 shadow-sm">
+              <div className="d-flex align-items-center mb-4">
+                <div className="bg-orange-secondary rounded-pill me-3" style={{ width: '12px', height: '40px' }}></div>
+                <div>
+                  <h4 className="fw-bold text-blue-dark mb-0">Treinos futuros</h4>
+                </div>
+              </div>
 
-      <div className="row">
-        {/* Próximos Treinos */}
-        <div className="col-md-6 mb-4">
-          <div className="card shadow-sm border-0">
-            <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">Próximos Treinos</h5>
-            </div>
-            <div className="card-body">
-              {treinos.length > 0 ? (
-                <ul className="list-group list-group-flush">
-                  {treinos.map((event, idx) => (
-                    <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
-                      <div>
-                        <strong>{event.titulo}</strong>
-                        <br />
-                        <small className="text-muted">{event.local} - {event.hora}</small>
-                      </div>
-                      <span className="badge bg-info rounded-pill">
-                        {new Date(event.data).toLocaleDateString('pt-BR')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted mb-0">Nenhum treino agendado.</p>
-              )}
+              <div className="d-flex flex-column gap-3">
+                {treinos.length > 0 ? treinos.map(treino => (
+                  <div key={treino._id} className="bg-blue-light rounded-4 p-4 position-relative shadow-sm" style={{ borderLeft: `5px solid ${treino.cor || '#22c55e'}` }}>
+                    <h5 className="fw-bold text-blue-dark mb-3">{treino.titulo}</h5>
+                    <div className="d-flex justify-content-between text-blue-dark">
+                      <span>{formatarData(treino.data)} - {treino.hora}</span>
+                      <span>{treino.local}</span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-muted text-center py-3">Nenhum treino programado.</div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Eventos Futuros */}
-        <div className="col-md-6 mb-4">
-          <div className="card shadow-sm border-0">
-            <div className="card-header bg-success text-white">
-              <h5 className="mb-0">Eventos Futuros</h5>
-            </div>
-            <div className="card-body">
-              {outrosEventos.length > 0 ? (
-                <ul className="list-group list-group-flush">
-                  {outrosEventos.map((event, idx) => (
-                    <li key={idx} className="list-group-item">
-                      <strong>{event.titulo}</strong>
-                      {event.descricao && <p className="mb-1 text-muted small">{event.descricao}</p>}
-                      <small className="text-muted">
-                        Data: {new Date(event.data).toLocaleDateString('pt-BR')} - {event.local}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted mb-0">Nenhum evento futuro agendado.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+          {/* Coluna Eventos Próximos */}
+          <div className="col-lg-6">
+            <div className="card-flat p-4 h-100 shadow-sm">
+              <div className="d-flex align-items-center mb-4">
+                <div className="bg-blue-dark rounded-pill me-3" style={{ width: '12px', height: '40px' }}></div>
+                <div>
+                  <h4 className="fw-bold text-blue-dark mb-0">Eventos próximos</h4>
+                </div>
+              </div>
 
-      <div className="row">
-        <div className="col-md-3 mb-4">
-          <div className="card bg-light border-0 shadow-sm text-center p-3">
-            <h3>{studentCount}</h3>
-            <p className="mb-0">Alunos Ativos</p>
+              <div className="d-flex flex-column gap-3">
+                {proximos.length > 0 ? proximos.map(evento => (
+                  <div key={evento._id} className="bg-orange-light rounded-4 p-4 position-relative shadow-sm" style={{ borderLeft: `5px solid ${evento.cor || '#f97316'}` }}>
+                    <div className="d-flex justify-content-between text-blue-dark mb-3">
+                      <h5 className="fw-bold mb-0">{evento.tipo} - {evento.titulo}</h5>
+                      <span className="text-muted fw-bold">{evento.local}</span>
+                    </div>
+                    <div className="text-orange">{formatarData(evento.data)} - {evento.hora}</div>
+                  </div>
+                )) : (
+                  <div className="text-muted text-center py-3">Nenhum evento programado.</div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="col-md-3 mb-4">
-          <div className="card bg-light border-0 shadow-sm text-center p-3">
-            <h3>{sportCount}</h3>
-            <p className="mb-0">Modalidades</p>
-          </div>
-        </div>
-        <div className="col-md-3 mb-4">
-          <div className="card bg-light border-0 shadow-sm text-center p-3">
-            <h3>{events.filter(e => e.tipo === 'treino').length}</h3>
-            <p className="mb-0">Treinos Agendados</p>
-          </div>
-        </div>
-        <div className="col-md-3 mb-4">
-          <div className="card bg-light border-0 shadow-sm text-center p-3">
-            <h3>{events.filter(e => e.tipo !== 'treino').length}</h3>
-            <p className="mb-0">Eventos Totais</p>
-          </div>
-        </div>
-      </div>
+      )}
     </Layout>
   );
-}
+};
+
+export default Home;

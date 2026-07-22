@@ -58,58 +58,68 @@ const initializeSports = async (req, res) => {
         nome: 'Atletismo',
         tipo: 'individual',
         subcategorias: [
-          'Corridas - 100 metros rasos',
-          'Corridas - 200 metros rasos',
-          'Corridas - 400 metros rasos',
-          'Corridas - 800 metros meio-fundo',
-          'Corridas - 1500 metros meio-fundo',
-          'Corridas - 3000 metros meio-fundo',
-          'Corridas - 5000 metros meio-fundo',
-          'Corridas - Revezamento',
-          'Saltos - Salto em altura',
-          'Saltos - Salto em distância',
-          'Saltos - Salto triplo',
-          'Saltos - Triátlo',
-          'Lançamentos e Arremessos - Disco',
-          'Lançamentos e Arremessos - Dardo',
-          'Lançamentos e Arremessos - Arremesso de peso'
+          'Corridas - 100m rasos',
+          'Corridas - 200m rasos',
+          'Corridas - 400m rasos',
+          'Corridas - 800m',
+          'Corridas - 1500m',
+          'Corridas - 3000m',
+          'Corridas - 5000m',
+          'Corridas - Revezamento 4x100',
+          'Corridas - Revezamento 4x400',
+          'Saltos - Salto em Distância',
+          'Saltos - Salto em Altura',
+          'Saltos - Salto Triplo',
+          'Lançamentos - Disco',
+          'Lançamentos - Dardo',
+          'Lançamentos - Peso'
         ]
+      },
+      {
+        nome: 'Badminton',
+        tipo: 'individual',
+        subcategorias: []
       },
       {
         nome: 'Tênis de Mesa',
         tipo: 'individual',
-        subcategorias: ['Simples Masculino', 'Simples Feminino', 'Duplas Mistas']
+        subcategorias: ['Individual', 'Dupla']
       },
       {
         nome: 'Xadrez',
         tipo: 'individual',
-        subcategorias: ['Clássico', 'Rápido', 'Relâmpago']
+        subcategorias: []
       },
       // Modalidades Coletivas
       {
+        nome: 'Basquete',
+        tipo: 'coletivo',
+        subcategorias: []
+      },
+      {
         nome: 'Futsal',
         tipo: 'coletivo',
-        subcategorias: ['Masculino', 'Feminino', 'Misto']
+        subcategorias: []
+      },
+      {
+        nome: 'Futebol',
+        tipo: 'coletivo',
+        subcategorias: []
       },
       {
         nome: 'Handebol',
         tipo: 'coletivo',
-        subcategorias: ['Masculino', 'Feminino']
+        subcategorias: []
       },
       {
-        nome: 'Basquete',
+        nome: 'Vôlei de Quadra',
         tipo: 'coletivo',
-        subcategorias: ['Masculino', 'Feminino']
+        subcategorias: []
       },
       {
-        nome: 'Vôlei',
+        nome: 'Vôlei de Praia (Duplas)',
         tipo: 'coletivo',
-        subcategorias: ['Masculino', 'Feminino', 'Misto']
-      },
-      {
-        nome: 'Vôlei de Praia',
-        tipo: 'coletivo',
-        subcategorias: ['Masculino', 'Feminino', 'Misto']
+        subcategorias: []
       }
     ];
 

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Student = require('../models/Student');
 const { JWT_SECRET } = require('../config');
 
 // Realizar login
@@ -32,7 +33,7 @@ const loginUser = async (req, res) => {
       { expiresIn: '2h' }
     );
 
-    res.json({ mensagem: 'Login bem-sucedido', token, tipo: usuario.tipo, nome: usuario.nome, id: usuario._id });
+    res.json({ mensagem: 'Login bem-sucedido', token, tipo: usuario.tipo, nome: usuario.nome, email: usuario.email, id: usuario._id, foto: usuario.foto });
   } catch (erro) {
     console.error("ERRO NO LOGIN:", erro);
     res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
@@ -41,10 +42,18 @@ const loginUser = async (req, res) => {
 
 //Realizar registro
 const registerUser = async (req, res) => {
-  const { nome, email, senha, tipo, matricula } = req.body;
-  console.log(`[Registro] Tentativa para: ${email}`);
+  const { nome, email, senha, tipo, matricula, adminCode, esportes, sexo } = req.body;
+  console.log(`[Registro] Tentativa para: ${email}, Tipo: ${tipo}`);
 
   try {
+    // Verificar código administrativo
+    if (tipo === 'admin') {
+      const validAdminCode = '123';
+      if (adminCode !== validAdminCode) {
+        return res.status(403).json({ mensagem: 'Código administrativo inválido' });
+      }
+    }
+
     // Verificar se o mongoose está conectado
     if (require('mongoose').connection.readyState !== 1) {
       console.error("ERRO: Banco de dados não está conectado!");
@@ -58,8 +67,9 @@ const registerUser = async (req, res) => {
     }
 
     // Verificar matrícula duplicada para estudantes
-    if (tipo === 'estudante' && matricula) {
-      const matriculaExistente = await User.findOne({ matricula });
+    const matValida = matricula && matricula.trim() !== '' ? matricula.trim() : undefined;
+    if (tipo === 'estudante' && matValida) {
+      const matriculaExistente = await User.findOne({ matricula: matValida });
       if (matriculaExistente) {
         return res.status(400).json({ mensagem: 'Matrícula já cadastrada' });
       }
@@ -74,10 +84,26 @@ const registerUser = async (req, res) => {
       email,
       senha: senhaHash,
       tipo,
-      matricula: tipo === 'estudante' ? matricula : undefined,
+      matricula: tipo === 'estudante' ? matValida : undefined,
+      esportes: tipo === 'estudante' ? (esportes || []) : undefined,
     });
 
     await novoUsuario.save();
+
+    // Se for estudante, cria automaticamente o perfil na tabela Student
+    if (tipo === 'estudante') {
+      const novoEstudante = new Student({
+        nome,
+        email,
+        matricula: matValida,
+        esportes: esportes || [],
+        serie: '1A',
+        sexo: sexo || 'Feminino',
+        adicionadoPor: novoUsuario._id
+      });
+      await novoEstudante.save();
+    }
+
     console.log(`✅ Usuário ${email} cadastrado com sucesso!`);
 
     res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso' });
@@ -94,10 +120,26 @@ const getUserById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const usuario = await User.findById(id).select('-senha');
+    let usuario = await User.findById(id).select('-senha').lean();
 
     if (!usuario) {
       return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+    }
+
+    if (usuario.tipo === 'estudante') {
+      const query = usuario.matricula ? { matricula: usuario.matricula } : { email: usuario.email };
+      const estudante = await Student.findOne(query).lean();
+      if (estudante) {
+        usuario.telefone = estudante.telefone || '';
+        usuario.peso = estudante.peso || '';
+        usuario.altura = estudante.altura || '';
+        usuario.idade = estudante.idade || '';
+        usuario.serie = estudante.serie || '';
+        usuario.esportes = estudante.esportes || [];
+        if (estudante.peso && estudante.altura) {
+           usuario.imc = (estudante.peso / (estudante.altura * estudante.altura)).toFixed(2);
+        }
+      }
     }
 
     res.json(usuario);
@@ -107,8 +149,46 @@ const getUserById = async (req, res) => {
   }
 };
 
+// Atualizar usuário
+const updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { nome, email, telefone, peso, altura, foto, idade, serie, esportes } = req.body;
+  
+  try {
+    const usuario = await User.findById(id);
+    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+
+    if (nome) usuario.nome = nome;
+    if (email) usuario.email = email;
+    if (foto) usuario.foto = foto;
+    if (esportes) usuario.esportes = esportes;
+    await usuario.save();
+
+    if (usuario.tipo === 'estudante') {
+      const query = usuario.matricula ? { matricula: usuario.matricula } : { email: usuario.email };
+      const estudante = await Student.findOne(query);
+      if (estudante) {
+        if (nome) estudante.nome = nome;
+        if (email) estudante.email = email;
+        if (telefone !== undefined) estudante.telefone = telefone;
+        if (peso !== undefined) estudante.peso = peso;
+        if (altura !== undefined) estudante.altura = altura;
+        if (idade !== undefined) estudante.idade = idade;
+        if (serie !== undefined) estudante.serie = serie;
+        if (foto) estudante.foto = foto;
+        if (esportes) estudante.esportes = esportes;
+        await estudante.save();
+      }
+    }
+    res.json({ mensagem: 'Perfil atualizado com sucesso' });
+  } catch (error) {
+    res.status(500).json({ mensagem: error.message });
+  }
+};
+
 module.exports = {
   loginUser,
   registerUser,
   getUserById,
+  updateUser,
 };

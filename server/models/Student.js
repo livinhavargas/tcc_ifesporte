@@ -2,17 +2,19 @@ const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
   nome: { type: String, required: true },
-  matricula: { type: String, required: true, unique: true },
-  serie: { type: String, enum: ['1EM', '2EM', '3EM'], required: true },
-  sexo: { type: String, enum: ['M', 'F', 'Outro'], required: true },
-  idade: { type: Number, required: true },
+  matricula: { type: String, unique: true, sparse: true },
+  serie: { type: String, enum: ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'] },
+  sexo: { type: String, enum: ['Masculino', 'Feminino'], required: true },
+  idade: { type: Number },
   esportes: [{ type: String }], // nomes das modalidades
   // Campos opcionais
   email: { type: String },
   telefone: { type: String },
   altura: { type: Number }, // em metros
   peso: { type: Number }, // em kg
-  adicionadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Referência ao admin/treinador que adicionou
+  foto: { type: String }, // Base64 foto
+  adicionadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Referência ao admin que adicionou
+
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

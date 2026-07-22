@@ -10,6 +10,7 @@ import Agenda from './pages/IFEsporte/Agenda';
 import Esportes from './pages/IFEsporte/Esportes';
 import Analises from './pages/IFEsporte/Analises';
 import SportDetail from './pages/IFEsporte/SportDetail';
+import StudentProfile from './pages/IFEsporte/StudentProfile';
 import AdminDashboard from './pages/IFEsporte/AdminDashboard';
 import AdminRoute from './components/AdminRoute';
 
@@ -19,9 +20,10 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [tipo, setTipo] = useState(localStorage.getItem('tipo'));
 
-  const handleLogin = (token, tipo) => {
+  const handleLogin = (token, tipo, email) => {
     localStorage.setItem('token', token);
     localStorage.setItem('tipo', tipo);
+    if (email) localStorage.setItem('userEmail', email);
     setToken(token);
     setTipo(tipo);
   };
@@ -35,10 +37,11 @@ export default function App() {
         <Route path="/perfil" element={token ? <Perfil /> : <Navigate to="/login" replace />} />
         <Route path="/home" element={token ? <Home /> : <Navigate to="/login" replace />} />
         
-        <Route path="/alunos" element={token ? <Alunos /> : <Navigate to="/login" replace />} />
+        <Route path="/alunos" element={token && tipo === 'admin' ? <Alunos /> : <Navigate to="/" replace />} />
+        <Route path="/alunos/:id" element={token && tipo === 'admin' ? <StudentProfile /> : <Navigate to="/" replace />} />
         <Route path="/agenda" element={token ? <Agenda /> : <Navigate to="/login" replace />} />
-        <Route path="/esportes" element={token ? <Esportes /> : <Navigate to="/login" replace />} />
-        <Route path="/esportes/:id" element={token ? <SportDetail /> : <Navigate to="/login" replace />} />
+        <Route path="/esportes" element={token && tipo === 'admin' ? <Esportes /> : <Navigate to="/" replace />} />
+        <Route path="/esportes/:id" element={token && tipo === 'admin' ? <SportDetail /> : <Navigate to="/" replace />} />
         <Route path="/analises" element={token ? <Analises /> : <Navigate to="/login" replace />} />
 
         {/* Rota Administrativa (Área do Servidor) */}

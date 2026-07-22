@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
+import ModalidadesSelector from '../../components/ModalidadesSelector';
 
 const Alunos = () => {
   const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const userType = localStorage.getItem('tipo');
@@ -13,8 +13,8 @@ const Alunos = () => {
   const [formData, setFormData] = useState({
     nome: '',
     matricula: '',
-    serie: '1EM',
-    sexo: 'M',
+    serie: '1A',
+    sexo: 'Feminino',
     idade: '',
     esportes: [],
     email: '',
@@ -23,6 +23,8 @@ const Alunos = () => {
     peso: ''
   });
 
+  const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
+
   useEffect(() => {
     fetchStudents();
   }, []);
@@ -30,25 +32,30 @@ const Alunos = () => {
   const fetchStudents = async () => {
     try {
       const response = await fetch('/api/students', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
       setStudents(data);
       setLoading(false);
     } catch (error) {
-      console.error('Erro ao buscar alunos:', error);
+      console.error(error);
       setLoading(false);
     }
   };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
     setMensagem('');
 
-    if (!formData.nome || !formData.matricula || !formData.idade) {
-      setMensagem('Preencha todos os campos obrigatórios');
+    if (!formData.nome || !formData.sexo) {
+      setMensagem('Preencha os campos obrigatórios (Nome, Gênero)');
       return;
     }
 
@@ -63,300 +70,169 @@ const Alunos = () => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        setMensagem(error.message || 'Erro ao adicionar aluno');
+        setMensagem('Erro ao adicionar aluno');
         return;
       }
 
-      setMensagem('✅ Aluno adicionado com sucesso!');
+      setMensagem('✅ Aluno adicionado!');
       setTimeout(() => {
-        setFormData({
-          nome: '',
-          matricula: '',
-          serie: '1EM',
-          sexo: 'M',
-          idade: '',
-          esportes: [],
-          email: '',
-          telefone: '',
-          altura: '',
-          peso: ''
-        });
+        setFormData({ nome: '', matricula: '', serie: '1EM', sexo: 'M', idade: '', esportes: [], email: '', telefone: '', altura: '', peso: '' });
         setShowForm(false);
         setMensagem('');
         fetchStudents();
       }, 1500);
     } catch (error) {
-      setMensagem('Erro ao conectar com o servidor');
+      setMensagem('Erro no servidor');
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const filteredStudents = students.filter(student =>
-    student.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.matricula.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    (student.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (student.matricula || '').toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+
+  const getImcStatusColor = (imc) => {
+    if (!imc) return '#ccc';
+    if (imc < 18.5) return '#eab308'; // amarelo
+    if (imc >= 18.5 && imc <= 24.9) return '#22c55e'; // verde
+    if (imc >= 25 && imc <= 29.9) return '#f97316'; // laranja
+    return '#ef4444'; // vermelho
+  };
 
   return (
     <Layout>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Gerenciamento de Alunos</h2>
-        {(userType === 'admin' || userType === 'treinador') && (
+      {/* Search Bar Row */}
+      <div className="d-flex justify-content-between align-items-center mb-5">
+        <div className="flex-grow-1 me-4">
+          <input 
+            type="text" 
+            className="form-control form-control-lg border-0 shadow-sm rounded-pill px-4" 
+            placeholder="Buscar aluno..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ backgroundColor: '#fff', fontSize: '1.1rem' }}
+          />
+        </div>
+        {userType === 'admin' && (
           <button 
-            className="btn btn-primary"
+            className="btn btn-light shadow-sm rounded-3 d-flex align-items-center justify-content-center"
+            style={{ width: '60px', height: '60px', fontSize: '2rem', color: '#B9C9DF' }}
             onClick={() => setShowForm(!showForm)}
           >
-            <i className="bi bi-plus-circle me-2"></i>{showForm ? 'Cancelar' : 'Novo Aluno'}
+            <i className={`bi bi-${showForm ? 'x' : 'plus'}`}></i>
           </button>
         )}
       </div>
 
-      {/* Formulário de adicionar aluno */}
-      {showForm && (userType === 'admin' || userType === 'treinador') && (
-        <div className="card mb-4 shadow-sm border-0">
-          <div className="card-header bg-primary text-white">
-            <h5 className="mb-0">Adicionar Novo Aluno</h5>
-          </div>
-          <div className="card-body">
-            {mensagem && <p className={`text-${mensagem.includes('✅') ? 'success' : 'danger'}`}>{mensagem}</p>}
-            <form onSubmit={handleAddStudent}>
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="nome" className="form-label fw-bold">Nome *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="nome"
-                    name="nome"
-                    value={formData.nome}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="matricula" className="form-label fw-bold">Matrícula *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="matricula"
-                    name="matricula"
-                    value={formData.matricula}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+      {showForm && userType === 'admin' && (
+        <div className="card-flat p-4 mb-5 shadow-sm border">
+          <h5 className="fw-bold mb-4 text-blue-dark">Adicionar Aluno</h5>
+          {mensagem && <div className={`alert ${mensagem.includes('✅') ? 'alert-success' : 'alert-danger'}`}>{mensagem}</div>}
+          <form onSubmit={handleAddStudent}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <input type="text" className="form-control" name="nome" placeholder="Nome *" value={formData.nome} onChange={handleInputChange} required />
               </div>
-
-              <div className="row">
-                <div className="col-md-3 mb-3">
-                  <label htmlFor="serie" className="form-label fw-bold">Ano Escolar *</label>
-                  <select
-                    className="form-select"
-                    id="serie"
-                    name="serie"
-                    value={formData.serie}
-                    onChange={handleInputChange}
-                  >
-                    <option value="1EM">1º EM</option>
-                    <option value="2EM">2º EM</option>
-                    <option value="3EM">3º EM</option>
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label htmlFor="sexo" className="form-label fw-bold">Sexo *</label>
-                  <select
-                    className="form-select"
-                    id="sexo"
-                    name="sexo"
-                    value={formData.sexo}
-                    onChange={handleInputChange}
-                  >
-                    <option value="M">Masculino</option>
-                    <option value="F">Feminino</option>
-                    <option value="Outro">Outro</option>
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label htmlFor="idade" className="form-label fw-bold">Idade *</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="idade"
-                    name="idade"
-                    value={formData.idade}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+              <div className="col-md-3">
+                <input type="text" className="form-control" name="matricula" placeholder="Matrícula (Op)" value={formData.matricula} onChange={handleInputChange} />
               </div>
-
-              <div className="row">
-                <div className="col-md-3 mb-3">
-                  <label htmlFor="altura" className="form-label">Altura (m)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    id="altura"
-                    name="altura"
-                    value={formData.altura}
-                    onChange={handleInputChange}
-                    placeholder="Ex: 1.75"
-                  />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label htmlFor="peso" className="form-label">Peso (kg)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    className="form-control"
-                    id="peso"
-                    name="peso"
-                    value={formData.peso}
-                    onChange={handleInputChange}
-                    placeholder="Ex: 70"
-                  />
-                </div>
+              <div className="col-md-3">
+                <select className="form-select" name="serie" value={formData.serie} onChange={handleInputChange}>
+                  {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
-
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="email" className="form-label">Email</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="telefone" className="form-label">Telefone</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="telefone"
-                    name="telefone"
-                    value={formData.telefone}
-                    onChange={handleInputChange}
-                  />
-                </div>
+              <div className="col-md-3">
+                <select className="form-select" name="sexo" value={formData.sexo} onChange={handleInputChange} required>
+                  <option value="Feminino">Feminino</option>
+                  <option value="Masculino">Masculino</option>
+                </select>
               </div>
-
-              <button type="submit" className="btn btn-success">
-                <i className="bi bi-check-circle me-2"></i>Adicionar Aluno
-              </button>
-            </form>
-          </div>
+              <div className="col-md-3">
+                <input type="number" className="form-control" name="idade" placeholder="Idade" value={formData.idade} onChange={handleInputChange} />
+              </div>
+              <div className="col-md-3">
+                <input type="number" step="0.01" className="form-control" name="altura" placeholder="Altura (ex: 1.75)" value={formData.altura} onChange={handleInputChange} />
+              </div>
+              <div className="col-md-3">
+                <input type="number" step="0.1" className="form-control" name="peso" placeholder="Peso (ex: 70.5)" value={formData.peso} onChange={handleInputChange} />
+              </div>
+              <div className="col-12 mt-3 mb-2">
+                <label className="fw-bold small mb-2 text-muted">Modalidades de Interesse</label>
+                <ModalidadesSelector 
+                  selected={formData.esportes}
+                  onChange={(novos) => setFormData({...formData, esportes: novos})}
+                />
+              </div>
+              <div className="col-12 text-end mt-4">
+                <button type="submit" className="btn btn-primary px-5">Salvar</button>
+              </div>
+            </div>
+          </form>
         </div>
       )}
 
-      {/* Busca */}
-      <div className="card mb-4">
-        <div className="card-body">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Buscar aluno por nome..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
       {loading ? (
-        <div className="text-center">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Carregando...</span>
-          </div>
-        </div>
+        <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
       ) : (
-        <div className="row">
-          <div className="col-md-8">
-            <div className="table-responsive">
-              <table className="table table-hover bg-white shadow-sm rounded">
-                <thead className="table-dark">
-                  <tr>
-                    <th>Nome</th>
-                    <th>Matrícula</th>
-                    <th>Série</th>
-                    <th>Idade</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.map(student => (
-                    <tr key={student._id} style={{ cursor: 'pointer' }}>
-                      <td onClick={() => setSelectedStudent(student)}>{student.nome}</td>
-                      <td>{student.matricula}</td>
-                      <td>{student.serie}</td>
-                      <td>{student.idade}</td>
-                      <td>
-                        <button 
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => setSelectedStudent(student)}
-                        >
-                          Ver Detalhes
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="col-md-4">
-            {selectedStudent ? (
-              <div className="card shadow-sm border-0">
-                <div className="card-header bg-primary text-white">
-                  <h5 className="mb-0">Ficha do Atleta</h5>
-                </div>
-                <div className="card-body">
-                  <h4>{selectedStudent.nome}</h4>
-                  <p className="text-muted">{selectedStudent.matricula} - {selectedStudent.serie}</p>
-                  <hr />
-                  <div><strong>Idade:</strong> {selectedStudent.idade} anos</div>
-                  <div><strong>Sexo:</strong> {selectedStudent.sexo === 'M' ? 'Masculino' : selectedStudent.sexo === 'F' ? 'Feminino' : 'Outro'}</div>
-                  {selectedStudent.altura && <div><strong>Altura:</strong> {selectedStudent.altura}m</div>}
-                  {selectedStudent.peso && <div><strong>Peso:</strong> {selectedStudent.peso}kg</div>}
-                  {selectedStudent.imc && (
-                    <div>
-                      <strong>IMC:</strong> {selectedStudent.imc}
-                      <span style={{ marginLeft: '10px', display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: selectedStudent.imc < 25 ? 'green' : selectedStudent.imc < 30 ? 'orange' : 'red' }}></span>
+        <div className="row g-4">
+          {filteredStudents.map(student => (
+            <div className="col-md-6 col-xl-4" key={student._id}>
+              <div className="card-flat p-4 h-100 position-relative shadow-sm cursor-pointer hover-bg-light" onClick={() => window.location.href=`/alunos/${student._id}`} style={{transition: '0.2s'}}>
+                
+                {/* Header: Avatar and Name */}
+                <div className="d-flex align-items-center mb-3">
+                  {student.foto ? (
+                    <img src={student.foto} alt="Perfil" className="rounded-circle shadow-sm me-3" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
+                  ) : (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 text-orange bg-blue-dark" style={{ width: '60px', height: '60px', fontSize: '1.8rem' }}>
+                      {student.nome.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <hr />
-                  <h6>Esportes Praticados:</h6>
                   <div>
-                    {selectedStudent.esportes && selectedStudent.esportes.length > 0 ? (
-                      selectedStudent.esportes.map((e, idx) => (
-                        <span key={idx} className="badge bg-secondary me-1 mb-1">{e}</span>
-                      ))
-                    ) : (
-                      <span className="text-muted">Nenhum esporte registrado</span>
-                    )}
+                    <h5 className="fw-bold text-blue-dark mb-0">{student.nome}</h5>
+                    <div className="text-blue-dark small">{student.matricula} - {student.serie || 'S/ Turma'}</div>
                   </div>
-                  <hr />
-                  <h6>Contato:</h6>
-                  <p className="mb-1"><i className="bi bi-envelope me-2"></i> {selectedStudent.email || 'N/A'}</p>
-                  <p><i className="bi bi-telephone me-2"></i> {selectedStudent.telefone || 'N/A'}</p>
                 </div>
+
+                {/* Sports Pills */}
+                <div className="d-flex flex-wrap gap-2 mb-4 mt-3">
+                  {student.esportes && student.esportes.length > 0 ? (
+                    student.esportes.map(esp => (
+                      <span key={esp} className="pill-orange">{esp}</span>
+                    ))
+                  ) : (
+                    <span className="text-muted small">Sem modalidades</span>
+                  )}
+                </div>
+
+                {/* Info Block */}
+                <div className="bg-blue-light p-3 rounded-4 mt-auto">
+                  <div className="row text-blue-dark small gx-0">
+                    <div className="col-6 mb-2">Sexo:</div>
+                    <div className="col-6 mb-2 text-end">{student.sexo === 'M' ? 'Masculino' : 'Feminino'}</div>
+                    
+                    <div className="col-6 mb-2">Altura:</div>
+                    <div className="col-6 mb-2 text-end">{student.altura ? `${student.altura}m` : '-'}</div>
+                    
+                    <div className="col-6 mb-2">Peso:</div>
+                    <div className="col-6 mb-2 text-end">{student.peso ? `${student.peso}kg` : '-'}</div>
+                    
+                    <div className="col-6 mt-1">IMC:</div>
+                    <div className="col-6 mt-1 text-end d-flex justify-content-end align-items-center">
+                      <span className="me-2">{student.imc ? student.imc : '-'}</span>
+                      <div className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: getImcStatusColor(student.imc) }}></div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
-            ) : (
-              <div className="alert alert-info">
-                Clique em um aluno para ver os detalhes.
-              </div>
-            )}
-          </div>
+            </div>
+          ))}
+          {filteredStudents.length === 0 && (
+            <div className="col-12 text-center text-muted py-5">
+              Nenhum aluno encontrado.
+            </div>
+          )}
         </div>
       )}
     </Layout>

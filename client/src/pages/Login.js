@@ -1,105 +1,136 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-
-export default function Login({ onLogin }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [mensagem, setMensagem] = useState('');
+const Login = ({ onLogin }) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    senha: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMensagem('');
+    setLoading(true);
+    setError('');
 
     try {
       const response = await fetch('/api/users/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: username, senha: password }),
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        setMensagem(data.mensagem || 'Erro no login');
-        return;
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('tipo', data.tipo);
+        localStorage.setItem('userName', data.nome);
+        localStorage.setItem('userId', data.id);
+        if (data.foto) localStorage.setItem('foto', data.foto);
+        
+        onLogin(data.token, data.tipo, data.email);
+        navigate('/');
+      } else {
+        setError(data.message || 'Erro ao realizar login');
       }
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('tipo', data.tipo);
-      localStorage.setItem('userName', data.nome);
-      localStorage.setItem('userId', data.id);
-      onLogin(data.token, data.tipo);
-      navigate('/');
-    } catch (error) {
-      setMensagem('Erro na conexão com o servidor');
+    } catch (err) {
+      setError('Erro de conexão ao servidor.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div 
-      className="bg-primary d-flex align-items-center justify-content-center" 
-      style={{ minHeight: '100vh' }}
-    >
-      <div className="container">
-          <div id="login-row" className="row justify-content-center align-items-center">
-            <div id="login-column" className="col-md-6">
-              <div id="login-box" className="col-md-12 p-4" style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '12px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                <form id="login-form" className="form" onSubmit={handleSubmit}>
-                  <div className="text-center mb-4">
-                    <img src="/logo.svg" alt="IFEsporte" style={{ height: '80px', marginBottom: '15px' }} />
-                  </div>
-                  <h3 className="text-center text-dark mb-2">Bem-vindo de volta!</h3>
-                  <p className="text-center text-muted mb-4">Faça login para acessar sua conta</p>
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-main">
+      <div className="card-flat p-5 shadow-sm" style={{ width: '100%', maxWidth: '480px' }}>
+        <div className="text-center mb-5">
+          <img src="/logo.png" alt="IFEsporte" style={{ height: '70px', marginBottom: '20px' }} />
+          <h4 className="fw-bold text-blue-dark">Bem-vindo de volta!</h4>
+          <p className="text-muted">Faça login para acessar sua conta</p>
+        </div>
 
-                  {mensagem && <p className="text-danger text-center mb-3">{mensagem}</p>}
+        {error && <div className="alert alert-danger rounded-3">{error}</div>}
 
-                  <div className="form-group mb-3">
-                    <label htmlFor="username" className="form-label fw-bold">Usuário ou Email:</label>
-                    <input
-                      type="text"
-                      name="username"
-                      id="username"
-                      className="form-control"
-                      placeholder="Digite seu usuário ou e-mail"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group mb-4">
-                    <label htmlFor="password" className="form-label fw-bold">Senha:</label>
-                    <input
-                      type="password"
-                      name="password"
-                      id="password"
-                      className="form-control"
-                      placeholder="Digite sua senha"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group d-flex justify-content-between mt-4">
-                    <input
-                      type="submit"
-                      name="submit"
-                      className="btn btn-primary btn-md px-5"
-                      value="Entrar"
-                    />
-                    <a href="/register" className="btn btn-outline-secondary btn-md px-5">
-                      Criar conta
-                    </a>
-                  </div>
-                </form>
-              </div>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="form-label fw-bold small text-blue-dark">Nome de usuário ou e-mail</label>
+            <div className="input-group">
+              <span className="input-group-text bg-white border-end-0 text-muted">
+                <i className="bi bi-person"></i>
+              </span>
+              <input
+                type="email"
+                className="form-control border-start-0 ps-0"
+                name="email"
+                placeholder="Digite seu e-mail"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+              />
             </div>
           </div>
+
+          <div className="mb-4">
+            <label className="form-label fw-bold small text-blue-dark">Senha</label>
+            <div className="input-group">
+              <span className="input-group-text bg-white border-end-0 text-muted">
+                <i className="bi bi-lock"></i>
+              </span>
+              <input
+                type="password"
+                className="form-control border-start-0 ps-0"
+                name="senha"
+                placeholder="Digite sua senha"
+                value={formData.senha}
+                onChange={handleInputChange}
+                required
+              />
+              <span className="input-group-text bg-white cursor-pointer text-muted border-start-0">
+                <i className="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+
+          <div className="d-flex justify-content-between align-items-center mb-5">
+            <div className="form-check">
+              <input className="form-check-input" type="checkbox" id="rememberMe" />
+              <label className="form-check-label text-muted small" htmlFor="rememberMe">
+                Lembrar-me
+              </label>
+            </div>
+            <Link to="#" className="text-decoration-none fw-bold small text-blue-dark">
+              Esqueci minha senha
+            </Link>
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary w-100 py-3 mb-4 rounded-3 fw-bold"
+            disabled={loading}
+          >
+            {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
+            Entrar
+          </button>
+        </form>
+
+        <div className="text-center text-muted small fw-bold">
+          Não tem uma conta? <Link to="/register" className="text-blue-dark text-decoration-none ms-1">Cadastre-se</Link>
         </div>
       </div>
+    </div>
   );
-}
+};
+
+export default Login;

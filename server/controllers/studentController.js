@@ -1,4 +1,5 @@
 const Student = require('../models/Student');
+const Analysis = require('../models/Analysis');
 
 const getAllStudents = async (req, res) => {
   try {
@@ -20,6 +21,7 @@ const getStudentById = async (req, res) => {
 };
 
 const createStudent = async (req, res) => {
+  console.log("POST /api/students PAYLOAD RECEBIDO:", req.body);
   const student = new Student(req.body);
   try {
     const newStudent = await student.save();
@@ -41,8 +43,13 @@ const updateStudent = async (req, res) => {
 
 const deleteStudent = async (req, res) => {
   try {
-    const student = await Student.findByIdAndDelete(req.params.id);
+    const studentId = req.params.id;
+    // Cascade delete análises
+    await Analysis.deleteMany({ aluno: studentId });
+    
+    const student = await Student.findByIdAndDelete(studentId);
     if (!student) return res.status(404).json({ message: 'Estudante não encontrado' });
+    
     res.json({ message: 'Estudante removido com sucesso' });
   } catch (error) {
     res.status(500).json({ message: error.message });

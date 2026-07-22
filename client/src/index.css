@@ -1,0 +1,126 @@
+/* IFEsporte Global Styles - Design System (Fidelidade 100%) */
+
+:root {
+  /* Cores baseadas nos protótipos */
+  --blue-dark: #295593;
+  --blue-top: #406DB1;
+  --blue-light: #B9C9DF;
+  
+  --bg-main: #E0E3E7;
+  --bg-sidebar: #F8F9FA;
+  --bg-white: #FFFFFF;
+  
+  --orange-active: #F4C88E;
+  --orange-secondary: #E8A958;
+  --orange-light: #F8D39E;
+
+  --text-dark: #295593; /* Texto principal e ícones usa a mesma cor do logo escuro */
+  --text-muted: #5777a1;
+}
+
+body {
+  background-color: var(--bg-main);
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-dark);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* Utilitários de Cor de Fundo */
+.bg-main { background-color: var(--bg-main) !important; }
+.bg-sidebar { background-color: var(--bg-sidebar) !important; }
+.bg-blue-dark { background-color: var(--blue-dark) !important; color: white !important; }
+.bg-blue-top { background-color: var(--blue-top) !important; color: white !important; }
+.bg-orange-active { background-color: var(--orange-active) !important; color: var(--blue-dark) !important; }
+.bg-orange-secondary { background-color: var(--orange-secondary) !important; }
+
+/* Utilitários de Texto */
+.text-blue-dark { color: var(--blue-dark) !important; }
+.text-orange { color: var(--orange-secondary) !important; }
+
+/* Botões */
+.btn-primary {
+  background-color: var(--blue-dark);
+  border-color: var(--blue-dark);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+}
+.btn-primary:hover {
+  background-color: #1c3c6a;
+  border-color: #1c3c6a;
+}
+
+/* Cards do Protótipo (Sem sombras exageradas, bem flats) */
+.card-flat {
+  background-color: var(--bg-white);
+  border: none !important;
+  border-radius: 16px;
+  box-shadow: none; /* Sem shadow para matching exato, ou quase nada */
+}
+
+/* Pills (Pílulas de modalidades/eventos) */
+.pill-orange {
+  background-color: var(--orange-secondary);
+  color: white;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.pill-blue-light {
+  background-color: var(--blue-light);
+  color: var(--blue-dark);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* Formulários */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  padding: 0.6rem 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--blue-dark);
+  box-shadow: 0 0 0 0.25rem rgba(41, 85, 147, 0.25);
+}
+
+/* Sidebar Customizada */
+.sidebar-link {
+  color: var(--blue-dark);
+  border-radius: 12px;
+  margin: 8px 16px;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(244, 200, 142, 0.3);
+}
+
+.sidebar-link.active {
+  background-color: var(--orange-active);
+  color: var(--blue-dark);
+}
+
+.sidebar-icon {
+  font-size: 1.5rem;
+  margin-right: 12px;
+}

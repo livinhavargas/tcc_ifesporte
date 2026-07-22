@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userName = localStorage.getItem('userName') || 'Usuário';
-  const userType = localStorage.getItem('tipo') || 'usuario';
+  const userPhoto = localStorage.getItem('foto');
+  const userInitials = userName.substring(0, 2).toUpperCase();
+  const userType = localStorage.getItem('tipo') || 'Estudante'; // lowercase internally maybe, but display as title case
+
+  const displayUserType = userType === 'admin' ? 'Administrador' : 'Estudante';
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -20,92 +25,84 @@ const Layout = ({ children }) => {
     setShowUserMenu(false);
   };
 
+  const isActive = (path) => {
+    return location.pathname.startsWith(path) && location.pathname !== '/' ? 'active' : '';
+  };
+
   return (
-    <div className="container-fluid">
-      {/* Header */}
-      <div className="row" style={{ backgroundColor: '#e8f0f7', borderBottom: '1px solid #dee2e6' }}>
-        <div className="col-md-3 col-lg-2 d-flex align-items-center px-3 py-3" style={{ backgroundColor: '#f8f9fa' }}>
-          <img src="/logo.svg" alt="IFEsporte" style={{ height: '50px' }} />
-        </div>
-        <main className="col-md-9 col-lg-10 d-flex justify-content-between align-items-center px-4">
-          <h5 className="mb-0 text-dark">IFEsporte - Gerenciamento Esportivo</h5>
+    <div className="d-flex flex-column min-vh-100">
+      {/* Top Header Full Width */}
+      <header className="w-100">
+        {/* Faixa azul escura no topo */}
+        <div className="bg-blue-top" style={{ height: '16px' }}></div>
+        
+        {/* Header content cinza/azul claro */}
+        <div className="d-flex justify-content-between align-items-center px-4 py-3" style={{ backgroundColor: '#D5DFE8' }}>
+          <div>
+            {/* O SVG oficial deve ter as cores originais (azul e laranja), sem filtros de inversão */}
+            <img src="/logo.png" alt="IFEsporte" style={{ height: '65px' }} />
+          </div>
+          
           <div className="position-relative">
-            <button 
-              className="btn btn-light border rounded-circle p-2 d-flex align-items-center justify-content-center"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              style={{ width: '45px', height: '45px' }}
+            <div 
+              className="d-flex align-items-center cursor-pointer px-3 py-2 hover-bg-light"
+              style={{ backgroundColor: '#E2E8F0', borderRadius: '12px', border: '1px solid #CBD5E1', transition: 'all 0.2s' }}
+              onClick={() => navigate('/perfil')}
             >
-              <i className="bi bi-person-circle" style={{ fontSize: '20px' }}></i>
-            </button>
-            {showUserMenu && (
               <div 
-                className="position-absolute bg-white border rounded shadow-lg p-2"
-                style={{ right: 0, top: '50px', minWidth: '200px', zIndex: 1000 }}
+                className="d-flex align-items-center justify-content-center bg-blue-dark text-white rounded-circle shadow-sm me-3"
+                style={{ width: '40px', height: '40px', fontSize: '0.9rem', overflow: 'hidden' }}
               >
-                <p className="px-3 pt-2 mb-0"><small><strong>{userName}</strong></small></p>
-                <p className="px-3 mb-3"><small className="text-muted">{userType === 'admin' ? 'Professor (Admin)' : userType === 'treinador' ? 'Treinador' : 'Estudante'}</small></p>
-                <hr className="my-2" />
-                <button 
-                  className="btn btn-sm btn-light w-100 text-start mb-2"
-                  onClick={handleProfile}
-                >
-                  <i className="bi bi-person me-2"></i>Meu Perfil
-                </button>
-                <button 
-                  className="btn btn-sm btn-outline-danger w-100"
-                  onClick={handleLogout}
-                >
-                  <i className="bi bi-box-arrow-right me-2"></i>Sair
-                </button>
+                {userPhoto ? (
+                  <img src={userPhoto} alt="Perfil" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                ) : (
+                  <span className="fw-bold">{userInitials}</span>
+                )}
               </div>
-            )}
+              <div className="text-start">
+                <div className="fw-bold text-blue-dark" style={{ lineHeight: '1', fontSize: '1.1rem' }}>{userName}</div>
+                <div className="text-muted" style={{ fontSize: '0.85rem' }}>{displayUserType}</div>
+              </div>
+            </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </header>
 
-      <div className="row">
+      {/* Main Body (Sidebar + Content) */}
+      <div className="d-flex flex-grow-1">
         {/* Sidebar */}
-        <nav id="sidebar" className="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse min-vh-100" style={{ backgroundColor: '#f8f9fa', borderRight: '1px solid #dee2e6' }}>
-          <div className="position-sticky pt-3">
-            <ul className="nav flex-column">
-              <li className="nav-item">
-                <Link className="nav-link text-dark" to="/">
-                  <i className="bi bi-house-door me-2"></i> Início
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link text-dark" to="/alunos">
-                  <i className="bi bi-people me-2"></i> Alunos
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link text-dark" to="/agenda">
-                  <i className="bi bi-calendar-event me-2"></i> Agenda
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link text-dark" to="/esportes">
-                  <i className="bi bi-trophy me-2"></i> Esportes
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link text-dark" to="/analises">
-                  <i className="bi bi-graph-up me-2"></i> Análises
-                </Link>
-              </li>
-              {localStorage.getItem('tipo') === 'admin' && (
-                <li className="nav-item">
-                  <Link className="nav-link text-primary fw-bold" to="/admin">
-                    <i className="bi bi-shield-lock me-2"></i> Área do Servidor
-                  </Link>
-                </li>
-              )}
-            </ul>
-          </div>
-        </nav>
+        <aside className="bg-sidebar flex-shrink-0" style={{ width: '260px' }}>
+          <nav className="pt-4">
+            <Link className={`sidebar-link ${location.pathname === '/' ? 'active' : ''}`} to="/">
+              <i className="bi bi-house-door-fill sidebar-icon"></i> Início
+            </Link>
+            
+            {userType === 'admin' && (
+              <Link className={`sidebar-link ${isActive('/alunos')}`} to="/alunos">
+                <i className="bi bi-people-fill sidebar-icon"></i> Alunos
+              </Link>
+            )}
+            
+            <Link className={`sidebar-link ${isActive('/agenda')}`} to="/agenda">
+              <i className="bi bi-calendar-event-fill sidebar-icon"></i> Agenda
+            </Link>
+            
+            {userType === 'admin' && (
+              <Link className={`sidebar-link ${isActive('/esportes')}`} to="/esportes">
+                <i className="bi bi-trophy-fill sidebar-icon"></i> Esportes
+              </Link>
+            )}
 
-        {/* Main Content */}
-        <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            {userType === 'estudante' && (
+              <Link className={`sidebar-link ${isActive('/analises')}`} to="/analises">
+                <i className="bi bi-card-checklist sidebar-icon"></i> Minhas Análises
+              </Link>
+            )}
+          </nav>
+        </aside>
+
+        {/* Page Content */}
+        <main className="flex-grow-1 p-4 p-md-5 bg-main position-relative">
           {children}
         </main>
       </div>

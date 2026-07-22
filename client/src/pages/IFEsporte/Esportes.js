@@ -1,110 +1,117 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
 
 const Esportes = () => {
-  const [sports, setSports] = useState([]);
+  const [genero, setGenero] = useState('Feminino');
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSports();
+    fetchStudents();
   }, []);
 
-  const fetchSports = async () => {
+  const fetchStudents = async () => {
     try {
-      const response = await fetch('/api/sports', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await fetch('/api/students', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setSports(data);
+        setStudents(data);
       }
-      setLoading(false);
     } catch (error) {
-      console.error('Erro ao buscar modalidades:', error);
+      console.error(error);
+    } finally {
       setLoading(false);
     }
   };
 
-  const renderSportCard = (sport) => (
-    <div className="col-md-4 mb-4" key={sport._id || sport.nome}>
-      <div 
-        className="card shadow-sm border-0 h-100 sport-card" 
-        onClick={() => navigate(`/esportes/${sport._id}`)}
-        style={{ 
-          cursor: 'pointer', 
-          transition: 'transform 0.2s, box-shadow 0.2s',
-          backgroundColor: sport.tipo === 'individual' ? '#e8f4f8' : '#fff4e6'
-        }}
-        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-      >
-        <div className="card-body text-center d-flex flex-column justify-content-center">
-          <div className="mb-3">
-            <i className={`bi bi-${sport.tipo === 'individual' ? 'person-fill' : 'people-fill'} fs-1`} style={{ color: sport.tipo === 'individual' ? '#1e5ba8' : '#f4a942' }}></i>
-          </div>
-          <h4 className="card-title text-dark">{sport.nome}</h4>
-          <p className="text-muted mb-2">{sport.tipo === 'individual' ? 'Individual' : 'Em Equipe'}</p>
-          {sport.subcategorias && sport.subcategorias.length > 0 && (
-            <p className="text-muted small">{sport.subcategorias.length} subesportes</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  const modalidadesIndividuais = [
+    { id: 'atletismo', nome: 'Atletismo', icone: 'bi-person-walking' },
+    { id: 'badminton', nome: 'Badminton', icone: 'bi-usb-drive' }, // using best match for shuttlecock
+    { id: 'tenis-de-mesa', nome: 'Tênis de Mesa', icone: 'bi-circle' },
+    { id: 'xadrez', nome: 'Xadrez', icone: 'bi-puzzle-fill' }
+  ];
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="text-center py-5">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Carregando...</span>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const modalidadesEquipe = [
+    { id: 'basquete', nome: 'Basquete', icone: 'bi-dribbble' },
+    { id: 'futsal', nome: 'Futsal', icone: 'bi-circle-fill' }, // soccer ball
+    { id: 'futebol', nome: 'Futebol', icone: 'bi-circle-half' },
+    { id: 'handebol', nome: 'Handebol', icone: 'bi-person-arms-up' },
+    { id: 'volei-quadra', nome: 'Vôlei de Quadra', icone: 'bi-record-circle' },
+    { id: 'volei-praia', nome: 'Vôlei de Praia', icone: 'bi-sun' }
+  ];
 
-  const individualSports = sports.filter(s => s.tipo === 'individual');
-  const teamSports = sports.filter(s => s.tipo === 'coletivo');
+  const getCount = (nome) => {
+    return students.filter(student => 
+      student.sexo === genero && 
+      student.esportes && 
+      student.esportes.some(esp => esp.includes(nome))
+    ).length;
+  };
 
   return (
     <Layout>
-      <div className="mb-4">
-        <h2>Modalidades Esportivas</h2>
-        <p className="text-muted">Explore e gerencie todas as modalidades do IFEsporte</p>
+      <div className="d-flex justify-content-center mb-5">
+        <div className="d-flex bg-white rounded-pill p-1 shadow-sm" style={{ width: '400px' }}>
+          <button 
+            className={`flex-fill btn rounded-pill fw-bold d-flex align-items-center justify-content-center ${genero === 'Feminino' ? 'bg-blue-dark text-orange' : 'bg-white text-blue-dark border-0'}`}
+            onClick={() => setGenero('Feminino')}
+            style={{ padding: '12px' }}
+          >
+            <i className="bi bi-gender-female fs-4 me-2"></i> Feminino
+          </button>
+          <button 
+            className={`flex-fill btn rounded-pill fw-bold d-flex align-items-center justify-content-center ${genero === 'Masculino' ? 'bg-blue-dark text-orange' : 'bg-white text-blue-dark border-0'}`}
+            onClick={() => setGenero('Masculino')}
+            style={{ padding: '12px' }}
+          >
+            <i className="bi bi-gender-male fs-4 me-2"></i> Masculino
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-5">
+        <h4 className="fw-bold text-orange mb-4">Modalidades individuais</h4>
+        <div className="row g-4">
+          {modalidadesIndividuais.map(mod => (
+            <div className="col-md-3" key={mod.id}>
+              <Link to={`/esportes/${mod.id}?genero=${genero}`} className="text-decoration-none">
+                <div className="card-flat shadow-sm text-center p-4 d-flex flex-column align-items-center justify-content-center h-100 transition-hover">
+                  <i className={`bi ${mod.icone} mb-3`} style={{ fontSize: '4.5rem', color: '#B08851' }}></i>
+                  <h4 className="fw-bold text-blue-dark mb-2">{mod.nome}</h4>
+                  <div className="text-blue-dark small">{getCount(mod.nome)} alunos cadastrados</div>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="fw-bold text-orange mb-4">Modalidades em equipe</h4>
+        <div className="row g-4">
+          {modalidadesEquipe.map(mod => (
+            <div className="col-md-3" key={mod.id}>
+              <Link to={`/esportes/${mod.id}?genero=${genero}`} className="text-decoration-none">
+                <div className="card-flat shadow-sm text-center p-4 d-flex flex-column align-items-center justify-content-center h-100 transition-hover">
+                  <i className={`bi ${mod.icone} mb-3`} style={{ fontSize: '4.5rem', color: '#B08851' }}></i>
+                  <h4 className="fw-bold text-blue-dark mb-2">{mod.nome}</h4>
+                  <div className="text-blue-dark small">{getCount(mod.nome)} alunos cadastrados</div>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
       </div>
       
-      {individualSports.length > 0 && (
-        <>
-          <h4 className="mb-3 text-primary">
-            <i className="bi bi-person-fill me-2"></i>Modalidades Individuais
-          </h4>
-          <div className="row mb-5">
-            {individualSports.map(renderSportCard)}
-          </div>
-        </>
-      )}
-
-      {teamSports.length > 0 && (
-        <>
-          <h4 className="mb-3 text-warning">
-            <i className="bi bi-people-fill me-2"></i>Modalidades em Equipe
-          </h4>
-          <div className="row">
-            {teamSports.map(renderSportCard)}
-          </div>
-        </>
-      )}
-
-      {sports.length === 0 && (
-        <div className="alert alert-info">
-          Nenhuma modalidade cadastrada. Contacte o administrador para adicionar modalidades.
-        </div>
-      )}
+      <style>{`
+        .transition-hover:hover {
+          transform: translateY(-5px);
+          transition: transform 0.2s ease-in-out;
+        }
+      `}</style>
     </Layout>
   );
 };
