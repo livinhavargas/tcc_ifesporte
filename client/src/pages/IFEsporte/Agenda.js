@@ -1,28 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
+import CalendarSidebar from './components/CalendarSidebar';
+import MainCalendar from './components/MainCalendar';
+import EventModal from './components/EventModal';
+import '../../agenda.css';
+
+const categoriesColors = {
+  'Treino': '#3b82f6',       // Azul
+  'Jogo': '#22c55e',         // Verde
+  'Campeonato': '#f97316',   // Laranja
+  'Reunião': '#8b5cf6',      // Roxo
+  'Avaliação': '#06b6d4',    // Ciano (como não especificado, escolhi ciano para não confundir com outros)
+  'Amistoso': '#14b8a6',     // Teal
+  'Urgente': '#ef4444',      // Vermelho
+  'Outro': '#64748b'         // Cinza
+};
 
 const Agenda = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
   
-  const userType = localStorage.getItem('tipo');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const [formData, setFormData] = useState({
-    titulo: '',
-    tipo: 'Treino',
-    data: '',
-    hora: '',
-    local: '',
-    descricao: ''
-  });
-  
-  const [editingEventId, setEditingEventId] = useState(null);
+  const userType = localStorage.getItem('tipo');
 
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  const parseEventForCalendar = (ev) => {
+    // A data é guardada no backend como YYYY-MM-DD ou Date ISOS
+    const dateStr = ev.data ? ev.data.split('T')[0] : new Date().toISOString().split('T')[0];
+    
+    const startStr = ev.horaInicial || ev.hora || '12:00';
+    const endStr = ev.horaFinal || (
+      // se não tem hora final, assume 1 hora de duração
+      `${String(parseInt(startStr.split(':')[0]) + 1).padStart(2, '0')}:${startStr.split(':')[1]}`
+    );
+
+    const start = new Date(`${dateStr}T${startStr}:00`);
+    const end = new Date(`${dateStr}T${endStr}:00`);
+
+    return {
+      ...ev,
+      start,
+      end,
+      title: ev.titulo || 'Evento'
+    };
+  };
 
   const fetchEvents = async () => {
     try {
@@ -31,7 +58,8 @@ const Agenda = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setEvents(data);
+        const formatted = data.map(parseEventForCalendar);
+        setEvents(formatted);
       }
     } catch (error) {
       console.error(error);
@@ -40,40 +68,98 @@ const Agenda = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleDateChange = (date) => {
+    setCurrentDate(date);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSelectSlot = ({ start, end }) => {
+    if (userType === 'estudante') return;
+    
+    // Create new event
+    setSelectedEvent({
+      start,
+      end,
+      data: start.toISOString(),
+      horaInicial: start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      horaFinal: end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    });
+    setShowModal(true);
+  };
+
+  const handleSelectEvent = (event) => {
+    setSelectedEvent(event);
+    setShowModal(true);
+  };
+
+  const handleEventDrop = async ({ event, start, end, isAllDay: droppedOnAllDaySlot }) => {
+    if (userType === 'estudante') return;
+    
+    const updatedEvent = {
+      ...event,
+      start,
+      end,
+      data: start.toISOString(),
+      horaInicial: start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      horaFinal: end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // Update in local state for immediate feedback
+    setEvents(prev => prev.map(ev => ev._id === event._id ? updatedEvent : ev));
+    await saveEventToApi(updatedEvent);
+  };
+
+  const handleEventResize = async ({ event, start, end }) => {
+    if (userType === 'estudante') return;
+
+    const updatedEvent = {
+      ...event,
+      start,
+      end,
+      data: start.toISOString(),
+      horaInicial: start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      horaFinal: end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setEvents(prev => prev.map(ev => ev._id === event._id ? updatedEvent : ev));
+    await saveEventToApi(updatedEvent);
+  };
+
+  const saveEventToApi = async (eventData) => {
+    const isNew = !eventData._id;
+    const url = isNew ? '/api/events' : `/api/events/${eventData._id}`;
+    const method = isNew ? 'POST' : 'PUT';
+
+    const payload = {
+      ...eventData,
+      titulo: eventData.titulo || eventData.title,
+      cor: categoriesColors[eventData.tipo] || categoriesColors.Outro
+    };
+
     try {
-      const url = editingEventId ? `/api/events/${editingEventId}` : '/api/events';
-      const method = editingEventId ? 'PUT' : 'POST';
-      
-      let eventColor = '#3b82f6'; // Azul padrão
-      if (formData.tipo === 'Treino') eventColor = '#22c55e'; // Verde
-      else if (formData.tipo === 'Amistoso') eventColor = '#eab308'; // Amarelo
-      else if (formData.tipo === 'Campeonato') eventColor = '#f97316'; // Laranja
-      
-      await fetch(url, {
-        method: method,
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({...formData, cor: eventColor})
+        body: JSON.stringify(payload)
       });
-      setFormData({ titulo: '', tipo: 'Treino', data: '', hora: '', local: '', descricao: '' });
-      setShowForm(false);
-      setEditingEventId(null);
-      fetchEvents();
-    } catch (error) {
-      console.error(error);
+      if (res.ok) {
+        fetchEvents();
+      }
+    } catch (err) {
+      console.error(err);
+      fetchEvents(); // Revert on failure
     }
   };
 
-  const handleDeleteEvent = async (id) => {
+  const handleSaveModal = async (eventData) => {
+    await saveEventToApi(eventData);
+    setShowModal(false);
+    setSelectedEvent(null);
+  };
+
+  const handleDelete = async (id) => {
     if(!window.confirm("Deseja realmente excluir este evento?")) return;
     try {
       await fetch(`/api/events/${id}`, {
@@ -81,176 +167,90 @@ const Agenda = () => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       fetchEvents();
+      setShowModal(false);
+      setSelectedEvent(null);
     } catch(err) {
       console.error(err);
     }
   };
 
-  const handleEditEvent = (ev) => {
-    setFormData({
-      titulo: ev.titulo,
-      tipo: ev.tipo,
-      data: ev.data ? ev.data.split('T')[0] : '',
-      hora: ev.hora,
-      local: ev.local,
-      descricao: ev.descricao || ''
-    });
-    setEditingEventId(ev._id);
-    setShowForm(true);
-  };
-
-  const daysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
-  const startDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-
-  const monthNames = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-  ];
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  };
-
-  const getEventsForDay = (day) => {
-    return events.filter(event => {
-      const eventDate = new Date(`${event.data}T00:00:00`);
-      return eventDate.getDate() === day &&
-             eventDate.getMonth() === currentMonth.getMonth() &&
-             eventDate.getFullYear() === currentMonth.getFullYear();
-    });
-  };
-
-  const renderCalendar = () => {
-    const days = [];
-    const totalDays = daysInMonth(currentMonth.getMonth(), currentMonth.getFullYear());
-    
-    // Empty slots before month starts
-    for (let i = 0; i < startDay; i++) {
-      days.push(<div key={`empty-${i}`} className="col" style={{ minHeight: '120px' }}></div>);
-    }
-    
-    // Actual days
-    for (let d = 1; d <= totalDays; d++) {
-      const dayEvents = getEventsForDay(d);
-      days.push(
-        <div key={d} className="col p-2">
-          <div className="rounded-4 p-2 h-100" style={{ backgroundColor: '#FBE6CD', minHeight: '110px' }}>
-            <div className="text-blue-dark fw-bold">{d}</div>
-            <div className="mt-2 d-flex flex-column gap-2">
-              {dayEvents.map((ev, idx) => (
-                <div key={idx} className="rounded-3 text-white p-2 text-start position-relative shadow-sm" style={{ backgroundColor: ev.cor || '#eab308', fontSize: '0.8rem' }}>
-                  <div className="fw-bold text-truncate mb-1">{ev.titulo}</div>
-                  <div className="d-flex align-items-center opacity-75 mb-1" style={{ fontSize: '0.7rem' }}>
-                    <i className="bi bi-tag-fill me-1"></i> {ev.tipo}
-                  </div>
-                  <div className="d-flex justify-content-between align-items-center mt-1">
-                    <span className="fw-bold bg-white text-dark px-1 rounded" style={{ fontSize: '0.7rem' }}>{ev.hora}</span>
-                    {userType === 'admin' && (
-                      <div className="d-flex gap-1">
-                        <i className="bi bi-pencil-fill cursor-pointer text-white opacity-75 hover-opacity-100" onClick={() => handleEditEvent(ev)}></i>
-                        <i className="bi bi-trash-fill cursor-pointer text-white opacity-75 hover-opacity-100" onClick={() => handleDeleteEvent(ev._id)}></i>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Wrap in rows of 7 (Bootstrap grid row-cols-7 doesn't exist, we use flex)
-    return (
-      <div className="d-flex flex-wrap" style={{ rowGap: '1rem' }}>
-        {days.map((day, idx) => (
-          <div key={idx} style={{ width: '14.28%', padding: '0 0.5rem' }}>
-            {day}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <Layout>
-      <div className="card-flat p-4 shadow-sm border">
+      <div className="container-fluid p-0 h-100 d-flex flex-column agenda-layout">
         
-        {/* Calendar Header */}
-        <div className="d-flex justify-content-between align-items-center mb-5 px-3">
-          <div className="d-flex align-items-center">
-            <button className="btn btn-link text-orange fs-2 p-0 me-4 text-decoration-none" onClick={prevMonth}>
-              <i className="bi bi-chevron-left"></i>
-            </button>
-            {userType === 'admin' && (
-              <button className="btn bg-blue-light text-blue-dark fw-bold rounded-3 px-4 py-2 d-flex align-items-center" onClick={() => {
-                setFormData({ titulo: '', tipo: 'Treino', data: '', hora: '', local: '', descricao: '' });
-                setEditingEventId(null);
-                setShowForm(!showForm);
-              }}>
-                <i className={`bi bi-${showForm ? 'x' : 'plus-lg'} me-2`}></i> {showForm ? 'Cancelar' : 'Novo evento'}
-              </button>
-            )}
+        {/* Header Superior */}
+        <div className="d-flex justify-content-between align-items-center bg-white px-4 py-3 border-bottom shadow-sm">
+          <div className="d-flex align-items-center gap-3">
+            <h4 className="mb-0 fw-bold text-dark d-flex align-items-center">
+              <i className="bi bi-calendar-range me-2 text-primary"></i> 
+              Agenda
+            </h4>
+            <button className="btn btn-outline-secondary btn-sm rounded-pill px-3 ms-3 fw-bold" onClick={() => setCurrentDate(new Date())}>Hoje</button>
           </div>
           
-          <div className="d-flex align-items-center">
-            <h3 className="fw-bold text-blue-dark mb-0 me-4">
-              {monthNames[currentMonth.getMonth()]} - {currentMonth.getFullYear()}
-            </h3>
-            <button className="btn btn-link text-orange fs-2 p-0 text-decoration-none" onClick={nextMonth}>
-              <i className="bi bi-chevron-right"></i>
-            </button>
+          <div className="d-flex align-items-center gap-2">
+             <div className="input-group input-group-sm rounded-pill overflow-hidden border">
+                <span className="input-group-text bg-white border-0"><i className="bi bi-search text-muted"></i></span>
+                <input type="text" className="form-control border-0 shadow-none bg-white" placeholder="Pesquisar..." style={{width: '150px'}} />
+             </div>
+             {userType !== 'estudante' && (
+              <button 
+                className="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center"
+                onClick={() => {
+                  setSelectedEvent(null);
+                  setShowModal(true);
+                }}
+              >
+                <i className="bi bi-plus-lg me-1"></i> Criar
+              </button>
+             )}
           </div>
         </div>
 
-        {/* Formulário */}
-        {showForm && userType === 'admin' && (
-          <div className="bg-light p-4 rounded-4 mb-4 border">
-            <form onSubmit={handleSubmit} className="row g-3">
-              <div className="col-md-6">
-                <input type="text" className="form-control" name="titulo" placeholder="Título do Evento" value={formData.titulo} onChange={handleInputChange} required />
-              </div>
-              <div className="col-md-3">
-                <input type="date" className="form-control" name="data" value={formData.data} onChange={handleInputChange} required />
-              </div>
-              <div className="col-md-3">
-                <input type="time" className="form-control" name="hora" value={formData.hora} onChange={handleInputChange} required />
-              </div>
-              <div className="col-md-6">
-                <input type="text" className="form-control" name="local" placeholder="Local (ex: Quadra Poliesportiva)" value={formData.local} onChange={handleInputChange} required />
-              </div>
-              <div className="col-md-3">
-                <select className="form-select" name="tipo" value={formData.tipo} onChange={handleInputChange}>
-                  <option value="Treino">Treino</option>
-                  <option value="Amistoso">Amistoso</option>
-                  <option value="Campeonato">Campeonato</option>
-                </select>
-              </div>
-              <div className="col-md-6">
-                <input type="text" className="form-control" name="descricao" placeholder="Descrição Opcional" value={formData.descricao} onChange={handleInputChange} />
-              </div>
-              <div className="col-12 text-end">
-                <button type="submit" className="btn btn-primary px-4">{editingEventId ? 'Salvar Alterações' : 'Agendar'}</button>
-              </div>
-            </form>
+        {/* Content Area */}
+        <div className="d-flex flex-grow-1 overflow-hidden" style={{ height: 'calc(100vh - 150px)' }}>
+          
+          {/* Sidebar */}
+          <div className="d-none d-lg-block" style={{ width: '280px', flexShrink: 0 }}>
+            <CalendarSidebar 
+              currentDate={currentDate} 
+              onDateChange={handleDateChange} 
+              events={events}
+              categoriesColors={categoriesColors}
+            />
           </div>
-        )}
 
-        {/* Days of Week Header */}
-        <div className="d-flex mb-3">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-            <div key={day} className="text-center text-blue-dark fw-bold" style={{ width: '14.28%' }}>
-              {day}
-            </div>
-          ))}
+          {/* Main Calendar */}
+          <div className="flex-grow-1 overflow-auto bg-light">
+            {loading ? (
+              <div className="d-flex justify-content-center align-items-center h-100">
+                <div className="spinner-border text-primary"></div>
+              </div>
+            ) : (
+              <MainCalendar 
+                events={events}
+                currentDate={currentDate}
+                onNavigate={handleDateChange}
+                onSelectEvent={handleSelectEvent}
+                onSelectSlot={handleSelectSlot}
+                onEventDrop={handleEventDrop}
+                onEventResize={handleEventResize}
+                categoriesColors={categoriesColors}
+              />
+            )}
+          </div>
+
         </div>
 
-        {/* Calendar Grid */}
-        {renderCalendar()}
+        {/* Modal Novo/Editar */}
+        <EventModal 
+          show={showModal} 
+          eventData={selectedEvent} 
+          onClose={() => setShowModal(false)}
+          onSave={handleSaveModal}
+          onDelete={handleDelete}
+          userType={userType}
+        />
 
       </div>
     </Layout>

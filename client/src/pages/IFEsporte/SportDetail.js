@@ -12,6 +12,11 @@ const SportDetail = () => {
   const [cronogramas, setCronogramas] = useState([]);
   const userType = localStorage.getItem('tipo');
   
+  const [showCronogramaForm, setShowCronogramaForm] = useState(false);
+  const [cronoData, setCronoData] = useState({
+    titulo: '', dataInicio: '', dataFim: '', competicaoAlvo: '', diasPorSemana: 3, objetivoGeral: ''
+  });
+  
   // Format id back to name
   const nameMap = {
     'atletismo': 'Atletismo',
@@ -45,6 +50,124 @@ const SportDetail = () => {
     return selectedCategory ? (selectedCategory.sub ? `${nome} - ${selectedCategory.cat} - ${selectedCategory.sub}` : `${nome} - ${selectedCategory.cat}`) : nome;
   };
 
+  const handleGerarCronograma = async () => {
+    if (!cronoData.titulo || !cronoData.dataInicio || !cronoData.dataFim || !cronoData.competicaoAlvo) {
+      alert("Preencha todos os campos de data e título");
+      return;
+    }
+    const dInicio = new Date(`${cronoData.dataInicio}T00:00:00`);
+    const dAlvo = new Date(`${cronoData.competicaoAlvo}T00:00:00`);
+    const dFim = new Date(`${cronoData.dataFim}T00:00:00`);
+
+    if (dInicio >= dAlvo || dAlvo >= dFim) {
+      alert("A ordem das datas deve ser: Início -> Competição Alvo -> Fim");
+      return;
+    }
+
+    const prepTime = dAlvo.getTime() - dInicio.getTime();
+    const midPoint = new Date(dInicio.getTime() + (prepTime / 2));
+
+    const generateTreinos = (start, end, objective) => {
+      let treinos = [];
+      let current = new Date(start);
+      const allowed = [];
+      if (cronoData.diasPorSemana >= 1) allowed.push(1); // seg
+      if (cronoData.diasPorSemana >= 2) allowed.push(3); // qua
+      if (cronoData.diasPorSemana >= 3) allowed.push(5); // sex
+      if (cronoData.diasPorSemana >= 4) allowed.push(2); // ter
+      if (cronoData.diasPorSemana >= 5) allowed.push(4); // qui
+      if (cronoData.diasPorSemana >= 6) allowed.push(6); // sab
+      if (cronoData.diasPorSemana >= 7) allowed.push(0); // dom
+
+      while (current <= end) {
+        if (allowed.includes(current.getDay())) {
+          treinos.push({
+            data: current.toISOString(),
+            tipo: `Treino ${objective}`
+          });
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      return treinos;
+    };
+
+    const semanasPrep = Math.ceil((midPoint - dInicio) / (7 * 24 * 60 * 60 * 1000));
+    const semanasComp = Math.ceil((dAlvo - midPoint) / (7 * 24 * 60 * 60 * 1000));
+    const semanasTrans = Math.ceil((dFim - dAlvo) / (7 * 24 * 60 * 60 * 1000));
+
+    const novo = {
+      titulo: cronoData.titulo,
+      modalidade: getCurrentModalidade(),
+      dataInicio: dInicio.toISOString(),
+      dataFim: dFim.toISOString(),
+      competicaoAlvo: dAlvo.toISOString(),
+      diasPorSemana: cronoData.diasPorSemana,
+      objetivoGeral: cronoData.objetivoGeral,
+      fases: [
+        { 
+          nome: 'Preparatória', dataInicio: dInicio, dataFim: midPoint, objetivo: 'Condicionamento físico e fundamentos', semanas: semanasPrep,
+          treinos: generateTreinos(dInicio, midPoint, 'Físico/Técnico')
+        },
+        { 
+          nome: 'Competitiva', dataInicio: midPoint, dataFim: dAlvo, objetivo: 'Tática, jogos treinos e competição', semanas: semanasComp,
+          treinos: generateTreinos(midPoint, dAlvo, 'Tático/Específico')
+        },
+        { 
+          nome: 'Transição', dataInicio: dAlvo, dataFim: dFim, objetivo: 'Descanso ativo e recuperação', semanas: semanasTrans,
+          treinos: generateTreinos(dAlvo, dFim, 'Recuperativo')
+        }
+      ]
+    };
+
+    try {
+      await fetch('/api/cronogramas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(novo)
+      });
+      fetchCronogramas();
+      setShowCronogramaForm(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleExportAgenda = async (cronograma) => {
+    if (!window.confirm("Deseja exportar estes treinos para a Agenda do IFesporte?")) return;
+    try {
+      for (const fase of cronograma.fases) {
+        for (const treino of fase.treinos) {
+          const ev = {
+            titulo: `${cronograma.titulo} - ${treino.tipo}`,
+            data: treino.data,
+            hora: '14:00',
+            local: getCurrentModalidade(),
+            descricao: `Fase: ${fase.nome} - Objetivo: ${fase.objetivo}`,
+            tipo: 'Treino'
+          };
+          await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            body: JSON.stringify(ev)
+          });
+        }
+      }
+      alert("Treinos exportados para a agenda com sucesso!");
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao exportar");
+    }
+  };
+
+  const handleDuplicate = async (id) => {
+    if (!window.confirm("Duplicar este cronograma?")) return;
+    await fetch(`/api/cronogramas/${id}/duplicate`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    fetchCronogramas();
+  };
+
   const fetchCronogramas = async () => {
     try {
       const res = await fetch(`/api/cronogramas?modalidade=${encodeURIComponent(getCurrentModalidade())}`, {
@@ -75,9 +198,9 @@ const SportDetail = () => {
 
   const hierarchy = {
     'Atletismo': {
-      'Corridas': ['100 metros rasos', '200 metros rasos', '400 metros rasos', '800 metros meio-fundo', '1500 metros meio-fundo', '3000 metros', '5000 metros', 'Revezamento'],
+      'Corridas': ['100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'Revezamento 100m', 'Revezamento 400m'],
       'Saltos': ['Distância', 'Altura', 'Triplo'],
-      'Lançamentos&Arremessos': ['Peso', 'Disco', 'Dardo']
+      'Lançamentos': ['Peso', 'Disco', 'Dardo']
     },
     'Tênis de Mesa': {
       'Individual': [],
@@ -94,7 +217,11 @@ const SportDetail = () => {
   };
 
   const countForNode = (keyword) => {
-    return students.filter(s => s.sexo === genero && s.esportes && s.esportes.some(esp => esp.includes(keyword))).length;
+    return students.filter(s => {
+      if (s.sexo !== genero) return false;
+      const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
+      return arr.some(esp => esp.includes(keyword));
+    }).length;
   };
 
   const getFilteredStudents = () => {
@@ -103,7 +230,11 @@ const SportDetail = () => {
       keyword = `${nome} - ${selectedCategory.cat}`;
       if (selectedCategory.sub) keyword += ` - ${selectedCategory.sub}`;
     }
-    return students.filter(s => s.sexo === genero && s.esportes && s.esportes.some(esp => esp.includes(keyword)));
+    return students.filter(s => {
+      if (s.sexo !== genero) return false;
+      const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
+      return arr.some(esp => esp.includes(keyword));
+    });
   };
 
   // Imagem 8 & 9 (Menu de categorias)
@@ -255,63 +386,78 @@ const SportDetail = () => {
             <div className="card-flat p-4 shadow-sm border">
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <h4 className="fw-bold text-blue-dark mb-0">Gerador de Cronogramas</h4>
-                {userType === 'admin' && (
-                  <button className="btn btn-primary fw-bold px-4" onClick={async () => {
-                    // Gerar cronograma simples
-                    const inicio = new Date();
-                    const fimPrep = new Date(inicio.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 dias
-                    const fimComp = new Date(fimPrep.getTime() + 60 * 24 * 60 * 60 * 1000); // +60 dias
-                    const fimTrans = new Date(fimComp.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 dias
-                    
-                    const novo = {
-                      titulo: `Plano de Treinamento - ${new Date().getFullYear()}`,
-                      modalidade: getCurrentModalidade(),
-                      dataInicio: inicio.toISOString(),
-                      dataFim: fimTrans.toISOString(),
-                      fases: [
-                        { nome: 'Preparatória', dataInicio: inicio, dataFim: fimPrep, objetivo: 'Condicionamento físico e fundamentos básicos.' },
-                        { nome: 'Competitiva', dataInicio: fimPrep, dataFim: fimComp, objetivo: 'Tática, jogos treinos e competição alvo.' },
-                        { nome: 'Transição', dataInicio: fimComp, dataFim: fimTrans, objetivo: 'Descanso ativo e recuperação.' }
-                      ]
-                    };
-
-                    try {
-                      await fetch('/api/cronogramas', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        },
-                        body: JSON.stringify(novo)
-                      });
-                      fetchCronogramas();
-                    } catch (e) {
-                      console.error(e);
-                    }
-                  }}>
-                    <i className="bi bi-magic me-2"></i> Gerar Automático
+                {userType === 'admin' && !showCronogramaForm && (
+                  <button className="btn btn-primary fw-bold px-4 shadow-sm" onClick={() => setShowCronogramaForm(true)}>
+                    <i className="bi bi-plus-circle me-2"></i> Novo Cronograma
                   </button>
                 )}
               </div>
+
+              {showCronogramaForm && (
+                <div className="card shadow-sm border-0 mb-4 bg-light p-4 rounded-4">
+                  <h5 className="fw-bold mb-4 text-blue-dark">Gerar Novo Cronograma Automático</h5>
+                  <div className="row g-3">
+                    <div className="col-md-12">
+                      <label className="form-label fw-bold small text-muted">Título do Cronograma</label>
+                      <input type="text" className="form-control" value={cronoData.titulo} onChange={e => setCronoData({...cronoData, titulo: e.target.value})} placeholder="Ex: Preparação OJE 2026" />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label fw-bold small text-muted">Data Início</label>
+                      <input type="date" className="form-control" value={cronoData.dataInicio} onChange={e => setCronoData({...cronoData, dataInicio: e.target.value})} />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label fw-bold small text-muted">Competição Alvo</label>
+                      <input type="date" className="form-control" value={cronoData.competicaoAlvo} onChange={e => setCronoData({...cronoData, competicaoAlvo: e.target.value})} />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label fw-bold small text-muted">Data Fim (Pós-competição)</label>
+                      <input type="date" className="form-control" value={cronoData.dataFim} onChange={e => setCronoData({...cronoData, dataFim: e.target.value})} />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label fw-bold small text-muted">Treinos por Semana</label>
+                      <input type="number" className="form-control" value={cronoData.diasPorSemana} onChange={e => setCronoData({...cronoData, diasPorSemana: e.target.value})} min="1" max="7" />
+                    </div>
+                    <div className="col-md-12">
+                      <label className="form-label fw-bold small text-muted">Objetivo Geral</label>
+                      <input type="text" className="form-control" value={cronoData.objetivoGeral} onChange={e => setCronoData({...cronoData, objetivoGeral: e.target.value})} placeholder="O que se espera desta temporada?" />
+                    </div>
+                    <div className="col-12 text-end mt-4">
+                      <button className="btn btn-light me-3 fw-bold border" onClick={() => setShowCronogramaForm(false)}>Cancelar</button>
+                      <button className="btn btn-primary fw-bold px-4" onClick={handleGerarCronograma}>
+                        <i className="bi bi-magic me-2"></i>Gerar Fases e Treinos Automáticos
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {cronogramas.length > 0 ? (
                 <div className="d-flex flex-column gap-4">
                   {cronogramas.map(cron => (
                     <div key={cron._id} className="border rounded-4 p-4 position-relative overflow-hidden">
-                      <div className="position-absolute top-0 end-0 mt-3 me-3">
+                      <div className="position-absolute top-0 end-0 mt-3 me-3 d-flex gap-2">
                         {userType === 'admin' && (
-                          <button className="btn btn-sm btn-outline-danger" onClick={async () => {
-                            if(window.confirm('Excluir cronograma?')) {
-                              await fetch(`/api/cronogramas/${cron._id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
-                              fetchCronogramas();
-                            }
-                          }}>
-                            <i className="bi bi-trash"></i>
-                          </button>
+                          <>
+                            <button className="btn btn-sm btn-outline-primary" title="Exportar para Agenda" onClick={() => handleExportAgenda(cron)}>
+                              <i className="bi bi-calendar-plus"></i> Exportar
+                            </button>
+                            <button className="btn btn-sm btn-outline-secondary" title="Duplicar" onClick={() => handleDuplicate(cron._id)}>
+                              <i className="bi bi-copy"></i> Duplicar
+                            </button>
+                            <button className="btn btn-sm btn-outline-danger" title="Excluir" onClick={async () => {
+                              if(window.confirm('Excluir cronograma permanentemente?')) {
+                                await fetch(`/api/cronogramas/${cron._id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+                                fetchCronogramas();
+                              }
+                            }}>
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </>
                         )}
                       </div>
                       <h5 className="fw-bold text-orange mb-2">{cron.titulo}</h5>
-                      <div className="text-muted small mb-4">Período: {new Date(cron.dataInicio).toLocaleDateString()} a {new Date(cron.dataFim).toLocaleDateString()}</div>
+                      <div className="text-muted small mb-1">Período: {new Date(cron.dataInicio).toLocaleDateString()} a {new Date(cron.dataFim).toLocaleDateString()}</div>
+                      <div className="text-blue-dark small mb-4 fw-bold">Alvo: {cron.competicaoAlvo ? new Date(cron.competicaoAlvo).toLocaleDateString() : 'N/A'} | {cron.diasPorSemana} treinos/semana</div>
                       
                       <div className="d-flex gap-3 overflow-auto pb-2">
                         {cron.fases.map((fase, i) => (
@@ -320,10 +466,18 @@ const SportDetail = () => {
                               {fase.nome}
                             </div>
                             <div className="p-3">
-                              <div className="text-muted small mb-2 fw-bold text-center">
-                                {new Date(fase.dataInicio).toLocaleDateString()} - {new Date(fase.dataFim).toLocaleDateString()}
-                              </div>
-                              <p className="small mb-0">{fase.objetivo}</p>
+                                <div className="text-muted small mb-2 fw-bold text-center">
+                                  {new Date(fase.dataInicio).toLocaleDateString()} - {new Date(fase.dataFim).toLocaleDateString()}
+                                </div>
+                                <p className="small mb-2 fw-bold text-blue-dark">{fase.semanas} Semanas</p>
+                                <p className="small mb-3 text-muted">{fase.objetivo}</p>
+                                <div className="small fw-bold text-blue-dark mb-1 border-top pt-2">Treinos Sugeridos:</div>
+                                <ul className="small text-muted mb-0 ps-3">
+                                  {fase.treinos && fase.treinos.slice(0, 4).map((t, index) => (
+                                    <li key={index}>{new Date(t.data).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}: {t.tipo}</li>
+                                  ))}
+                                  {fase.treinos && fase.treinos.length > 4 && <li>... mais {fase.treinos.length - 4} treinos</li>}
+                                </ul>
                             </div>
                           </div>
                         ))}

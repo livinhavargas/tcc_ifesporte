@@ -40,30 +40,35 @@ const loginUser = async (req, res) => {
   }
 };
 
-//Realizar registro
+// Realizar registro
 const registerUser = async (req, res) => {
-  const { nome, email, senha, tipo, matricula, adminCode, esportes, sexo } = req.body;
+  const { 
+    nome, email, senha, tipo, 
+    telefone, sexo, idade, turma, matricula, peso, altura, modalidades,
+    codigoConvite, cpf, endereco, dataNascimento, nomeResponsavel, telefoneResponsavel,
+    alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa
+  } = req.body;
+  
   console.log(`[Registro] Tentativa para: ${email}, Tipo: ${tipo}`);
 
   try {
-    // Verificar código administrativo
-    if (tipo === 'admin') {
-      const validAdminCode = '123';
-      if (adminCode !== validAdminCode) {
-        return res.status(403).json({ mensagem: 'Código administrativo inválido' });
-      }
-    }
-
     // Verificar se o mongoose está conectado
     if (require('mongoose').connection.readyState !== 1) {
       console.error("ERRO: Banco de dados não está conectado!");
       return res.status(500).json({ mensagem: 'Banco de dados offline. Tente novamente em instantes.' });
     }
 
+    // Backend validation for Treinador
+    if (tipo === 'Treinador') {
+      if (codigoConvite !== '123') {
+        return res.status(400).json({ mensagem: 'Código de Acesso inválido para Treinador.' });
+      }
+    }
+
     const userExistente = await User.findOne({ email });
 
     if (userExistente) {
-      return res.status(400).json({ mensagem: 'Usuário já cadastrado' });
+      return res.status(400).json({ mensagem: 'E-mail já cadastrado.' });
     }
 
     // Verificar matrícula duplicada para estudantes
@@ -71,7 +76,7 @@ const registerUser = async (req, res) => {
     if (tipo === 'estudante' && matValida) {
       const matriculaExistente = await User.findOne({ matricula: matValida });
       if (matriculaExistente) {
-        return res.status(400).json({ mensagem: 'Matrícula já cadastrada' });
+        return res.status(400).json({ mensagem: 'Matrícula já cadastrada.' });
       }
     }
 
@@ -80,37 +85,47 @@ const registerUser = async (req, res) => {
     const senhaHash = await bcrypt.hash(senha, salt);
 
     const novoUsuario = new User({
-      nome,
-      email,
-      senha: senhaHash,
-      tipo,
+      nome, email, senha: senhaHash, tipo, telefone, sexo, idade, cpf, endereco,
+      dataNascimento: dataNascimento === '' ? null : dataNascimento,
+      nomeResponsavel, telefoneResponsavel,
+      alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
       matricula: tipo === 'estudante' ? matValida : undefined,
-      esportes: tipo === 'estudante' ? (esportes || []) : undefined,
+      esportes: tipo === 'estudante' ? (modalidades || []) : undefined,
+      turma: tipo === 'estudante' ? turma : undefined,
+      peso: tipo === 'estudante' ? peso : undefined,
+      altura: tipo === 'estudante' ? altura : undefined,
     });
 
     await novoUsuario.save();
 
-    // Se for estudante, cria automaticamente o perfil na tabela Student
+    // Se for estudante, cria no Student
     if (tipo === 'estudante') {
       const novoEstudante = new Student({
-        nome,
-        email,
+        nome, email,
         matricula: matValida,
-        esportes: esportes || [],
-        serie: '1A',
+        esportes: modalidades || [],
         sexo: sexo || 'Feminino',
+        idade,
+        turma,
+        peso,
+        altura,
+        telefone,
+        cpf,
+        endereco,
+        dataNascimento: dataNascimento === '' ? null : dataNascimento,
+        nomeResponsavel,
+        telefoneResponsavel,
+        alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
         adicionadoPor: novoUsuario._id
       });
       await novoEstudante.save();
     }
 
     console.log(`✅ Usuário ${email} cadastrado com sucesso!`);
-
     res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso' });
   } catch (erro) {
     console.error("!!! ERRO CRÍTICO NO REGISTRO !!!");
     console.error("Mensagem:", erro.message);
-    console.error("Stack:", erro.stack);
     res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
   }
 };
@@ -134,8 +149,20 @@ const getUserById = async (req, res) => {
         usuario.peso = estudante.peso || '';
         usuario.altura = estudante.altura || '';
         usuario.idade = estudante.idade || '';
-        usuario.serie = estudante.serie || '';
+        usuario.serie = estudante.turma || estudante.serie || '';
+        usuario.turma = estudante.turma || estudante.serie || '';
         usuario.esportes = estudante.esportes || [];
+        usuario.cpf = estudante.cpf || '';
+        usuario.endereco = estudante.endereco || '';
+        usuario.dataNascimento = estudante.dataNascimento ? estudante.dataNascimento.toISOString().split('T')[0] : '';
+        usuario.contatoEmergencia = estudante.contatoEmergencia || '';
+        usuario.nomeResponsavel = estudante.nomeResponsavel || '';
+        usuario.telefoneResponsavel = estudante.telefoneResponsavel || '';
+        usuario.alergias = estudante.alergias || '';
+        usuario.lesoesAnteriores = estudante.lesoesAnteriores || '';
+        usuario.restricoesMedicas = estudante.restricoesMedicas || '';
+        usuario.numeroCamisa = estudante.numeroCamisa || '';
+        
         if (estudante.peso && estudante.altura) {
            usuario.imc = (estudante.peso / (estudante.altura * estudante.altura)).toFixed(2);
         }
@@ -152,33 +179,75 @@ const getUserById = async (req, res) => {
 // Atualizar usuário
 const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { nome, email, telefone, peso, altura, foto, idade, serie, esportes } = req.body;
+  const { 
+    nome, email, telefone, peso, altura, foto, idade, serie, turma, esportes, sexo, 
+    matricula, cpf, endereco, dataNascimento, contatoEmergencia, nomeResponsavel, telefoneResponsavel,
+    alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa
+  } = req.body;
   
   try {
     const usuario = await User.findById(id);
     if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado' });
 
+    // Buscar o estudante usando os dados originais do usuário ANTES de alterar o usuário
+    let estudante = null;
+    if (usuario.tipo === 'estudante') {
+      const queryOriginal = usuario.matricula ? { matricula: usuario.matricula } : { email: usuario.email };
+      estudante = await Student.findOne(queryOriginal);
+      // Fallback usando o ID do usuário (adicionadoPor) caso o query original falhe
+      if (!estudante) {
+        estudante = await Student.findOne({ adicionadoPor: usuario._id });
+      }
+      // Último fallback se tudo falhar, tenta pelo email atual
+      if (!estudante) {
+        estudante = await Student.findOne({ email: usuario.email });
+      }
+    }
+
     if (nome) usuario.nome = nome;
     if (email) usuario.email = email;
     if (foto) usuario.foto = foto;
     if (esportes) usuario.esportes = esportes;
+    if (sexo) usuario.sexo = sexo;
+    if (matricula !== undefined) usuario.matricula = matricula === '' ? undefined : matricula;
+    if (cpf !== undefined) usuario.cpf = cpf;
+    if (endereco !== undefined) usuario.endereco = endereco;
+    if (dataNascimento !== undefined) usuario.dataNascimento = dataNascimento === '' ? null : dataNascimento;
+    if (telefone !== undefined) usuario.telefone = telefone;
+    if (nomeResponsavel !== undefined) usuario.nomeResponsavel = nomeResponsavel;
+    if (telefoneResponsavel !== undefined) usuario.telefoneResponsavel = telefoneResponsavel;
+    if (alergias !== undefined) usuario.alergias = alergias;
+    if (lesoesAnteriores !== undefined) usuario.lesoesAnteriores = lesoesAnteriores;
+    if (restricoesMedicas !== undefined) usuario.restricoesMedicas = restricoesMedicas;
+    if (numeroCamisa !== undefined) usuario.numeroCamisa = numeroCamisa;
+    
     await usuario.save();
 
-    if (usuario.tipo === 'estudante') {
-      const query = usuario.matricula ? { matricula: usuario.matricula } : { email: usuario.email };
-      const estudante = await Student.findOne(query);
-      if (estudante) {
-        if (nome) estudante.nome = nome;
-        if (email) estudante.email = email;
-        if (telefone !== undefined) estudante.telefone = telefone;
-        if (peso !== undefined) estudante.peso = peso;
-        if (altura !== undefined) estudante.altura = altura;
-        if (idade !== undefined) estudante.idade = idade;
-        if (serie !== undefined) estudante.serie = serie;
-        if (foto) estudante.foto = foto;
-        if (esportes) estudante.esportes = esportes;
-        await estudante.save();
-      }
+    if (usuario.tipo === 'estudante' && estudante) {
+      if (nome) estudante.nome = nome;
+      if (email) estudante.email = email;
+      if (telefone !== undefined) estudante.telefone = telefone;
+      if (peso !== undefined) estudante.peso = peso === '' ? null : peso;
+      if (altura !== undefined) estudante.altura = altura === '' ? null : altura;
+      if (idade !== undefined) estudante.idade = idade === '' ? null : idade;
+      if (serie !== undefined) estudante.serie = serie;
+      if (turma !== undefined) estudante.turma = turma;
+      if (foto) estudante.foto = foto;
+      if (esportes) estudante.esportes = esportes;
+      if (sexo) estudante.sexo = sexo;
+      if (matricula !== undefined) estudante.matricula = matricula === '' ? undefined : matricula;
+      if (cpf !== undefined) estudante.cpf = cpf;
+      if (endereco !== undefined) estudante.endereco = endereco;
+      if (dataNascimento !== undefined) estudante.dataNascimento = dataNascimento === '' ? null : dataNascimento;
+      if (contatoEmergencia !== undefined) estudante.contatoEmergencia = contatoEmergencia;
+      if (nomeResponsavel !== undefined) estudante.nomeResponsavel = nomeResponsavel;
+      if (telefoneResponsavel !== undefined) estudante.telefoneResponsavel = telefoneResponsavel;
+      if (alergias !== undefined) estudante.alergias = alergias;
+      if (lesoesAnteriores !== undefined) estudante.lesoesAnteriores = lesoesAnteriores;
+      if (restricoesMedicas !== undefined) estudante.restricoesMedicas = restricoesMedicas;
+      if (numeroCamisa !== undefined) estudante.numeroCamisa = numeroCamisa;
+      
+      await estudante.save();
     }
     res.json({ mensagem: 'Perfil atualizado com sucesso' });
   } catch (error) {

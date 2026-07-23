@@ -1,4 +1,4 @@
-/* IFEsporte Global Styles - Design System (Fidelidade 100%) */
+/* IFesporte Global Styles - Design System (Fidelidade 100%) */
 
 :root {
   /* Cores baseadas nos protótipos */
@@ -123,4 +123,35 @@ h1, h2, h3, h4, h5, h6 {
 .sidebar-icon {
   font-size: 1.5rem;
   margin-right: 12px;
+}
+
+/* Configuração de Impressão e Relatórios PDF */
+@media print {
+  header, aside, .btn, .nav-tabs, .d-none-print {
+    display: none !important;
+  }
+  
+  body, .bg-main, .card-flat {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  .card-flat {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+  }
+  
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }

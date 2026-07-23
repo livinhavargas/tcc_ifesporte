@@ -44,11 +44,11 @@ const Esportes = () => {
   ];
 
   const getCount = (nome) => {
-    return students.filter(student => 
-      student.sexo === genero && 
-      student.esportes && 
-      student.esportes.some(esp => esp.includes(nome))
-    ).length;
+    return students.filter(student => {
+      if (student.sexo !== genero) return false;
+      const arr = student.modalidades?.length > 0 ? student.modalidades : (student.esportes || []);
+      return arr.some(esp => esp.includes(nome));
+    }).length;
   };
 
   return (

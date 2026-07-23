@@ -1,46 +1,37 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import Logo from './Logo';
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const userName = localStorage.getItem('userName') || 'Usuário';
   const userPhoto = localStorage.getItem('foto');
   const userInitials = userName.substring(0, 2).toUpperCase();
-  const userType = localStorage.getItem('tipo') || 'Estudante'; // lowercase internally maybe, but display as title case
-
-  const displayUserType = userType === 'admin' ? 'Administrador' : 'Estudante';
+  const userType = localStorage.getItem('tipo') || 'Estudante'; 
+  const displayUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('tipo');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userId');
+    localStorage.clear();
     window.location.href = '/login';
   };
 
-  const handleProfile = () => {
-    navigate('/perfil');
-    setShowUserMenu(false);
-  };
-
   const isActive = (path) => {
-    return location.pathname.startsWith(path) && location.pathname !== '/' ? 'active' : '';
+    if (path === '/') return location.pathname === '/' ? 'active' : '';
+    return location.pathname.startsWith(path) ? 'active' : '';
   };
 
   return (
     <div className="d-flex flex-column min-vh-100">
       {/* Top Header Full Width */}
       <header className="w-100">
-        {/* Faixa azul escura no topo */}
         <div className="bg-blue-top" style={{ height: '16px' }}></div>
         
-        {/* Header content cinza/azul claro */}
         <div className="d-flex justify-content-between align-items-center px-4 py-3" style={{ backgroundColor: '#D5DFE8' }}>
           <div>
-            {/* O SVG oficial deve ter as cores originais (azul e laranja), sem filtros de inversão */}
-            <img src="/logo.png" alt="IFEsporte" style={{ height: '65px' }} />
+            <Link to="/" className="text-decoration-none d-flex align-items-center">
+              <Logo height="48px" />
+            </Link>
           </div>
           
           <div className="position-relative">
@@ -71,38 +62,58 @@ const Layout = ({ children }) => {
       {/* Main Body (Sidebar + Content) */}
       <div className="d-flex flex-grow-1">
         {/* Sidebar */}
-        <aside className="bg-sidebar flex-shrink-0" style={{ width: '260px' }}>
-          <nav className="pt-4">
-            <Link className={`sidebar-link ${location.pathname === '/' ? 'active' : ''}`} to="/">
-              <i className="bi bi-house-door-fill sidebar-icon"></i> Início
+        <aside className="bg-sidebar flex-shrink-0 shadow-sm" style={{ width: '260px' }}>
+          <nav className="pt-4 d-flex flex-column h-100 pb-4">
+            
+            <Link className={`sidebar-link ${isActive('/')}`} to="/">
+              <i className="bi bi-grid-fill sidebar-icon"></i> Início
             </Link>
             
-            {userType === 'admin' && (
+            {userType !== 'estudante' && (
+              <Link className={`sidebar-link ${isActive('/perfil')}`} to="/perfil">
+                <i className="bi bi-person-badge-fill sidebar-icon"></i> Meu Perfil
+              </Link>
+            )}
+
+            {userType !== 'estudante' && (
               <Link className={`sidebar-link ${isActive('/alunos')}`} to="/alunos">
                 <i className="bi bi-people-fill sidebar-icon"></i> Alunos
               </Link>
             )}
-            
-            <Link className={`sidebar-link ${isActive('/agenda')}`} to="/agenda">
-              <i className="bi bi-calendar-event-fill sidebar-icon"></i> Agenda
-            </Link>
-            
-            {userType === 'admin' && (
+
+            {userType !== 'estudante' && (
               <Link className={`sidebar-link ${isActive('/esportes')}`} to="/esportes">
-                <i className="bi bi-trophy-fill sidebar-icon"></i> Esportes
+                <i className="bi bi-trophy-fill sidebar-icon"></i> Modalidades
               </Link>
             )}
 
-            {userType === 'estudante' && (
+            <Link className={`sidebar-link ${isActive('/agenda')}`} to="/agenda">
+              <i className="bi bi-calendar-event-fill sidebar-icon"></i> Agenda
+            </Link>
+
+            {userType !== 'estudante' && (
               <Link className={`sidebar-link ${isActive('/analises')}`} to="/analises">
-                <i className="bi bi-card-checklist sidebar-icon"></i> Minhas Análises
+                <i className="bi bi-clipboard2-data-fill sidebar-icon"></i> Análises Esportivas
               </Link>
             )}
+
+            {userType !== 'estudante' && (
+              <Link className={`sidebar-link ${isActive('/relatorios')}`} to="/relatorios">
+                <i className="bi bi-file-earmark-bar-graph-fill sidebar-icon"></i> Relatórios
+              </Link>
+            )}
+
+            <div className="mt-auto px-4 w-100">
+               <button onClick={handleLogout} className="btn btn-outline-danger w-100 fw-bold rounded-3">
+                 <i className="bi bi-box-arrow-left me-2"></i> Sair
+               </button>
+            </div>
+            
           </nav>
         </aside>
 
         {/* Page Content */}
-        <main className="flex-grow-1 p-4 p-md-5 bg-main position-relative">
+        <main className="flex-grow-1 p-4 p-md-5 bg-main position-relative overflow-auto" style={{ maxHeight: 'calc(100vh - 80px)' }}>
           {children}
         </main>
       </div>

@@ -1,48 +1,52 @@
 import React from 'react';
-
+import Layout from '../../components/Layout';
+import { Link } from 'react-router-dom';
+import Logo from '../../components/Logo';
 export default function AdminDashboard() {
   return (
-    <div className="container mt-5">
-      <div className="card shadow">
-        <div className="card-header bg-dark text-white">
-          <h2>Painel Administrativo (Área do Servidor)</h2>
+    <Layout>
+      <div className="container mt-4">
+        <div className="d-flex justify-content-between align-items-center mb-5">
+          <div className="d-flex align-items-center">
+            <div className="bg-blue-dark rounded-pill me-3" style={{ width: '12px', height: '40px' }}></div>
+            <h2 className="fw-bold text-blue-dark mb-0">Painel Administrativo</h2>
+          </div>
+          <a href="/" className="btn btn-outline-primary rounded-pill fw-bold px-4">Voltar</a>
         </div>
-        <div className="card-body">
-          <p>Bem-vindo à área de gerenciamento do sistema.</p>
-          <div className="row mt-4">
-            <div className="col-md-4">
-              <div className="card bg-light mb-3">
-                <div className="card-body text-center">
-                  <h5 className="card-title">Usuários</h5>
-                  <p className="card-text">Gerenciar contas de treinadores e administradores.</p>
-                  <button className="btn btn-primary">Acessar</button>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card bg-light mb-3">
-                <div className="card-body text-center">
-                  <h5 className="card-title">Configurações</h5>
-                  <p className="card-text">Ajustes globais do sistema IFEsporte.</p>
-                  <button className="btn btn-primary">Acessar</button>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card bg-light mb-3">
-                <div className="card-body text-center">
-                  <h5 className="card-title">Relatórios</h5>
-                  <p className="card-text">Visualizar estatísticas gerais do projeto.</p>
-                  <button className="btn btn-primary">Acessar</button>
-                </div>
-              </div>
+
+        <div className="row g-4">
+          <div className="col-md-4">
+            <div className="card-flat p-4 h-100 shadow-sm border hover-bg-light transition-hover text-center">
+              <i className="bi bi-people-fill text-orange mb-3 d-block" style={{ fontSize: '3rem' }}></i>
+              <h4 className="fw-bold text-blue-dark mb-2">Usuários</h4>
+              <p className="text-muted small mb-4">Gerenciar contas de treinadores e administradores.</p>
+              <button className="btn btn-primary rounded-pill px-4 fw-bold w-100">Acessar</button>
             </div>
           </div>
-          <div className="mt-4">
-            <a href="/" className="btn btn-secondary">Voltar para Home</a>
+          <div className="col-md-4">
+            <div className="card-flat p-4 h-100 shadow-sm border hover-bg-light transition-hover text-center">
+              <i className="bi bi-gear-fill text-orange mb-3 d-block" style={{ fontSize: '3rem' }}></i>
+              <h4 className="fw-bold text-blue-dark mb-2">Configurações</h4>
+              <p className="text-muted small mb-4">Ajustes globais do sistema <Logo height="14px" style={{ display: 'inline-block', verticalAlign: 'baseline' }} />.</p>
+              <button className="btn btn-primary rounded-pill px-4 fw-bold w-100">Acessar</button>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="card-flat p-4 h-100 shadow-sm border hover-bg-light transition-hover text-center">
+              <i className="bi bi-bar-chart-fill text-orange mb-3 d-block" style={{ fontSize: '3rem' }}></i>
+              <h4 className="fw-bold text-blue-dark mb-2">Relatórios</h4>
+              <p className="text-muted small mb-4">Visualizar estatísticas gerais do projeto.</p>
+              <button className="btn btn-primary rounded-pill px-4 fw-bold w-100">Acessar</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <style>{`
+        .transition-hover:hover {
+          transform: translateY(-5px);
+          transition: transform 0.2s ease-in-out;
+        }
+      `}</style>
+    </Layout>
   );
 }

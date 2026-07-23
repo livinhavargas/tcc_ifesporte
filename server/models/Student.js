@@ -1,20 +1,62 @@
 const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
+  // Informações Pessoais
   nome: { type: String, required: true },
-  matricula: { type: String, unique: true, sparse: true },
-  serie: { type: String, enum: ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'] },
+  dataNascimento: { type: Date },
   sexo: { type: String, enum: ['Masculino', 'Feminino'], required: true },
-  idade: { type: Number },
-  esportes: [{ type: String }], // nomes das modalidades
-  // Campos opcionais
-  email: { type: String },
+  cpf: { type: String },
+  rg: { type: String },
+  foto: { type: String },
   telefone: { type: String },
-  altura: { type: Number }, // em metros
-  peso: { type: Number }, // em kg
-  foto: { type: String }, // Base64 foto
-  adicionadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Referência ao admin que adicionou
+  email: { type: String },
+  endereco: { type: String },
+  cidade: { type: String },
+  estado: { type: String },
+  cep: { type: String },
+  idade: { type: Number }, // Mantido por retrocompatibilidade
 
+  // Informações Escolares
+  matricula: { type: String, unique: true, sparse: true },
+  turma: { type: String }, // Substitui a 'serie' antiga por algo mais genérico
+  serie: { type: String }, // Mantido por retrocompatibilidade
+  curso: { type: String },
+  anoLetivo: { type: String },
+  instituicao: { type: String },
+
+  // Informações Esportivas
+  esportes: [{ type: String }], // Mantido por retrocompatibilidade
+  modalidades: [{ type: String }], // Novo formato
+  categoria: { type: String },
+  posicao: { type: String },
+  tempoPratica: { type: String },
+  treinadorResponsavel: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  equipe: { type: String },
+  numeroCamisa: { type: String },
+  dominancia: { type: String, enum: ['Destro', 'Canhoto', 'Ambidestro'] },
+
+  // Informações Médicas e Contato
+  alergias: { type: String },
+  medicamentos: { type: String },
+  restricoesMedicas: { type: String },
+  lesoesAnteriores: { type: String },
+  contatoEmergencia: { type: String }, // legado
+  observacoesMedicas: { type: String },
+  nomeResponsavel: { type: String },
+  telefoneResponsavel: { type: String },
+
+  // Físico (retrocompatibilidade)
+  altura: { type: Number },
+  peso: { type: Number },
+
+  // Status
+  situacao: { 
+    type: String, 
+    enum: ['Ativo', 'Inativo', 'Afastado', 'Lesionado', 'Transferido'], 
+    default: 'Ativo' 
+  },
+  
+  adicionadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
@@ -28,11 +70,9 @@ studentSchema.virtual('imc').get(function() {
   return null;
 });
 
-// Virtual para validar IMC
 studentSchema.virtual('imcStatus').get(function() {
   const imc = this.imc;
   if (!imc) return null;
-  
   if (imc < 18.5) return 'Baixo peso';
   if (imc < 25) return 'Normal';
   if (imc < 30) return 'Sobrepeso';

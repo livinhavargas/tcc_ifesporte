@@ -1,0 +1,150 @@
+
+/* ==========================================================================
+   Google Calendar Clone Custom Styles (Agenda)
+   ========================================================================== */
+
+/* Layout da Agenda para preencher a tela */
+.agenda-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar Customizações */
+.calendar-sidebar {
+  border-right: 1px solid #e5e7eb;
+}
+
+/* Mini Calendário (react-calendar overrides) */
+.mini-calendar-container .react-calendar {
+  width: 100%;
+  border: none;
+  font-family: 'Poppins', sans-serif;
+}
+.react-calendar__navigation button {
+  font-weight: bold;
+  color: var(--blue-dark);
+}
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: transparent;
+  color: var(--orange-secondary);
+}
+.react-calendar__month-view__days__day--weekend {
+  color: #ef4444;
+}
+.react-calendar__tile {
+  padding: 8px 6px;
+  border-radius: 50%;
+  margin: 2px 0;
+}
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background-color: #f1f5f9;
+  border-radius: 50%;
+}
+.react-calendar__tile--now {
+  background-color: var(--blue-light) !important;
+  color: var(--blue-dark);
+  font-weight: bold;
+}
+.react-calendar__tile--active {
+  background-color: var(--blue-dark) !important;
+  color: white !important;
+}
+.has-event-tile {
+  position: relative;
+}
+.has-event-tile::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background-color: var(--orange-secondary);
+  border-radius: 50%;
+}
+
+/* Main Calendar (react-big-calendar overrides) */
+.main-calendar-container .rbc-calendar {
+  font-family: 'Poppins', sans-serif;
+  border: none;
+}
+.rbc-header {
+  padding: 10px 0;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+.rbc-month-view {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+}
+.rbc-day-bg {
+  border-left: 1px solid #f1f5f9;
+}
+.rbc-month-row {
+  border-top: 1px solid #f1f5f9;
+}
+.rbc-date-cell {
+  padding: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #475569;
+}
+.rbc-date-cell.rbc-now {
+  font-weight: bold;
+}
+.rbc-date-cell.rbc-now > a {
+  background-color: var(--blue-dark);
+  color: white;
+  border-radius: 50%;
+  padding: 2px 8px;
+  display: inline-block;
+}
+.rbc-event {
+  border: none;
+  box-shadow: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 2px;
+  font-size: 0.75rem;
+}
+.rbc-today {
+  background-color: rgba(64, 109, 177, 0.05); /* subtle blue */
+}
+.rbc-time-view {
+  border: none;
+}
+.rbc-time-header {
+  border-bottom: 1px solid #e2e8f0;
+}
+.rbc-time-content {
+  border-top: none;
+}
+.rbc-timeslot-group {
+  border-bottom: 1px solid #f1f5f9;
+}
+.rbc-time-column {
+  border-left: 1px solid #f1f5f9;
+}
+.rbc-allday-cell {
+  display: none; /* Hide all-day row for cleaner look if not needed */
+}
+.rbc-time-gutter .rbc-timeslot-group {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* Event Sidebar Cards */
+.event-sidebar-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-color: white;
+}
+.event-sidebar-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}

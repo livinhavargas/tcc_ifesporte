@@ -1,4 +1,4 @@
-# IFEsporte - Guia de Implementação
+# IFesporte - Guia de Implementação
 
 ## 📋 Resumo das Melhorias Implementadas
 
@@ -165,4 +165,4 @@ GET /api/sports/initialize
 
 **Versão**: 2.0.0
 **Data**: 2024
-**Desenvolvido por**: IFC - IFEsporte Team
+**Desenvolvido por**: IFC - IFesporte Team

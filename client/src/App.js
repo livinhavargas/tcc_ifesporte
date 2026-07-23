@@ -5,16 +5,14 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Perfil from './pages/Perfil';
-import Alunos from './pages/IFEsporte/Alunos';
-import Agenda from './pages/IFEsporte/Agenda';
-import Esportes from './pages/IFEsporte/Esportes';
-import Analises from './pages/IFEsporte/Analises';
-import SportDetail from './pages/IFEsporte/SportDetail';
-import StudentProfile from './pages/IFEsporte/StudentProfile';
-import AdminDashboard from './pages/IFEsporte/AdminDashboard';
+import Alunos from './pages/IFesporte/Alunos';
+import Agenda from './pages/IFesporte/Agenda';
+import Esportes from './pages/IFesporte/Esportes';
+import Analises from './pages/IFesporte/Analises';
+import SportDetail from './pages/IFesporte/SportDetail';
+import StudentProfile from './pages/IFesporte/StudentProfile';
+import AdminDashboard from './pages/IFesporte/AdminDashboard'; // We can use this as Relatórios mock for now
 import AdminRoute from './components/AdminRoute';
-
-import PrivateRoute from './components/PrivateRoute';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -28,6 +26,9 @@ export default function App() {
     setTipo(tipo);
   };
 
+  // Funções de verificação de papel
+  const isStaff = tipo !== 'estudante'; // Professor, Treinador, Coordenador, Administrador
+
   return (
     <Router>
       <Routes>
@@ -35,16 +36,21 @@ export default function App() {
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register />} />
         <Route path="/perfil" element={token ? <Perfil /> : <Navigate to="/login" replace />} />
-        <Route path="/home" element={token ? <Home /> : <Navigate to="/login" replace />} />
         
-        <Route path="/alunos" element={token && tipo === 'admin' ? <Alunos /> : <Navigate to="/" replace />} />
-        <Route path="/alunos/:id" element={token && tipo === 'admin' ? <StudentProfile /> : <Navigate to="/" replace />} />
+        {/* Rotas Restritas para Staff */}
+        <Route path="/alunos" element={token && isStaff ? <Alunos /> : <Navigate to="/" replace />} />
+        <Route path="/alunos/:id" element={token && isStaff ? <StudentProfile /> : <Navigate to="/" replace />} />
+        
+        {/* Rotas Comuns */}
         <Route path="/agenda" element={token ? <Agenda /> : <Navigate to="/login" replace />} />
-        <Route path="/esportes" element={token && tipo === 'admin' ? <Esportes /> : <Navigate to="/" replace />} />
-        <Route path="/esportes/:id" element={token && tipo === 'admin' ? <SportDetail /> : <Navigate to="/" replace />} />
-        <Route path="/analises" element={token ? <Analises /> : <Navigate to="/login" replace />} />
+        <Route path="/esportes" element={token && isStaff ? <Esportes /> : <Navigate to="/" replace />} />
+        <Route path="/esportes/:id" element={token && isStaff ? <SportDetail /> : <Navigate to="/" replace />} />
+        <Route path="/analises" element={token && isStaff ? <Analises /> : <Navigate to="/" replace />} />
+        
+        {/* Relatórios */}
+        <Route path="/relatorios" element={token && isStaff ? <AdminDashboard /> : <Navigate to="/" replace />} />
 
-        {/* Rota Administrativa (Área do Servidor) */}
+        {/* Rota Administrativa (Configurações) */}
         <Route 
           path="/admin" 
           element={
@@ -59,4 +65,3 @@ export default function App() {
     </Router>
   );
 }
-

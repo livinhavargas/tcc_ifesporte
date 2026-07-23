@@ -4,26 +4,23 @@ import ModalidadesSelector from '../../components/ModalidadesSelector';
 
 const Alunos = () => {
   const [students, setStudents] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const userType = localStorage.getItem('tipo');
 
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTurma, setFilterTurma] = useState('');
+  const [filterSituacao, setFilterSituacao] = useState('');
+  
   const [formData, setFormData] = useState({
-    nome: '',
-    matricula: '',
-    serie: '1A',
-    sexo: 'Feminino',
-    idade: '',
-    esportes: [],
-    email: '',
-    telefone: '',
-    altura: '',
-    peso: ''
+    nome: '', matricula: '', turma: '1º Ano Técnico', sexo: 'Feminino',
+    modalidades: [], email: '', telefone: '', situacao: 'Ativo'
   });
 
-  const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
+  const turmasDisponiveis = ['1º Ano Técnico', '2º Ano Técnico', '3º Ano Técnico', 'Superior', 'Outro'];
+  const situacoes = ['Ativo', 'Inativo', 'Afastado', 'Lesionado', 'Transferido'];
 
   useEffect(() => {
     fetchStudents();
@@ -48,8 +45,6 @@ const Alunos = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-
-
   const handleAddStudent = async (e) => {
     e.preventDefault();
     setMensagem('');
@@ -60,13 +55,19 @@ const Alunos = () => {
     }
 
     try {
+      // Garantindo que envia pro backend usando o novo formato 'modalidades' + fallback para 'esportes' antigo caso necessite
+      const payload = {
+        ...formData,
+        esportes: formData.modalidades 
+      };
+
       const response = await fetch('/api/students', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -74,9 +75,9 @@ const Alunos = () => {
         return;
       }
 
-      setMensagem('✅ Aluno adicionado!');
+      setMensagem('✅ Aluno cadastrado com sucesso!');
       setTimeout(() => {
-        setFormData({ nome: '', matricula: '', serie: '1EM', sexo: 'M', idade: '', esportes: [], email: '', telefone: '', altura: '', peso: '' });
+        setFormData({ nome: '', matricula: '', turma: '1º Ano Técnico', sexo: 'Feminino', modalidades: [], email: '', telefone: '', situacao: 'Ativo' });
         setShowForm(false);
         setMensagem('');
         fetchStudents();
@@ -86,155 +87,207 @@ const Alunos = () => {
     }
   };
 
-  const filteredStudents = students.filter(student =>
-    (student.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (student.matricula || '').toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = (student.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (student.matricula || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Suporte a 'turma' (novo) ou 'serie' (antigo)
+    const studentTurma = student.turma || student.serie || '';
+    const matchesTurma = filterTurma ? studentTurma.includes(filterTurma) : true;
+    
+    const matchesSituacao = filterSituacao ? student.situacao === filterSituacao : true;
 
-  const getImcStatusColor = (imc) => {
-    if (!imc) return '#ccc';
-    if (imc < 18.5) return '#eab308'; // amarelo
-    if (imc >= 18.5 && imc <= 24.9) return '#22c55e'; // verde
-    if (imc >= 25 && imc <= 29.9) return '#f97316'; // laranja
-    return '#ef4444'; // vermelho
+    return matchesSearch && matchesTurma && matchesSituacao;
+  }).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+
+  const getSituacaoColor = (sit) => {
+    switch(sit) {
+      case 'Ativo': return '#22c55e'; // verde
+      case 'Inativo': return '#94a3b8'; // cinza
+      case 'Afastado': return '#f59e0b'; // laranja
+      case 'Lesionado': return '#ef4444'; // vermelho
+      case 'Transferido': return '#3b82f6'; // azul
+      default: return '#22c55e';
+    }
   };
 
   return (
     <Layout>
-      {/* Search Bar Row */}
-      <div className="d-flex justify-content-between align-items-center mb-5">
-        <div className="flex-grow-1 me-4">
-          <input 
-            type="text" 
-            className="form-control form-control-lg border-0 shadow-sm rounded-pill px-4" 
-            placeholder="Buscar aluno..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ backgroundColor: '#fff', fontSize: '1.1rem' }}
-          />
-        </div>
-        {userType === 'admin' && (
-          <button 
-            className="btn btn-light shadow-sm rounded-3 d-flex align-items-center justify-content-center"
-            style={{ width: '60px', height: '60px', fontSize: '2rem', color: '#B9C9DF' }}
-            onClick={() => setShowForm(!showForm)}
-          >
-            <i className={`bi bi-${showForm ? 'x' : 'plus'}`}></i>
-          </button>
-        )}
-      </div>
-
-      {showForm && userType === 'admin' && (
-        <div className="card-flat p-4 mb-5 shadow-sm border">
-          <h5 className="fw-bold mb-4 text-blue-dark">Adicionar Aluno</h5>
-          {mensagem && <div className={`alert ${mensagem.includes('✅') ? 'alert-success' : 'alert-danger'}`}>{mensagem}</div>}
-          <form onSubmit={handleAddStudent}>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <input type="text" className="form-control" name="nome" placeholder="Nome *" value={formData.nome} onChange={handleInputChange} required />
-              </div>
-              <div className="col-md-3">
-                <input type="text" className="form-control" name="matricula" placeholder="Matrícula (Op)" value={formData.matricula} onChange={handleInputChange} />
-              </div>
-              <div className="col-md-3">
-                <select className="form-select" name="serie" value={formData.serie} onChange={handleInputChange}>
-                  {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="col-md-3">
-                <select className="form-select" name="sexo" value={formData.sexo} onChange={handleInputChange} required>
-                  <option value="Feminino">Feminino</option>
-                  <option value="Masculino">Masculino</option>
-                </select>
-              </div>
-              <div className="col-md-3">
-                <input type="number" className="form-control" name="idade" placeholder="Idade" value={formData.idade} onChange={handleInputChange} />
-              </div>
-              <div className="col-md-3">
-                <input type="number" step="0.01" className="form-control" name="altura" placeholder="Altura (ex: 1.75)" value={formData.altura} onChange={handleInputChange} />
-              </div>
-              <div className="col-md-3">
-                <input type="number" step="0.1" className="form-control" name="peso" placeholder="Peso (ex: 70.5)" value={formData.peso} onChange={handleInputChange} />
-              </div>
-              <div className="col-12 mt-3 mb-2">
-                <label className="fw-bold small mb-2 text-muted">Modalidades de Interesse</label>
-                <ModalidadesSelector 
-                  selected={formData.esportes}
-                  onChange={(novos) => setFormData({...formData, esportes: novos})}
-                />
-              </div>
-              <div className="col-12 text-end mt-4">
-                <button type="submit" className="btn btn-primary px-5">Salvar</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
-      ) : (
-        <div className="row g-4">
-          {filteredStudents.map(student => (
-            <div className="col-md-6 col-xl-4" key={student._id}>
-              <div className="card-flat p-4 h-100 position-relative shadow-sm cursor-pointer hover-bg-light" onClick={() => window.location.href=`/alunos/${student._id}`} style={{transition: '0.2s'}}>
-                
-                {/* Header: Avatar and Name */}
-                <div className="d-flex align-items-center mb-3">
-                  {student.foto ? (
-                    <img src={student.foto} alt="Perfil" className="rounded-circle shadow-sm me-3" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
-                  ) : (
-                    <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 text-orange bg-blue-dark" style={{ width: '60px', height: '60px', fontSize: '1.8rem' }}>
-                      {student.nome.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <h5 className="fw-bold text-blue-dark mb-0">{student.nome}</h5>
-                    <div className="text-blue-dark small">{student.matricula} - {student.serie || 'S/ Turma'}</div>
-                  </div>
-                </div>
-
-                {/* Sports Pills */}
-                <div className="d-flex flex-wrap gap-2 mb-4 mt-3">
-                  {student.esportes && student.esportes.length > 0 ? (
-                    student.esportes.map(esp => (
-                      <span key={esp} className="pill-orange">{esp}</span>
-                    ))
-                  ) : (
-                    <span className="text-muted small">Sem modalidades</span>
-                  )}
-                </div>
-
-                {/* Info Block */}
-                <div className="bg-blue-light p-3 rounded-4 mt-auto">
-                  <div className="row text-blue-dark small gx-0">
-                    <div className="col-6 mb-2">Sexo:</div>
-                    <div className="col-6 mb-2 text-end">{student.sexo === 'M' ? 'Masculino' : 'Feminino'}</div>
-                    
-                    <div className="col-6 mb-2">Altura:</div>
-                    <div className="col-6 mb-2 text-end">{student.altura ? `${student.altura}m` : '-'}</div>
-                    
-                    <div className="col-6 mb-2">Peso:</div>
-                    <div className="col-6 mb-2 text-end">{student.peso ? `${student.peso}kg` : '-'}</div>
-                    
-                    <div className="col-6 mt-1">IMC:</div>
-                    <div className="col-6 mt-1 text-end d-flex justify-content-end align-items-center">
-                      <span className="me-2">{student.imc ? student.imc : '-'}</span>
-                      <div className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: getImcStatusColor(student.imc) }}></div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          ))}
-          {filteredStudents.length === 0 && (
-            <div className="col-12 text-center text-muted py-5">
-              Nenhum aluno encontrado.
-            </div>
+      <div className="container-fluid p-0">
+        
+        {/* Header e Filtros */}
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+          <div>
+            <h2 className="fw-bold text-blue-dark mb-1">Meus Atletas</h2>
+            <p className="text-muted mb-0">Gerencie todos os alunos inscritos nos seus esportes.</p>
+          </div>
+          {userType !== 'estudante' && (
+            <button 
+              className="btn btn-primary shadow-sm rounded-pill px-4 py-2 fw-bold"
+              onClick={() => setShowForm(!showForm)}
+            >
+              <i className={`bi bi-${showForm ? 'x-lg' : 'plus-lg'} me-2`}></i> 
+              {showForm ? 'Cancelar' : 'Novo Aluno'}
+            </button>
           )}
         </div>
-      )}
+
+        {/* Painel de Filtros */}
+        <div className="card-flat p-3 mb-4 shadow-sm border">
+          <div className="row g-3">
+            <div className="col-md-5">
+              <div className="input-group">
+                <span className="input-group-text bg-white border-end-0 text-muted"><i className="bi bi-search"></i></span>
+                <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar por nome ou matrícula..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              </div>
+            </div>
+            <div className="col-md-3">
+              <select className="form-select text-muted" value={filterTurma} onChange={(e) => setFilterTurma(e.target.value)}>
+                <option value="">Todas as Turmas</option>
+                {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="col-md-4">
+              <select className="form-select text-muted" value={filterSituacao} onChange={(e) => setFilterSituacao(e.target.value)}>
+                <option value="">Todas as Situações</option>
+                {situacoes.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Formulário de Cadastro Rápido */}
+        {showForm && userType !== 'estudante' && (
+          <div className="card-flat p-4 mb-5 shadow-sm border" style={{ backgroundColor: '#f8fafc' }}>
+            <h5 className="fw-bold mb-4 text-blue-dark border-bottom pb-2">Cadastro Rápido de Aluno</h5>
+            {mensagem && <div className={`alert ${mensagem.includes('✅') ? 'alert-success' : 'alert-danger'} fw-bold rounded-3`}>{mensagem}</div>}
+            
+            <form onSubmit={handleAddStudent}>
+              <div className="row g-3">
+                <div className="col-md-4">
+                  <label className="form-label small fw-bold text-muted">Nome Completo *</label>
+                  <input type="text" className="form-control" name="nome" value={formData.nome} onChange={handleInputChange} required />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label small fw-bold text-muted">Matrícula</label>
+                  <input type="text" className="form-control" name="matricula" value={formData.matricula} onChange={handleInputChange} />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label small fw-bold text-muted">Turma</label>
+                  <select className="form-select" name="turma" value={formData.turma} onChange={handleInputChange}>
+                    {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small fw-bold text-muted">Sexo</label>
+                  <select className="form-select" name="sexo" value={formData.sexo} onChange={handleInputChange} required>
+                    <option value="Feminino">Feminino</option>
+                    <option value="Masculino">Masculino</option>
+                  </select>
+                </div>
+                
+                <div className="col-md-4">
+                  <label className="form-label small fw-bold text-muted">E-mail</label>
+                  <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label small fw-bold text-muted">Telefone / WhatsApp</label>
+                  <input type="text" className="form-control" name="telefone" value={formData.telefone} onChange={handleInputChange} />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label small fw-bold text-muted">Situação Inicial</label>
+                  <select className="form-select" name="situacao" value={formData.situacao} onChange={handleInputChange}>
+                    {situacoes.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div className="col-12 mt-4">
+                  <label className="form-label small fw-bold text-muted">Vincular Modalidades</label>
+                  <ModalidadesSelector 
+                    selected={formData.modalidades}
+                    onChange={(novos) => setFormData({...formData, modalidades: novos})}
+                  />
+                  <small className="text-muted d-block mt-1">Isso adicionará o aluno imediatamente aos elencos selecionados.</small>
+                </div>
+                
+                <div className="col-12 text-end mt-4 pt-3 border-top">
+                  <button type="submit" className="btn btn-primary px-5 py-2 fw-bold rounded-pill">
+                    Salvar e Ir para Perfil Completo
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Grid de Listagem */}
+        {loading ? (
+          <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+        ) : (
+          <div className="row g-4">
+            {filteredStudents.map(student => {
+              const sit = student.situacao || 'Ativo';
+              const sitColor = getSituacaoColor(sit);
+              // Fallback para modalidades ou esportes (retrocompatibilidade)
+              const arrEsportes = student.modalidades?.length > 0 ? student.modalidades : (student.esportes || []);
+
+              return (
+                <div className="col-md-6 col-xl-4" key={student._id}>
+                  <div 
+                    className="card-flat p-4 h-100 position-relative shadow-sm cursor-pointer hover-bg-light" 
+                    onClick={() => window.location.href=`/alunos/${student._id}`} 
+                    style={{transition: '0.2s', borderTop: `4px solid ${sitColor}`}}
+                  >
+                    
+                    {/* Badge Situação */}
+                    <span 
+                      className="position-absolute top-0 end-0 mt-3 me-3 badge rounded-pill" 
+                      style={{ backgroundColor: `${sitColor}20`, color: sitColor, fontSize: '0.75rem', fontWeight: 'bold' }}
+                    >
+                      {sit.toUpperCase()}
+                    </span>
+                    
+                    {/* Header: Avatar and Name */}
+                    <div className="d-flex align-items-center mb-3 mt-2">
+                      {student.foto ? (
+                        <img src={student.foto} alt="Perfil" className="rounded-circle shadow-sm me-3" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
+                      ) : (
+                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm bg-blue-dark text-white" style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
+                          {student.nome ? student.nome.charAt(0).toUpperCase() : 'A'}
+                        </div>
+                      )}
+                      <div className="pe-4">
+                        <h5 className="fw-bold text-blue-dark mb-0 text-truncate" style={{maxWidth: '180px'}}>{student.nome}</h5>
+                        <div className="text-muted small fw-bold mt-1">{student.turma || student.serie || 'S/ Turma'} {student.matricula ? `• ${student.matricula}` : ''}</div>
+                      </div>
+                    </div>
+
+                    {/* Sports Pills */}
+                    <div className="d-flex flex-wrap gap-2 mb-3 mt-3">
+                      {arrEsportes && arrEsportes.length > 0 ? (
+                        arrEsportes.map((esp, idx) => (
+                          <span key={idx} className="badge bg-light text-blue-dark border px-2 py-1">{esp}</span>
+                        ))
+                      ) : (
+                        <span className="text-muted small fst-italic">Sem modalidades vinculadas</span>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              );
+            })}
+            
+            {filteredStudents.length === 0 && (
+              <div className="col-12 text-center py-5">
+                <i className="bi bi-people text-muted" style={{ fontSize: '3rem' }}></i>
+                <h5 className="fw-bold text-blue-dark mt-3">Nenhum aluno encontrado</h5>
+                <p className="text-muted">Ajuste os filtros ou cadastre um novo aluno.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </Layout>
   );
 };

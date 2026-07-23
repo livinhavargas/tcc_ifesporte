@@ -11,15 +11,15 @@ export const estruturaModalidades = [
   { id: 'Xadrez', nome: 'Xadrez' },
   { id: 'Atletismo', nome: 'Atletismo', sub: [
     { id: 'Atletismo - Corridas', nome: 'Corridas', sub: [
-      { id: 'Atletismo - Corridas - 100m rasos', nome: '100m rasos' },
-      { id: 'Atletismo - Corridas - 200m rasos', nome: '200m rasos' },
-      { id: 'Atletismo - Corridas - 400m rasos', nome: '400m rasos' },
+      { id: 'Atletismo - Corridas - 100m', nome: '100m' },
+      { id: 'Atletismo - Corridas - 200m', nome: '200m' },
+      { id: 'Atletismo - Corridas - 400m', nome: '400m' },
       { id: 'Atletismo - Corridas - 800m', nome: '800m' },
       { id: 'Atletismo - Corridas - 1500m', nome: '1500m' },
       { id: 'Atletismo - Corridas - 3000m', nome: '3000m' },
       { id: 'Atletismo - Corridas - 5000m', nome: '5000m' },
-      { id: 'Atletismo - Corridas - Revezamento 4x100', nome: 'Revezamento 4x100' },
-      { id: 'Atletismo - Corridas - Revezamento 4x400', nome: 'Revezamento 4x400' }
+      { id: 'Atletismo - Corridas - Revezamento 100m', nome: 'Revezamento 100m' },
+      { id: 'Atletismo - Corridas - Revezamento 400m', nome: 'Revezamento 400m' }
     ]},
     { id: 'Atletismo - Saltos', nome: 'Saltos', sub: [
       { id: 'Atletismo - Saltos - Distância', nome: 'Distância' },
@@ -27,9 +27,9 @@ export const estruturaModalidades = [
       { id: 'Atletismo - Saltos - Triplo', nome: 'Triplo' }
     ]},
     { id: 'Atletismo - Lançamentos', nome: 'Lançamentos', sub: [
+      { id: 'Atletismo - Lançamentos - Peso', nome: 'Peso' },
       { id: 'Atletismo - Lançamentos - Disco', nome: 'Disco' },
-      { id: 'Atletismo - Lançamentos - Dardo', nome: 'Dardo' },
-      { id: 'Atletismo - Lançamentos - Peso', nome: 'Peso' }
+      { id: 'Atletismo - Lançamentos - Dardo', nome: 'Dardo' }
     ]}
   ]},
   { id: 'Tênis de Mesa', nome: 'Tênis de Mesa', sub: [

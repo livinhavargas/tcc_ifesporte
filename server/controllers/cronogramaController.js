@@ -34,8 +34,39 @@ const deleteCronograma = async (req, res) => {
   }
 };
 
+const updateCronograma = async (req, res) => {
+  try {
+    const cronograma = await Cronograma.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!cronograma) return res.status(404).json({ message: 'Cronograma não encontrado' });
+    res.json(cronograma);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const duplicateCronograma = async (req, res) => {
+  try {
+    const original = await Cronograma.findById(req.params.id);
+    if (!original) return res.status(404).json({ message: 'Cronograma não encontrado' });
+    
+    const cloneData = original.toObject();
+    delete cloneData._id;
+    delete cloneData.createdAt;
+    delete cloneData.updatedAt;
+    cloneData.titulo = `${cloneData.titulo} (Cópia)`;
+    
+    const cronograma = new Cronograma(cloneData);
+    await cronograma.save();
+    res.status(201).json(cronograma);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllCronogramas,
   createCronograma,
-  deleteCronograma
+  deleteCronograma,
+  updateCronograma,
+  duplicateCronograma
 };

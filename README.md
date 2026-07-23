@@ -1,4 +1,4 @@
-# IFEsporte - Sistema de Gestão Esportiva do Instituto Federal Catarinense
+# IFesporte - Sistema de Gestão Esportiva do Instituto Federal Catarinense
 
 > **ESTE DOCUMENTO É A FONTE OFICIAL DE VERDADE DO PROJETO.**
 > 
@@ -29,7 +29,7 @@
 
 ## OBJETIVO
 
-O IFEsporte é um sistema web desenvolvido para gerenciamento esportivo do Instituto Federal Catarinense.
+O IFesporte é um sistema web desenvolvido para gerenciamento esportivo do Instituto Federal Catarinense.
 
 O sistema deve permitir administrar modalidades, atletas, cronogramas, eventos, treinamentos e análises técnicas de desempenho esportivo.
 
