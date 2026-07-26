@@ -238,50 +238,58 @@ const Perfil = () => {
                 <input type="email" className={inputClass} name="email" value={profileData.email} onChange={handleInputChange} required readOnly={!isEditing} />
               </div>
 
-              <div className="col-md-4">
-                <label className="form-label text-muted small fw-bold mb-1">CPF</label>
-                <input type="text" className={inputClass} name="cpf" value={profileData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" readOnly={!isEditing} />
-              </div>
+              {userType === 'estudante' && (
+                <>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">CPF</label>
+                    <input type="text" className={inputClass} name="cpf" value={profileData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" readOnly={!isEditing} />
+                  </div>
 
-              <div className="col-md-4">
-                <label className="form-label text-muted small fw-bold mb-1">Data de Nascimento</label>
-                <input type="date" className={inputClass} name="dataNascimento" value={profileData.dataNascimento} onChange={handleInputChange} readOnly={!isEditing} />
-              </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Data de Nascimento</label>
+                    <input type="date" className={inputClass} name="dataNascimento" value={profileData.dataNascimento} onChange={handleInputChange} readOnly={!isEditing} />
+                  </div>
 
-              <div className="col-md-4">
-                <label className="form-label text-muted small fw-bold mb-1">Gênero</label>
-                {isEditing ? (
-                  <select className={selectClass} name="sexo" value={profileData.sexo} onChange={handleInputChange}>
-                    <option value="">Selecione...</option>
-                    <option value="Feminino">Feminino</option>
-                    <option value="Masculino">Masculino</option>
-                  </select>
-                ) : (
-                  <div className={inputClass}>{profileData.sexo || '-'}</div>
-                )}
-              </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Gênero</label>
+                    {isEditing ? (
+                      <select className={selectClass} name="sexo" value={profileData.sexo} onChange={handleInputChange}>
+                        <option value="">Selecione...</option>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Masculino">Masculino</option>
+                      </select>
+                    ) : (
+                      <div className={inputClass}>{profileData.sexo || '-'}</div>
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* CONTATO */}
-              <div className="col-12 mt-5"><h6 className="fw-bold text-orange border-bottom pb-2 mb-3"><i className="bi bi-telephone-fill me-2"></i>Contato e Localização</h6></div>
+              <div className="col-12 mt-5"><h6 className="fw-bold text-orange border-bottom pb-2 mb-3"><i className="bi bi-telephone-fill me-2"></i>Contato</h6></div>
 
               <div className="col-md-6">
                 <label className="form-label text-muted small fw-bold mb-1">Telefone / Celular</label>
                 <input type="text" className={inputClass} name="telefone" value={profileData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" readOnly={!isEditing} />
               </div>
 
-              <div className="col-12">
-                <label className="form-label text-muted small fw-bold mb-1">Endereço Completo</label>
-                <input type="text" className={inputClass} name="endereco" value={profileData.endereco} onChange={handleInputChange} placeholder="Rua, Número, Bairro, CEP" readOnly={!isEditing} />
-              </div>
+              {userType === 'estudante' && (
+                <>
+                  <div className="col-12">
+                    <label className="form-label text-muted small fw-bold mb-1">Endereço Completo</label>
+                    <input type="text" className={inputClass} name="endereco" value={profileData.endereco} onChange={handleInputChange} placeholder="Rua, Número, Bairro, CEP" readOnly={!isEditing} />
+                  </div>
 
-              <div className="col-md-6">
-                <label className="form-label text-muted small fw-bold mb-1">Nome do Responsável</label>
-                <input type="text" className={inputClass} name="nomeResponsavel" value={profileData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do Responsável" readOnly={!isEditing} />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label text-muted small fw-bold mb-1">Telefone do Responsável</label>
-                <input type="text" className={inputClass} name="telefoneResponsavel" value={profileData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" readOnly={!isEditing} />
-              </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small fw-bold mb-1">Nome do Responsável</label>
+                    <input type="text" className={inputClass} name="nomeResponsavel" value={profileData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do Responsável" readOnly={!isEditing} />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small fw-bold mb-1">Telefone do Responsável</label>
+                    <input type="text" className={inputClass} name="telefoneResponsavel" value={profileData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" readOnly={!isEditing} />
+                  </div>
+                </>
+              )}
 
               {/* DADOS ESCOLARES E ESPORTIVOS (Estudante) */}
               {userType === 'estudante' && (

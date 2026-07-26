@@ -70,20 +70,8 @@ const Layout = ({ children }) => {
             </Link>
             
             {userType !== 'estudante' && (
-              <Link className={`sidebar-link ${isActive('/perfil')}`} to="/perfil">
-                <i className="bi bi-person-badge-fill sidebar-icon"></i> Meu Perfil
-              </Link>
-            )}
-
-            {userType !== 'estudante' && (
               <Link className={`sidebar-link ${isActive('/alunos')}`} to="/alunos">
                 <i className="bi bi-people-fill sidebar-icon"></i> Alunos
-              </Link>
-            )}
-
-            {userType !== 'estudante' && (
-              <Link className={`sidebar-link ${isActive('/esportes')}`} to="/esportes">
-                <i className="bi bi-trophy-fill sidebar-icon"></i> Modalidades
               </Link>
             )}
 
@@ -92,14 +80,8 @@ const Layout = ({ children }) => {
             </Link>
 
             {userType !== 'estudante' && (
-              <Link className={`sidebar-link ${isActive('/analises')}`} to="/analises">
-                <i className="bi bi-clipboard2-data-fill sidebar-icon"></i> Análises Esportivas
-              </Link>
-            )}
-
-            {userType !== 'estudante' && (
-              <Link className={`sidebar-link ${isActive('/relatorios')}`} to="/relatorios">
-                <i className="bi bi-file-earmark-bar-graph-fill sidebar-icon"></i> Relatórios
+              <Link className={`sidebar-link ${isActive('/esportes')}`} to="/esportes">
+                <i className="bi bi-trophy-fill sidebar-icon"></i> Modalidades
               </Link>
             )}
 

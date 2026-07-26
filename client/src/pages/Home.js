@@ -5,13 +5,26 @@ import StudentHome from './IFesporte/StudentHome';
 
 const Home = () => {
   const [events, setEvents] = useState([]);
+  const [priorities, setPriorities] = useState([]);
+  const [cronogramas, setCronogramas] = useState([]);
   const [loading, setLoading] = useState(true);
+  
   const userName = localStorage.getItem('userName') || 'Usuário';
   const tipo = localStorage.getItem('tipo');
+
+  const [goals, setGoals] = useState(() => {
+    const saved = localStorage.getItem('agenda_goals');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, text: 'Preparar equipe para campeonato', done: false },
+      { id: 2, text: 'Finalizar avaliações físicas', done: false },
+      { id: 3, text: 'Organizar amistoso', done: false }
+    ];
+  });
 
   useEffect(() => {
     if (tipo !== 'estudante') {
       fetchEvents();
+      fetchCronogramas();
     } else {
       setLoading(false); // StudentHome does its own loading
     }
@@ -23,16 +36,34 @@ const Home = () => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      const futuros = data.filter(ev => ev.data && ev.data.split('T')[0] >= todayStr);
-      futuros.sort((a, b) => a.data.localeCompare(b.data));
+      // Prioridades
+      const priorityEvents = data
+        .filter(ev => ev.eventoObrigatorio && ev.data && new Date(ev.data.split('T')[0] + 'T12:00:00') >= today)
+        .sort((a, b) => a.data.localeCompare(b.data))
+        .slice(0, 6);
 
-      setEvents(futuros.slice(0, 4)); // Pegar apenas os 4 próximos
-      setLoading(false);
+      setPriorities(priorityEvents);
+      setEvents(data);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const fetchCronogramas = async () => {
+    try {
+      const response = await fetch('/api/cronogramas', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCronogramas(data);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
       setLoading(false);
     }
   };
@@ -42,6 +73,23 @@ const Home = () => {
     const dateStr = dataString.split('T')[0];
     const parts = dateStr.split('-');
     return `${parts[2]}/${parts[1]}`;
+  };
+
+  const formatModalityToId = (modName) => {
+    const baseMod = modName.split(' - ')[0];
+    const nameMapReverse = {
+      'Atletismo': 'atletismo',
+      'Badminton': 'badminton',
+      'Tênis de Mesa': 'tenis-de-mesa',
+      'Xadrez': 'xadrez',
+      'Basquete': 'basquete',
+      'Futsal': 'futsal',
+      'Futebol': 'futebol',
+      'Handebol': 'handebol',
+      'Vôlei de Quadra': 'volei-quadra',
+      'Vôlei de Praia': 'volei-praia'
+    };
+    return nameMapReverse[baseMod] || baseMod.toLowerCase().replace(/\s+/g, '-');
   };
 
   if (tipo === 'estudante') {
@@ -54,150 +102,150 @@ const Home = () => {
 
   return (
     <Layout>
-      <div className="container-fluid p-0">
+      <div className="container-fluid p-0 pb-5">
         
         {/* Saudação */}
-        <div className="mb-4">
-          <h2 className="fw-bold text-blue-dark">Olá, {userName.split(' ')[0]} 👋</h2>
-          <p className="text-muted">Aqui está o resumo das suas atividades e equipes.</p>
+        <div className="mb-5 d-flex justify-content-between align-items-end">
+          <div>
+            <h2 className="fw-bold text-blue-dark mb-1">Olá, {userName.split(' ')[0]} 👋</h2>
+            <p className="text-muted mb-0">Aqui está o painel de controle e acompanhamento das suas equipes.</p>
+          </div>
         </div>
 
-        {/* 4 Cartões de Resumo */}
+        {/* 1. Atletas Ativos (O único card superior mantido) */}
         <div className="row g-4 mb-5">
-          <div className="col-md-3">
-            <div className="card-flat p-4 h-100 shadow-sm d-flex flex-column justify-content-center align-items-center text-center">
-              <div className="bg-orange-light text-orange rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}>
+          <div className="col-md-4 col-lg-3">
+            <div className="card-flat p-4 h-100 shadow-sm d-flex flex-column justify-content-center align-items-center text-center bg-white" style={{ borderRadius: '16px' }}>
+              <div className="bg-orange-light text-orange rounded-circle d-flex align-items-center justify-content-center mb-3 transition hover-scale" style={{width: '64px', height: '64px', fontSize: '1.75rem'}}>
                 <i className="bi bi-people-fill"></i>
               </div>
-              <h2 className="fw-bold text-blue-dark mb-0">45</h2>
-              <span className="text-muted small fw-bold mt-1">Atletas Ativos</span>
-            </div>
-          </div>
-          
-          <div className="col-md-3">
-            <div className="card-flat p-4 h-100 shadow-sm d-flex flex-column justify-content-center align-items-center text-center">
-              <div className="bg-blue-light text-blue-dark rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}>
-                <i className="bi bi-calendar-event-fill"></i>
-              </div>
-              <h5 className="fw-bold text-blue-dark mb-0">{events.length > 0 ? formatarData(events[0].data) : '--/--'}</h5>
-              <span className="text-muted small fw-bold mt-1 text-truncate w-100 px-2">{events.length > 0 ? events[0].titulo : 'Sem eventos'}</span>
-            </div>
-          </div>
-          
-          <div className="col-md-3">
-            <div className="card-flat p-4 h-100 shadow-sm d-flex flex-column justify-content-center align-items-center text-center">
-              <div className="bg-green-light text-success rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}>
-                <i className="bi bi-clipboard-data-fill"></i>
-              </div>
-              <h2 className="fw-bold text-blue-dark mb-0">12</h2>
-              <span className="text-muted small fw-bold mt-1">Análises Pendentes</span>
-            </div>
-          </div>
-          
-          <div className="col-md-3">
-            <div className="card-flat p-4 h-100 shadow-sm d-flex flex-column justify-content-center align-items-center text-center cursor-pointer hover-bg-light transition" onClick={() => window.location.href='/relatorios'}>
-              <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px', fontSize: '1.5rem'}}>
-                <i className="bi bi-file-earmark-bar-graph-fill"></i>
-              </div>
-              <h5 className="fw-bold text-blue-dark mb-0">Relatórios</h5>
-              <span className="text-primary small fw-bold mt-1">Gerar Novo <i className="bi bi-arrow-right"></i></span>
+              <h1 className="fw-bold text-blue-dark mb-0 lh-1">45</h1>
+              <span className="text-muted small fw-bold mt-2 text-uppercase" style={{ letterSpacing: '1px' }}>Atletas Ativos</span>
             </div>
           </div>
         </div>
 
-        <div className="row g-4">
-          {/* Gráficos */}
-          <div className="col-lg-8">
-            <div className="card-flat p-4 h-100 shadow-sm">
-              <h5 className="fw-bold text-blue-dark mb-4">Evolução Média (Índice de Desempenho)</h5>
-              
-              <div className="w-100 d-flex flex-column align-items-center justify-content-center" style={{ height: '300px' }}>
-                <svg viewBox="0 0 800 250" className="w-100 h-100">
-                  {/* Grid Lines */}
-                  <line x1="50" y1="200" x2="750" y2="200" stroke="#e2e8f0" strokeWidth="2" />
-                  <line x1="50" y1="150" x2="750" y2="150" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="5,5" />
-                  <line x1="50" y1="100" x2="750" y2="100" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="5,5" />
-                  <line x1="50" y1="50" x2="750" y2="50" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="5,5" />
-                  
-                  {/* Line Chart */}
-                  <path d="M 50 180 L 150 160 L 250 130 L 350 140 L 450 90 L 550 110 L 650 60 L 750 40" fill="none" stroke="#295593" strokeWidth="4" />
-                  
-                  {/* Points */}
-                  <circle cx="50" cy="180" r="6" fill="#f97316" />
-                  <circle cx="150" cy="160" r="6" fill="#f97316" />
-                  <circle cx="250" cy="130" r="6" fill="#f97316" />
-                  <circle cx="350" cy="140" r="6" fill="#f97316" />
-                  <circle cx="450" cy="90" r="6" fill="#f97316" />
-                  <circle cx="550" cy="110" r="6" fill="#f97316" />
-                  <circle cx="650" cy="60" r="6" fill="#f97316" />
-                  <circle cx="750" cy="40" r="6" fill="#f97316" />
-
-                  {/* X Axis Labels */}
-                  <text x="50" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Jan</text>
-                  <text x="150" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Fev</text>
-                  <text x="250" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Mar</text>
-                  <text x="350" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Abr</text>
-                  <text x="450" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Mai</text>
-                  <text x="550" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Jun</text>
-                  <text x="650" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Jul</text>
-                  <text x="750" y="230" fontSize="12" fill="#64748b" textAnchor="middle">Ago</text>
-                </svg>
-              </div>
-
-            </div>
+        {/* 2. Metas Gerais */}
+        <div className="mb-5">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h4 className="fw-bold text-blue-dark mb-0 d-flex align-items-center">
+              <i className="bi bi-bullseye text-orange me-3 fs-3"></i>Metas Gerais
+            </h4>
+            <Link to="/agenda" className="btn btn-outline-primary btn-sm fw-bold rounded-pill px-4 shadow-sm transition">Gerenciar Metas</Link>
           </div>
-
-          {/* Assiduidade e Próximas Atividades */}
-          <div className="col-lg-4">
-            
-            {/* Assiduidade */}
-            <div className="card-flat p-4 mb-4 shadow-sm text-center">
-              <h6 className="fw-bold text-blue-dark mb-4">Assiduidade Mensal</h6>
-              <div className="position-relative d-inline-block mx-auto mb-3" style={{ width: '160px', height: '160px' }}>
-                <svg viewBox="0 0 36 36" className="w-100 h-100">
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none" stroke="#e2e8f0" strokeWidth="3"
-                  />
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none" stroke="#22c55e" strokeWidth="3" strokeDasharray="85, 100"
-                  />
-                </svg>
-                <div className="position-absolute top-50 start-50 translate-middle text-center">
-                  <h3 className="fw-bold text-success mb-0">85%</h3>
-                  <small className="text-muted fw-bold" style={{ fontSize: '0.6rem' }}>PRESENÇA</small>
+          
+          <div className="row g-4">
+            {goals.map(g => (
+              <div key={g.id} className="col-md-6 col-lg-4">
+                <div className="card-flat p-4 h-100 shadow-sm border-0 position-relative overflow-hidden bg-white" style={{ borderRadius: '16px' }}>
+                  <div className="position-absolute top-0 start-0 h-100" style={{ width: '6px', backgroundColor: g.done ? '#22c55e' : '#f97316' }}></div>
+                  
+                  <div className="d-flex justify-content-between align-items-start ms-2 mb-3">
+                    <h6 className={`fw-bold mb-0 lh-base ${g.done ? 'text-muted text-decoration-line-through' : 'text-blue-dark'}`} style={{ fontSize: '1.05rem' }}>
+                      {g.text}
+                    </h6>
+                    <div className="ms-3 flex-shrink-0">
+                      {g.done ? <i className="bi bi-check-circle-fill text-success fs-4 shadow-sm rounded-circle bg-white"></i> : <i className="bi bi-circle text-muted fs-4"></i>}
+                    </div>
+                  </div>
+                  
+                  <div className="ms-2 mt-auto">
+                    <span className={`badge rounded-pill px-3 py-2 fw-bold ${g.done ? 'bg-success text-white shadow-sm' : 'bg-orange-light text-orange'}`}>
+                      {g.done ? 'Concluída' : 'Em andamento'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* Próximas Atividades */}
-            <div className="card-flat p-4 shadow-sm">
-              <h6 className="fw-bold text-blue-dark mb-4">Próximas Atividades</h6>
-              {loading ? (
-                <div className="text-center py-4"><div className="spinner-border text-primary spinner-border-sm"></div></div>
-              ) : events.length > 0 ? (
-                <div className="d-flex flex-column gap-3">
-                  {events.map((ev, i) => (
-                    <div key={i} className="d-flex align-items-center p-3 bg-light rounded-3">
-                      <div className="bg-white rounded p-2 text-center shadow-sm me-3" style={{ minWidth: '55px' }}>
-                        <span className="d-block text-danger fw-bold lh-1 mb-1">{formatarData(ev.data).split('/')[0]}</span>
-                        <span className="d-block text-muted small lh-1">{formatarData(ev.data).split('/')[1]}</span>
+        {/* 3. Prioridades */}
+        <div className="mb-5 pt-3">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h4 className="fw-bold text-blue-dark mb-0 d-flex align-items-center">
+              <i className="bi bi-exclamation-triangle-fill text-danger me-3 fs-3"></i>Prioridades
+            </h4>
+            <Link to="/agenda" className="btn btn-outline-primary btn-sm fw-bold rounded-pill px-4 shadow-sm transition">Gerenciar Prioridades</Link>
+          </div>
+          
+          <div className="row g-4">
+            {priorities.length > 0 ? priorities.map(ev => (
+              <div key={ev._id} className="col-md-6 col-lg-4">
+                <div className="card-flat p-4 h-100 shadow-sm border-0 position-relative overflow-hidden bg-white" style={{ borderRadius: '16px' }}>
+                  <div className="position-absolute top-0 start-0 w-100" style={{ height: '4px', backgroundColor: '#ef4444' }}></div>
+                  <div className="d-flex flex-column h-100">
+                    <h6 className="fw-bold text-dark mb-3 lh-base" style={{ fontSize: '1.05rem' }}>{ev.titulo}</h6>
+                    
+                    <div className="mt-auto d-flex align-items-center p-2 rounded-3 bg-light text-muted small fw-bold">
+                      <i className="bi bi-calendar-event me-2 text-danger"></i>
+                      {formatarData(ev.data)} às {ev.horaInicial || ev.hora || '12:00'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )) : (
+              <div className="col-12">
+                <div className="p-5 border-0 rounded-4 text-center shadow-sm" style={{ backgroundColor: '#F8FAFC' }}>
+                  <i className="bi bi-emoji-smile fs-1 text-muted opacity-50 mb-3 d-block"></i>
+                  <h6 className="text-muted fw-bold mb-0">Nenhuma prioridade urgente no momento.</h6>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 4. Cronogramas */}
+        <div className="mb-2 pt-3">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h4 className="fw-bold text-blue-dark mb-0 d-flex align-items-center">
+              <i className="bi bi-calendar-range-fill text-primary me-3 fs-3"></i>Cronogramas
+            </h4>
+          </div>
+          
+          {loading ? (
+             <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+          ) : cronogramas.length > 0 ? (
+            <div className="row g-4">
+              {cronogramas.map(cron => (
+                <div key={cron._id} className="col-md-6 col-lg-4">
+                  <div className="card-flat p-0 h-100 shadow-sm border-0 d-flex flex-column bg-white overflow-hidden" style={{ borderRadius: '16px' }}>
+                    <div className="p-4 d-flex flex-column flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <span className="badge bg-blue-light text-blue-dark px-3 py-2 rounded-pill fw-bold" style={{ fontSize: '0.75rem' }}>
+                          {cron.modalidade}
+                        </span>
+                        <div className="text-muted opacity-50"><i className="bi bi-clipboard-data fs-5"></i></div>
                       </div>
-                      <div className="flex-grow-1 overflow-hidden">
-                        <h6 className="fw-bold text-blue-dark mb-1 text-truncate">{ev.titulo}</h6>
-                        <small className="text-muted text-truncate d-block">{ev.tipo} • {ev.horaInicial || ev.hora}</small>
+                      
+                      <h5 className="fw-bold text-blue-dark mb-3 lh-base">{cron.titulo}</h5>
+                      
+                      <div className="d-flex align-items-center text-muted small fw-medium mt-auto bg-light p-2 rounded-3">
+                        <i className="bi bi-calendar3 me-2 text-primary"></i>
+                        {new Date(cron.dataInicio).toLocaleDateString('pt-BR')} a {new Date(cron.dataFim).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
-                  ))}
-                  <Link to="/agenda" className="btn btn-outline-primary btn-sm mt-2 fw-bold rounded-pill">Ver Agenda Completa</Link>
+                    
+                    <div className="bg-light px-4 py-3 border-top d-flex justify-content-between align-items-center">
+                      <small className="text-muted fw-medium" style={{ fontSize: '0.75rem' }}>Acesso rápido</small>
+                      <Link to={`/esportes/${formatModalityToId(cron.modalidade)}`} className="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm transition hover-scale">
+                        Abrir <i className="bi bi-arrow-right ms-1"></i>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-muted small text-center mb-0">Nenhuma atividade agendada.</p>
-              )}
+              ))}
             </div>
-
-          </div>
+          ) : (
+            <div className="text-center text-muted p-5 border-0 shadow-sm" style={{ backgroundColor: '#F8FAFC', borderRadius: '16px' }}>
+              <i className="bi bi-calendar-x fs-1 text-muted mb-3 d-block opacity-50"></i>
+              <h5 className="fw-bold text-blue-dark mb-2">Nenhum cronograma</h5>
+              <p className="mb-4 text-muted">Nenhum cronograma foi criado até o momento.</p>
+              <Link to="/esportes" className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm transition hover-scale">
+                Criar Cronograma
+              </Link>
+            </div>
+          )}
         </div>
 
       </div>
