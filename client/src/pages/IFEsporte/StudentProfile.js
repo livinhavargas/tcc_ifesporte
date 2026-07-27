@@ -9,13 +9,14 @@ const StudentProfile = () => {
   const userType = localStorage.getItem('tipo'); 
   
   const [student, setStudent] = useState(null);
+  const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [activeTab, setActiveTab] = useState('perfil'); // perfil, estatisticas, anotacoes
+  const [showModalidadePicker, setShowModalidadePicker] = useState(false);
 
-  const turmasDisponiveis = ['1º Ano Técnico', '2º Ano Técnico', '3º Ano Técnico', 'Superior', 'Outro'];
-  const situacoes = ['Ativo', 'Inativo', 'Afastado', 'Lesionado', 'Transferido'];
+  const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
 
   useEffect(() => {
     fetchStudent();
@@ -28,6 +29,19 @@ const StudentProfile = () => {
       });
       const data = await response.json();
       setStudent(data);
+
+      try {
+        const analisesRes = await fetch('/api/analysis', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (analisesRes.ok) {
+          const analisesData = await analisesRes.json();
+          setAnalyses(analisesData.filter(a => a.aluno && a.aluno._id === id));
+        }
+      } catch (err) {
+        console.error('Erro ao buscar análises:', err);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -68,33 +82,44 @@ const StudentProfile = () => {
     }
   };
 
-  const getImcData = () => {
-    if (!student || !student.peso || !student.altura) return { valor: '-', cor: '#94a3b8', status: 'N/A' };
-    const peso = parseFloat(student.peso);
-    const altura = parseFloat(student.altura);
-    const imc = (peso / (altura * altura)).toFixed(2);
-    
-    let cor = '#94a3b8';
-    let status = 'Desconhecido';
-
-    if (imc < 18.5) { cor = '#eab308'; status = 'Abaixo do peso (Alerta)'; }
-    else if (imc >= 18.5 && imc <= 24.9) { cor = '#22c55e'; status = 'Peso saudável'; }
-    else if (imc >= 25 && imc <= 29.9) { cor = '#f97316'; status = 'Sobrepeso (Alerta)'; }
-    else { cor = '#ef4444'; status = 'Obesidade (Atenção)'; }
-
-    return { valor: imc, cor, status };
-  };
-
-  const getSituacaoColor = (sit) => {
-    switch(sit) {
-      case 'Ativo': return '#22c55e';
-      case 'Inativo': return '#94a3b8';
-      case 'Afastado': return '#f59e0b';
-      case 'Lesionado': return '#ef4444';
-      case 'Transferido': return '#3b82f6';
-      default: return '#22c55e';
+  const isMinor = (dob) => {
+    if (!dob) return false;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
+    return age < 18;
   };
+
+  const calculateAge = (dob) => {
+    if (!dob) return '-';
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const groupedAnalyses = React.useMemo(() => {
+    if (!analyses || analyses.length === 0) return {};
+    const grouped = {};
+    analyses.forEach(a => {
+      const mod = a.modalidade || 'Outros';
+      if (!grouped[mod]) grouped[mod] = [];
+      grouped[mod].push(a);
+    });
+    Object.keys(grouped).forEach(mod => {
+      grouped[mod].sort((a, b) => new Date(b.dataAvaliacao || b.data) - new Date(a.dataAvaliacao || a.data));
+    });
+    return grouped;
+  }, [analyses]);
+  const hasAnalyses = Object.keys(groupedAnalyses).length > 0;
 
   const handleDelete = async () => {
     if (!window.confirm(`Tem certeza que deseja excluir o atleta ${student.nome}?`)) return;
@@ -113,9 +138,6 @@ const StudentProfile = () => {
   if (loading) return <Layout><div className="text-center py-5"><div className="spinner-border text-primary"></div></div></Layout>;
   if (!student) return <Layout><div className="text-center py-5">Aluno não encontrado.</div></Layout>;
 
-  const imcData = getImcData();
-  const sitColor = getSituacaoColor(student.situacao || 'Ativo');
-
   return (
     <Layout>
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -124,7 +146,7 @@ const StudentProfile = () => {
             <i className="bi bi-arrow-left"></i>
           </button>
           <div>
-            <h2 className="fw-bold text-blue-dark mb-0">Dashboard do Atleta</h2>
+            <h2 className="fw-bold text-blue-dark mb-0">Informações do Atleta</h2>
           </div>
         </div>
         <div className="d-flex gap-2">
@@ -144,12 +166,8 @@ const StudentProfile = () => {
       <div className="row g-4">
         {/* Lado Esquerdo - Info Resumo */}
         <div className="col-lg-4">
-          <div className="card-flat p-4 text-center h-100 shadow-sm border-0 position-relative" style={{ borderTop: `5px solid ${sitColor}` }}>
+          <div className="card-flat p-4 text-center h-100 shadow-sm border-0 position-relative" style={{ borderTop: `5px solid #3b82f6` }}>
             
-            <span className="position-absolute top-0 end-0 mt-3 me-3 badge rounded-pill px-3 py-2 shadow-sm" style={{ backgroundColor: sitColor, color: '#fff' }}>
-              {(student.situacao || 'Ativo').toUpperCase()}
-            </span>
-
             <div className="d-inline-block position-relative mb-4 mt-4">
               <div className="d-flex align-items-center justify-content-center bg-blue-dark text-white rounded-circle shadow-sm mb-2" style={{ width: '150px', height: '150px', fontSize: '3rem', margin: '0 auto', overflow: 'hidden' }}>
                 {student.foto ? (
@@ -167,14 +185,23 @@ const StudentProfile = () => {
                {student.modalidades && student.modalidades.map((m, i) => <span key={i} className="badge bg-orange-light text-orange border border-orange px-2 py-1">{m}</span>)}
             </div>
 
-            <div className="bg-light rounded-4 p-4 text-start mb-3 border">
-              <div className="mb-2"><i className="bi bi-envelope-fill me-2 text-primary"></i> <strong>{student.email || 'Não informado'}</strong></div>
-              <div><i className="bi bi-whatsapp me-2 text-success"></i> <strong>{student.telefone || 'Não informado'}</strong></div>
-            </div>
+            {(student.email || student.cpf) && (
+              <div className="bg-light rounded-4 p-4 text-start mb-3 border">
+                {student.email && <div className="mb-2"><i className="bi bi-envelope-fill me-2 text-primary"></i> <strong>{student.email}</strong></div>}
+                {student.cpf && <div><i className="bi bi-person-vcard-fill me-2 text-success"></i> <strong>{student.cpf}</strong></div>}
+              </div>
+            )}
 
             <div className="bg-light rounded-4 p-4 text-start border">
               <h6 className="fw-bold text-blue-dark mb-2">Contato de Emergência</h6>
-              <div className="text-danger fw-bold"><i className="bi bi-telephone-plus-fill me-2"></i> {student.contatoEmergencia || 'Não informado'}</div>
+              {student.nomeResponsavel || student.telefoneResponsavel ? (
+                <>
+                  {student.nomeResponsavel && <div className="text-secondary mb-1"><i className="bi bi-person-fill me-2"></i> {student.nomeResponsavel}</div>}
+                  {student.telefoneResponsavel && <div className="text-danger fw-bold"><i className="bi bi-telephone-plus-fill me-2"></i> {student.telefoneResponsavel}</div>}
+                </>
+              ) : (
+                <div className="text-muted small">Nenhum contato de emergência cadastrado.</div>
+              )}
             </div>
           </div>
         </div>
@@ -187,17 +214,12 @@ const StudentProfile = () => {
             <ul className="nav nav-tabs px-4 pt-4 border-bottom-0 bg-light">
               <li className="nav-item">
                 <button className={`nav-link fw-bold ${activeTab === 'perfil' ? 'active bg-white text-blue-dark border-bottom-0' : 'text-muted'}`} onClick={() => setActiveTab('perfil')}>
-                  <i className="bi bi-person-lines-fill me-2"></i> Perfil & Médico
+                  <i className="bi bi-person-lines-fill me-2"></i> Perfil
                 </button>
               </li>
               <li className="nav-item">
                 <button className={`nav-link fw-bold ${activeTab === 'estatisticas' ? 'active bg-white text-blue-dark border-bottom-0' : 'text-muted'}`} onClick={() => setActiveTab('estatisticas')}>
-                  <i className="bi bi-graph-up-arrow me-2"></i> Estatísticas
-                </button>
-              </li>
-              <li className="nav-item">
-                <button className={`nav-link fw-bold ${activeTab === 'anotacoes' ? 'active bg-white text-blue-dark border-bottom-0' : 'text-muted'}`} onClick={() => setActiveTab('anotacoes')}>
-                  <i className="bi bi-journal-text me-2"></i> Anotações (Coach)
+                  <i className="bi bi-graph-up-arrow me-2"></i> Análises
                 </button>
               </li>
             </ul>
@@ -217,7 +239,7 @@ const StudentProfile = () => {
                   </div>
 
                   <div className="row g-4">
-                    {/* Bloco Escolar */}
+                    {/* Bloco Escolar e Pessoal */}
                     <div className="col-12"><h6 className="fw-bold text-orange mb-0"><i className="bi bi-mortarboard-fill me-2"></i>Dados Escolares e Pessoais</h6></div>
                     
                     <div className="col-md-6">
@@ -236,53 +258,54 @@ const StudentProfile = () => {
                       </select>
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <label className="form-label text-muted small fw-bold">Data de Nasc.</label>
                       <input type="date" className="form-control bg-light" name="dataNascimento" value={student.dataNascimento ? student.dataNascimento.split('T')[0] : ''} onChange={handleInputChange} disabled={!isEditing} />
                     </div>
-                    <div className="col-md-4">
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small fw-bold">Idade</label>
+                      <input type="text" className="form-control bg-light" value={`${calculateAge(student.dataNascimento)} anos`} disabled />
+                    </div>
+                    <div className="col-md-3">
                       <label className="form-label text-muted small fw-bold">Gênero</label>
                       <select className="form-select bg-light" name="sexo" value={student.sexo || ''} onChange={handleInputChange} disabled={!isEditing} required>
                         <option value="Feminino">Feminino</option>
                         <option value="Masculino">Masculino</option>
+                        <option value="Outro">Outro</option>
                       </select>
                     </div>
-                    <div className="col-md-4">
-                      <label className="form-label text-muted small fw-bold">Situação</label>
-                      <select className="form-select bg-light" name="situacao" value={student.situacao || 'Ativo'} onChange={handleInputChange} disabled={!isEditing}>
-                        {situacoes.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small fw-bold">CPF</label>
+                      <input type="text" className="form-control bg-light" name="cpf" value={student.cpf || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="000.000.000-00" />
+                    </div>
+                    
+                    <div className="col-md-12">
+                      <label className="form-label text-muted small fw-bold">Endereço</label>
+                      <input type="text" className="form-control bg-light" name="endereco" value={student.endereco || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Rua, Bairro, Nº" />
+                    </div>
+
+                    {/* Bloco do Responsável */}
+                    <div className="col-12 mt-4"><h6 className="fw-bold text-orange mb-0"><i className="bi bi-people-fill me-2"></i>Dados do Responsável</h6></div>
+                    
+                    <div className="col-md-6">
+                      <label className="form-label text-muted small fw-bold">Nome do Responsável</label>
+                      <input type="text" className="form-control bg-light" name="nomeResponsavel" value={student.nomeResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label text-muted small fw-bold">Telefone do Responsável</label>
+                      <input type="text" className="form-control bg-light" name="telefoneResponsavel" value={student.telefoneResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="(00) 00000-0000" />
                     </div>
 
                     {/* Bloco Físico/Esportivo */}
                     <div className="col-12 mt-5"><h6 className="fw-bold text-orange mb-0"><i className="bi bi-activity me-2"></i>Antropometria e Esporte</h6></div>
 
-                    <div className="col-md-3">
+                    <div className="col-md-4">
                       <label className="form-label text-muted small fw-bold">Peso (kg)</label>
                       <input type="number" step="0.1" className="form-control bg-light" name="peso" value={student.peso || ''} onChange={handleInputChange} disabled={!isEditing} />
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-md-4">
                       <label className="form-label text-muted small fw-bold">Altura (m)</label>
                       <input type="number" step="0.01" className="form-control bg-light" name="altura" value={student.altura || ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    <div className="col-md-6 d-flex align-items-end pb-2">
-                       <span className="badge rounded-pill fw-bold px-3 py-2 fs-6 shadow-sm" style={{backgroundColor: imcData.cor, color: '#fff'}}>
-                         IMC: {imcData.valor} ({imcData.status})
-                       </span>
-                    </div>
-
-                    <div className="col-md-4">
-                      <label className="form-label text-muted small fw-bold">Posição (Principal)</label>
-                      <input type="text" className="form-control bg-light" name="posicao" value={student.posicao || ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label text-muted small fw-bold">Dominância</label>
-                      <select className="form-select bg-light" name="dominancia" value={student.dominancia || ''} onChange={handleInputChange} disabled={!isEditing}>
-                        <option value="">Selecione...</option>
-                        <option value="Destro">Destro</option>
-                        <option value="Canhoto">Canhoto</option>
-                        <option value="Ambidestro">Ambidestro</option>
-                      </select>
                     </div>
                     <div className="col-md-4">
                       <label className="form-label text-muted small fw-bold">Nº Camisa (Opcional)</label>
@@ -325,107 +348,103 @@ const StudentProfile = () => {
                 </form>
               )}
 
-              {/* TAB 2: ESTATÍSTICAS */}
+              {/* TAB 2: ANÁLISES */}
               {activeTab === 'estatisticas' && (
                 <div>
                   <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                     <h5 className="fw-bold text-blue-dark mb-0">Rendimento Desportivo</h5>
-                     <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onClick={() => navigate(`/analises?alunoId=${id}`)}>
-                       Ver Análises Detalhadas
-                     </button>
+                     {showModalidadePicker ? (
+                       <h5 className="fw-bold text-blue-dark mb-0">Escolha a modalidade</h5>
+                     ) : (
+                       <h5 className="fw-bold text-blue-dark mb-0">Análises Realizadas</h5>
+                     )}
+                     
+                     <div className="d-flex gap-2">
+                       {showModalidadePicker ? (
+                         <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold border text-muted" onClick={() => setShowModalidadePicker(false)}>
+                           Cancelar
+                         </button>
+                       ) : (
+                         <>
+                           {userType !== 'estudante' && (
+                             <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onClick={() => setShowModalidadePicker(true)}>
+                               <i className="bi bi-plus-lg me-1"></i> Nova Análise
+                             </button>
+                           )}
+                         </>
+                       )}
+                     </div>
                   </div>
-                  
-                  <div className="row g-4">
-                    <div className="col-md-6">
-                      <div className="card-flat bg-light border p-4 text-center h-100">
-                        <h6 className="fw-bold text-blue-dark mb-4">Radar de Habilidades (Média)</h6>
-                        <div className="mx-auto" style={{ width: '250px', height: '250px' }}>
-                           {/* MOCK SVG RADAR CHART */}
-                           <svg viewBox="0 0 100 100" className="w-100 h-100">
-                             {/* Fundo Radar */}
-                             <polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1"/>
-                             <polygon points="50,25 80,40 80,60 50,75 20,60 20,40" fill="none" stroke="#cbd5e1" strokeWidth="1"/>
-                             <line x1="50" y1="5" x2="50" y2="95" stroke="#cbd5e1" strokeWidth="1"/>
-                             <line x1="5" y1="25" x2="95" y2="75" stroke="#cbd5e1" strokeWidth="1"/>
-                             <line x1="5" y1="75" x2="95" y2="25" stroke="#cbd5e1" strokeWidth="1"/>
-                             
-                             {/* Area do Atleta (Exemplo) */}
-                             <polygon points="50,30 85,35 60,70 50,80 30,60 20,40" fill="rgba(249, 115, 22, 0.4)" stroke="#f97316" strokeWidth="2"/>
-                             
-                             {/* Labels */}
-                             <text x="50" y="3" fontSize="4" textAnchor="middle" fill="#64748b" fontWeight="bold">Físico</text>
-                             <text x="96" y="25" fontSize="4" textAnchor="start" fill="#64748b" fontWeight="bold">Tática</text>
-                             <text x="96" y="75" fontSize="4" textAnchor="start" fill="#64748b" fontWeight="bold">Passe</text>
-                             <text x="50" y="99" fontSize="4" textAnchor="middle" fill="#64748b" fontWeight="bold">Defesa</text>
-                             <text x="4" y="75" fontSize="4" textAnchor="end" fill="#64748b" fontWeight="bold">Chute</text>
-                             <text x="4" y="25" fontSize="4" textAnchor="end" fill="#64748b" fontWeight="bold">Drible</text>
-                           </svg>
+
+                  {showModalidadePicker ? (
+                    <div className="py-2">
+                      {student.modalidades && student.modalidades.length > 0 ? (
+                        <div className="row g-3">
+                          {student.modalidades.map(mod => (
+                            <div key={mod} className="col-md-4">
+                              <button 
+                                className="btn btn-outline-primary w-100 p-4 rounded-4 shadow-sm fw-bold border-2 d-flex flex-column align-items-center justify-content-center gap-2 h-100"
+                                onClick={() => navigate(`/analises?alunoId=${id}&novaAnalise=true&modalidade=${encodeURIComponent(mod)}`)}
+                              >
+                                <i className="bi bi-activity fs-2"></i>
+                                {mod}
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-center py-5">
+                          <i className="bi bi-exclamation-circle fs-1 text-muted mb-3 d-block"></i>
+                          <p className="text-muted fs-5">Este atleta não possui modalidades cadastradas no perfil.</p>
+                          <button className="btn btn-primary mt-3 rounded-pill fw-bold" onClick={() => { setActiveTab('perfil'); setShowModalidadePicker(false); setIsEditing(true); }}>
+                            Adicionar Modalidade
+                          </button>
+                        </div>
+                      )}
                     </div>
-
-                    <div className="col-md-6">
-                      <div className="card-flat bg-light border p-4 h-100">
-                        <h6 className="fw-bold text-blue-dark mb-4 text-center">Frequência e Assiduidade</h6>
-                        
-                        <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
-                          <div>
-                            <span className="d-block text-muted small fw-bold">Presenças (Últimos 30 dias)</span>
-                            <span className="fs-3 fw-bold text-success">24</span>
-                          </div>
-                          <div>
-                            <span className="d-block text-muted small fw-bold">Faltas</span>
-                            <span className="fs-3 fw-bold text-danger">3</span>
+                  ) : (
+                    <>
+                  {hasAnalyses ? (
+                    <div>
+                      {Object.keys(groupedAnalyses).map(mod => (
+                        <div key={mod} className="mb-4">
+                          <h6 className="fw-bold text-secondary mb-3 pb-2 border-bottom d-flex align-items-center">
+                            <i className="bi bi-bookmark-fill me-2 text-primary"></i>
+                            {mod}
+                          </h6>
+                          <div className="row g-3">
+                            {groupedAnalyses[mod].map(analise => (
+                              <div key={analise._id} className="col-md-6 col-lg-4">
+                                <div className="card-flat p-3 border h-100 bg-white shadow-sm">
+                                  <div className="d-flex justify-content-between mb-2 align-items-center">
+                                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle">{analise.tipo}</span>
+                                    <span className="text-muted small fw-medium">
+                                      <i className="bi bi-calendar3 me-1"></i>
+                                      {new Date(analise.dataAvaliacao || analise.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                    </span>
+                                  </div>
+                                  <h6 className="fw-bold text-blue-dark mb-2 mt-3 text-truncate">{analise.subtipo ? `Análise de ${analise.subtipo}` : 'Análise Geral'}</h6>
+                                  <div className="text-muted small mb-3">
+                                    <i className="bi bi-person-badge me-1"></i>
+                                    Treinador: {analise.treinador ? analise.treinador.nome : 'Não informado'}
+                                  </div>
+                                  <button className="btn btn-outline-secondary btn-sm w-100 fw-bold" onClick={() => navigate(`/analises/${analise._id}`)}>
+                                    Visualizar
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-
-                        <div className="mt-4">
-                          <span className="d-block text-muted small fw-bold mb-2">Taxa de Participação</span>
-                          <div className="progress" style={{ height: '20px' }}>
-                            <div className="progress-bar bg-success fw-bold" role="progressbar" style={{ width: '88%' }}>88%</div>
-                          </div>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: ANOTAÇÕES */}
-              {activeTab === 'anotacoes' && (
-                <div>
-                  <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                     <h5 className="fw-bold text-blue-dark mb-0">Coach Notes (Diário do Treinador)</h5>
-                     <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold">
-                       <i className="bi bi-plus-lg me-2"></i>Nova Anotação
-                     </button>
-                  </div>
-
-                  <div className="d-flex flex-column gap-3">
-                    <div className="p-3 bg-light rounded-4 border border-start border-4 border-primary">
-                      <div className="d-flex justify-content-between mb-2">
-                        <span className="fw-bold text-blue-dark">Desempenho no Jogo Treino</span>
-                        <span className="text-muted small">Hoje, 14:30</span>
-                      </div>
-                      <p className="mb-0 text-secondary">O aluno mostrou grande evolução na recomposição defensiva, mas ainda precisa trabalhar o pé não dominante.</p>
+                  ) : (
+                    <div className="text-center py-5 bg-light rounded-4 border border-dashed">
+                      <i className="bi bi-clipboard-x fs-1 text-muted mb-3 d-block"></i>
+                      <p className="text-muted fs-5 mb-0">Este atleta ainda não possui análises registradas.</p>
                     </div>
-
-                    <div className="p-3 bg-light rounded-4 border border-start border-4 border-warning">
-                      <div className="d-flex justify-content-between mb-2">
-                        <span className="fw-bold text-blue-dark">Aviso de Lesão Leve</span>
-                        <span className="text-muted small">12/07/2026</span>
-                      </div>
-                      <p className="mb-0 text-secondary">Torção leve no tornozelo direito. Ficará afastado dos treinos com bola por 3 dias. Encaminhado ao departamento médico.</p>
-                    </div>
-
-                    <div className="p-3 bg-light rounded-4 border border-start border-4 border-secondary">
-                      <div className="d-flex justify-content-between mb-2">
-                        <span className="fw-bold text-blue-dark">Avaliação Inicial</span>
-                        <span className="text-muted small">01/02/2026</span>
-                      </div>
-                      <p className="mb-0 text-secondary">Aluno inserido no programa. Boa estrutura física, mas requer adaptação tática ao esquema da equipe.</p>
-                    </div>
-                  </div>
+                  )}
+                    </>
+                  )}
                 </div>
               )}
 

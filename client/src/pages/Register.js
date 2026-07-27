@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Register = () => {
+const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCancel = null }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -13,14 +13,13 @@ const Register = () => {
     email: '',
     senha: '',
     confirmarSenha: '',
-    tipo: 'Treinador', // Apenas Treinador ou estudante
+    tipo: defaultType || 'Treinador', // Apenas Treinador ou estudante
 
     // Etapa 2 - Comuns / Gerais
     telefone: '',
     
     sexo: 'Feminino',
     dataNascimento: '',
-    idade: '',
     cpf: '',
     endereco: '',
     turma: '',
@@ -154,7 +153,11 @@ const Register = () => {
       const data = await response.json();
 
       if (response.ok) {
-        navigate('/login');
+        if (isEmbedded && onSuccess) {
+          onSuccess();
+        } else {
+          navigate('/login');
+        }
       } else {
         setError(data.message || data.mensagem || 'Erro ao realizar cadastro');
         setStep(1); 
@@ -167,8 +170,8 @@ const Register = () => {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-main py-5">
-      <div className="card-flat p-5 shadow-sm" style={{ width: '100%', maxWidth: '850px', borderRadius: '16px' }}>
+    <div className={isEmbedded ? "w-100" : "min-vh-100 d-flex align-items-center justify-content-center bg-main py-5"}>
+      <div className={`card-flat p-5 ${!isEmbedded ? 'shadow-sm' : 'border'}`} style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', borderRadius: '16px', backgroundColor: isEmbedded ? '#f8fafc' : '#ffffff' }}>
         
         <div className="text-center mb-5">
           <h2 className="fw-bold text-blue-dark">Criação de Conta</h2>
@@ -191,7 +194,7 @@ const Register = () => {
             <div className="row g-3 mb-4">
               <div className="col-md-12">
                 <label className="form-label fw-bold small text-blue-dark">Tipo de Usuário *</label>
-                <select className="form-select bg-light border-0" name="tipo" value={formData.tipo} onChange={handleInputChange}>
+                <select className="form-select bg-light border-0" name="tipo" value={formData.tipo} onChange={handleInputChange} disabled={isEmbedded}>
                   <option value="Treinador">Treinador</option>
                   <option value="estudante">Estudante / Atleta</option>
                 </select>
@@ -215,7 +218,11 @@ const Register = () => {
             </div>
 
             <div className="d-flex justify-content-between mt-5">
-              <Link to="/login" className="btn btn-outline-secondary fw-bold px-4 rounded-3">Cancelar</Link>
+              {isEmbedded && onCancel ? (
+                <button type="button" onClick={onCancel} className="btn btn-outline-secondary fw-bold px-4 rounded-3">Cancelar</button>
+              ) : (
+                <Link to="/login" className="btn btn-outline-secondary fw-bold px-4 rounded-3">Cancelar</Link>
+              )}
               <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <i className="bi bi-arrow-right ms-2"></i></button>
             </div>
           </div>
@@ -254,13 +261,9 @@ const Register = () => {
                   <option value="Masculino">Masculino</option>
                 </select>
               </div>
-              <div className="col-md-3">
+              <div className="col-md-6">
                 <label className="form-label fw-bold small text-muted">Data de Nascimento *</label>
                 <input type="date" className="form-control bg-light border-0" name="dataNascimento" value={formData.dataNascimento} onChange={handleInputChange} />
-              </div>
-              <div className="col-md-3">
-                <label className="form-label fw-bold small text-muted">Idade (Opcional)</label>
-                <input type="number" className="form-control bg-light border-0" name="idade" value={formData.idade} onChange={handleInputChange} placeholder="Ex: 16" min="1" max="100" />
               </div>
               
               <div className="col-md-4">
@@ -384,7 +387,6 @@ const Register = () => {
                   <>
                     <div className="col-6"><strong>Gênero:</strong> {formData.sexo}</div>
                     <div className="col-6"><strong>Data Nasc.:</strong> {formData.dataNascimento ? new Date(formData.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</div>
-                    <div className="col-6"><strong>Idade:</strong> {formData.idade || '-'}</div>
                     <div className="col-6"><strong>CPF:</strong> {formData.cpf}</div>
                     <div className="col-6"><strong>Matrícula:</strong> {formData.matricula}</div>
                     <div className="col-6"><strong>Telefone:</strong> {formData.telefone}</div>

@@ -103,6 +103,8 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
   const [mensagem, setMensagem] = useState('');
   const [searchParams] = useSearchParams();
   const alunoIdParam = searchParams.get('alunoId');
+  const novaAnaliseParam = searchParams.get('novaAnalise');
+  const modalidadeParam = searchParams.get('modalidade');
   
   const userType = localStorage.getItem('tipo');
 
@@ -135,6 +137,17 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
     fetchStudents();
     fetchAnalyses();
   }, []);
+
+  useEffect(() => {
+    if (novaAnaliseParam === 'true') {
+      setShowForm(true);
+      setFormData(prev => ({
+        ...prev,
+        aluno: alunoIdParam || prev.aluno,
+        modalidade: modalidadeParam || prev.modalidade
+      }));
+    }
+  }, [novaAnaliseParam, alunoIdParam, modalidadeParam]);
 
   const fetchStudents = async () => {
     try {

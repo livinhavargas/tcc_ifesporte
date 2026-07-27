@@ -8,10 +8,31 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
     horaInicial: '', 
     horaFinal: '',
     localNome: '', 
+    localNome: '', 
     modalidade: '',
+    categoria: '',
     descricao: '',
     eventoObrigatorio: false
   });
+
+  const [esportes, setEsportes] = useState([]);
+
+  useEffect(() => {
+    const fetchEsportes = async () => {
+      try {
+        const response = await fetch('/api/sports', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setEsportes(data);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar modalidades:", err);
+      }
+    };
+    fetchEsportes();
+  }, []);
 
   useEffect(() => {
     if (show && eventData) {
@@ -23,13 +44,14 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
         horaFinal: eventData.horaFinal || (eventData.end ? new Date(eventData.end).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : ''),
         localNome: eventData.localNome || eventData.local || '',
         modalidade: eventData.modalidade || '',
+        categoria: eventData.categoria || '',
         descricao: eventData.descricao || '',
         eventoObrigatorio: eventData.eventoObrigatorio || false
       });
     } else if (show && !eventData) {
       setFormData({
         titulo: '', tipo: 'Treino', data: '', horaInicial: '', horaFinal: '',
-        localNome: '', modalidade: '', descricao: '', eventoObrigatorio: false
+        localNome: '', modalidade: '', categoria: '', descricao: '', eventoObrigatorio: false
       });
     }
   }, [show, eventData]);
@@ -86,8 +108,6 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
                     <option value="Treino">Treino</option>
                     <option value="Amistoso">Amistoso</option>
                     <option value="Campeonato">Campeonato</option>
-                    <option value="Reunião">Reunião</option>
-                    <option value="Avaliação">Avaliação</option>
                     <option value="Outro">Outro</option>
                   </select>
                 </div>
@@ -113,9 +133,23 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
                   </div>
                 </div>
                 <div className="col-md-6">
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-people text-muted fs-5 me-2"></i>
-                    <input type="text" className="form-control border-0 bg-light" name="modalidade" value={formData.modalidade} onChange={handleChange} placeholder="Equipe / Modalidade" readOnly={isReadOnly} />
+                  <div className="d-flex align-items-center gap-2">
+                    <div className="flex-grow-1 d-flex align-items-center">
+                      <i className="bi bi-people text-muted fs-5 me-2"></i>
+                      <select className="form-select border-0 bg-light" name="modalidade" value={formData.modalidade} onChange={handleChange} disabled={isReadOnly}>
+                        <option value="">Selecione a Modalidade</option>
+                        {esportes.map(esp => (
+                          <option key={esp._id} value={esp.nome}>{esp.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ width: '130px' }}>
+                      <select className="form-select border-0 bg-light" name="categoria" value={formData.categoria} onChange={handleChange} disabled={isReadOnly}>
+                        <option value="">Categoria</option>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Masculino">Masculino</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
