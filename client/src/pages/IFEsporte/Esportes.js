@@ -43,11 +43,23 @@ const Esportes = () => {
     { id: 'volei-praia', nome: 'Vôlei de Praia', icone: 'bi-sun' }
   ];
 
+  const checkMatch = (esp, keyword) => {
+    const e = (esp || '').toLowerCase();
+    const k = (keyword || '').toLowerCase();
+    if (e.includes(k)) return true;
+    
+    if (k === 'atletismo') {
+      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lançamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distância', 'altura', 'triplo', 'peso', 'disco', 'dardo'];
+      return termos.some(t => e.includes(t));
+    }
+    return false;
+  };
+
   const getCount = (nome) => {
     return students.filter(student => {
       if (student.sexo !== genero) return false;
       const arr = student.modalidades?.length > 0 ? student.modalidades : (student.esportes || []);
-      return arr.some(esp => esp.includes(nome));
+      return arr.some(esp => checkMatch(esp, nome));
     }).length;
   };
 

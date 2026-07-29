@@ -41,6 +41,23 @@ const SportDetail = () => {
   // Tabs for the final view: 'alunos', 'analises', 'cronogramas'
   const [activeTab, setActiveTab] = useState('alunos');
 
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterFaixaEtaria, setFilterFaixaEtaria] = useState('Todos');
+  const [filterTurma, setFilterTurma] = useState('Todas');
+
+  const isMinor = (dob) => {
+    if (!dob) return false;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age < 18;
+  };
+
   React.useEffect(() => {
     fetchStudents();
     fetchCronogramas();
@@ -48,6 +65,13 @@ const SportDetail = () => {
 
   const getCurrentModalidade = () => {
     return selectedCategory ? (selectedCategory.sub ? `${nome} - ${selectedCategory.cat} - ${selectedCategory.sub}` : `${nome} - ${selectedCategory.cat}`) : nome;
+  };
+
+  const getPageTitle = () => {
+    if (selectedCategory) {
+      return selectedCategory.sub ? `${selectedCategory.cat} ${selectedCategory.sub}` : selectedCategory.cat;
+    }
+    return nome;
   };
 
   const handleGerarCronograma = async () => {
@@ -216,11 +240,47 @@ const SportDetail = () => {
     setActiveTab('alunos');
   };
 
+  const checkMatch = (esp, keyword) => {
+    const e = (esp || '').toLowerCase();
+    const k = (keyword || '').toLowerCase();
+    if (e.includes(k)) return true;
+    
+    const parts = k.split('-').map(p => p.trim());
+    
+    if (k === 'atletismo') {
+      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lançamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distância', 'altura', 'triplo', 'peso', 'disco', 'dardo'];
+      return termos.some(t => e.includes(t));
+    }
+    
+    if (parts.length === 2 && parts[0] === 'atletismo') {
+      const cat = parts[1];
+      if (cat.includes('corrida')) {
+        const termos = ['corrida', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento'];
+        return termos.some(t => e.includes(t));
+      }
+      if (cat.includes('salto')) {
+        const termos = ['salto', 'distância', 'altura', 'triplo'];
+        return termos.some(t => e.includes(t));
+      }
+      if (cat.includes('lançamento') || cat.includes('arremesso')) {
+        const termos = ['lançamento', 'arremesso', 'peso', 'disco', 'dardo'];
+        return termos.some(t => e.includes(t));
+      }
+    }
+    
+    if (parts.length === 3 && parts[0] === 'atletismo') {
+      const leaf = parts[2];
+      if (e.includes(leaf)) return true;
+    }
+    
+    return false;
+  };
+
   const countForNode = (keyword) => {
     return students.filter(s => {
       if (s.sexo !== genero) return false;
       const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
-      return arr.some(esp => esp.includes(keyword));
+      return arr.some(esp => checkMatch(esp, keyword));
     }).length;
   };
 
@@ -230,11 +290,29 @@ const SportDetail = () => {
       keyword = `${nome} - ${selectedCategory.cat}`;
       if (selectedCategory.sub) keyword += ` - ${selectedCategory.sub}`;
     }
-    return students.filter(s => {
+    let filtered = students.filter(s => {
       if (s.sexo !== genero) return false;
       const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
-      return arr.some(esp => esp.includes(keyword));
+      return arr.some(esp => checkMatch(esp, keyword));
     });
+
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter(s => 
+        (s.nome || '').toLowerCase().includes(lower) || 
+        (s.matricula || '').toLowerCase().includes(lower)
+      );
+    }
+    if (filterFaixaEtaria === 'Menor de idade') {
+      filtered = filtered.filter(s => s.dataNascimento ? isMinor(s.dataNascimento) : false);
+    } else if (filterFaixaEtaria === 'Maior de idade') {
+      filtered = filtered.filter(s => s.dataNascimento ? !isMinor(s.dataNascimento) : false);
+    }
+    if (filterTurma !== 'Todas') {
+      filtered = filtered.filter(s => (s.turma || s.serie || '') === filterTurma);
+    }
+
+    return filtered;
   };
 
   // Imagem 8 & 9 (Menu de categorias)
@@ -303,16 +381,12 @@ const SportDetail = () => {
         <div className="d-flex align-items-center">
           <i className="bi bi-person-walking me-3" style={{ fontSize: '4rem', color: '#295593' }}></i>
           <div>
-            <h1 className="fw-bold text-blue-dark mb-0 lh-1">{nome}</h1>
+            <h1 className="fw-bold text-blue-dark mb-0 lh-1">{getPageTitle()}</h1>
             <div className="text-blue-dark mt-1" style={{ fontSize: '1.2rem' }}>{genero}</div>
           </div>
         </div>
         <div className="d-flex flex-column align-items-end">
           <div className="d-flex align-items-center mb-2">
-            <div className="text-end me-3">
-              <h4 className="fw-bold text-orange mb-0">{selectedCategory ? selectedCategory.cat : nome}</h4>
-              <div className="text-blue-dark fw-bold">{selectedCategory && selectedCategory.sub ? selectedCategory.sub : 'Geral'}</div>
-            </div>
             <button className="btn btn-blue-dark text-white rounded-circle d-flex align-items-center justify-content-center bg-blue-dark" style={{width:'45px', height:'45px'}} onClick={() => hasHierarchy ? setView('categories') : navigate('/esportes')}>
                <i className="bi bi-arrow-left fs-4"></i>
             </button>
@@ -351,28 +425,104 @@ const SportDetail = () => {
         {/* Conteúdo Dinâmico */}
         <div className="flex-grow-1">
           {activeTab === 'alunos' && (
-            <div className="card-flat p-4 shadow-sm border">
-              <h4 className="fw-bold text-blue-dark mb-4">Lista de Alunos</h4>
-              <div className="d-flex flex-column gap-3">
-                {getFilteredStudents().length > 0 ? getFilteredStudents().map(aluno => (
-                  <div key={aluno._id} className="d-flex align-items-center p-3 rounded-4 bg-light border cursor-pointer hover-bg-light" onClick={() => navigate(`/alunos/${aluno._id}`)}>
-                    {aluno.foto ? (
-                      <img src={aluno.foto} alt="Perfil" className="rounded-circle shadow-sm me-3" style={{width: '50px', height: '50px', objectFit: 'cover'}} />
-                    ) : (
-                      <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 text-orange bg-blue-dark" style={{ width: '50px', height: '50px', fontSize: '1.2rem' }}>
-                        {aluno.nome.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <h5 className="fw-bold text-blue-dark mb-0">{aluno.nome}</h5>
-                      <div className="text-muted small">{aluno.matricula} - {aluno.serie || 'S/ Turma'}</div>
+            <div className="d-flex flex-column gap-4">
+              {/* Filtros e Busca */}
+              <div className="card-flat p-4 shadow-sm border rounded-4 bg-white">
+                <div className="row g-3 align-items-end">
+                  <div className="col-md-6">
+                    <label className="form-label small fw-bold text-muted mb-1">Pesquisar Atleta</label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-search"></i></span>
+                      <input 
+                        type="text" 
+                        className="form-control bg-light border-start-0 ps-0" 
+                        placeholder="Pesquisar por nome ou matrícula..." 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                      />
                     </div>
                   </div>
-                )) : (
-                  <div className="text-center text-muted py-5">
-                    Nenhum aluno encontrado para esta modalidade.
+                  <div className="col-md-3">
+                    <label className="form-label small fw-bold text-muted mb-1">Faixa Etária</label>
+                    <div className="d-flex align-items-center bg-light rounded px-3 border" style={{ height: '38px' }}>
+                      <select 
+                        className="form-select form-select-sm border-0 bg-transparent shadow-none w-100 p-0" 
+                        value={filterFaixaEtaria} 
+                        onChange={(e) => setFilterFaixaEtaria(e.target.value)}
+                      >
+                        <option value="Todos">Todos</option>
+                        <option value="Menor de idade">Menor de idade</option>
+                        <option value="Maior de idade">Maior de idade</option>
+                      </select>
+                    </div>
                   </div>
-                )}
+                  <div className="col-md-3">
+                    <label className="form-label small fw-bold text-muted mb-1">Turma</label>
+                    <div className="d-flex align-items-center bg-light rounded px-3 border" style={{ height: '38px' }}>
+                      <select 
+                        className="form-select form-select-sm border-0 bg-transparent shadow-none w-100 p-0" 
+                        value={filterTurma} 
+                        onChange={(e) => setFilterTurma(e.target.value)}
+                      >
+                        <option value="Todas">Todas</option>
+                        {['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lista de Alunos */}
+              <div className="card-flat p-4 shadow-sm border rounded-4 bg-white">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h4 className="fw-bold text-blue-dark mb-0">Alunos Cadastrados</h4>
+                  <span className="badge bg-blue-dark fs-6 rounded-pill px-3 py-2">{getFilteredStudents().length} atletas</span>
+                </div>
+                
+                <div className="row g-4">
+                  {getFilteredStudents().length > 0 ? getFilteredStudents().map(aluno => (
+                    <div key={aluno._id} className="col-md-6 col-xl-4">
+                      <div 
+                        className="card-flat p-4 h-100 position-relative shadow-sm cursor-pointer hover-bg-light border" 
+                        onClick={() => navigate(`/alunos/${aluno._id}`)}
+                        style={{ transition: '0.2s', borderTop: `4px solid #3b82f6` }}
+                      >
+                        <div className="d-flex align-items-center mb-3">
+                          {aluno.foto ? (
+                            <img src={aluno.foto} alt="Perfil" className="rounded-circle shadow-sm me-3 flex-shrink-0" style={{width: '64px', height: '64px', objectFit: 'cover'}} />
+                          ) : (
+                            <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm bg-blue-dark text-white flex-shrink-0" style={{ width: '64px', height: '64px', fontSize: '1.5rem' }}>
+                              {aluno.nome.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="pe-2">
+                            <h5 className="fw-bold text-blue-dark mb-1 text-truncate" style={{maxWidth: '100%'}}>{aluno.nome}</h5>
+                            <div className="text-muted small fw-bold">{aluno.turma || aluno.serie || 'S/ Turma'} {aluno.matricula ? `• ${aluno.matricula}` : ''}</div>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+                          <span className="text-muted small">
+                            <i className="bi bi-calendar3 me-1"></i>
+                            {aluno.dataNascimento ? new Date(aluno.dataNascimento).toLocaleDateString('pt-BR') : 'Sem data'}
+                          </span>
+                          {aluno.dataNascimento && (
+                            <span className={`badge ${isMinor(aluno.dataNascimento) ? 'bg-orange-active text-blue-dark' : 'bg-secondary'}`}>
+                              {isMinor(aluno.dataNascimento) ? 'Menor' : 'Maior'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="col-12 text-center py-5">
+                      <i className="bi bi-search text-muted opacity-50 mb-3" style={{ fontSize: '3rem' }}></i>
+                      <h5 className="fw-bold text-blue-dark">Nenhum atleta encontrado.</h5>
+                      <p className="text-muted">Ajuste os filtros ou o termo de pesquisa.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

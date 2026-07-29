@@ -373,9 +373,9 @@ const Alunos = () => {
                     {/* Header: Avatar and Name */}
                     <div className="d-flex align-items-center mb-3 mt-2">
                       {student.foto ? (
-                        <img src={student.foto} alt="Perfil" className="rounded-circle shadow-sm me-3" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
+                        <img src={student.foto} alt="Perfil" className="rounded-circle shadow-sm me-3 flex-shrink-0" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
                       ) : (
-                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm bg-blue-dark text-white" style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
+                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm bg-blue-dark text-white flex-shrink-0" style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
                           {student.nome ? student.nome.charAt(0).toUpperCase() : 'A'}
                         </div>
                       )}
