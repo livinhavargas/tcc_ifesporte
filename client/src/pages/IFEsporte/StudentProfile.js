@@ -13,7 +13,7 @@ const StudentProfile = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [mensagem, setMensagem] = useState('');
-  const [activeTab, setActiveTab] = useState('perfil'); // perfil, estatisticas, anotacoes
+  const [activeTab, setActiveTab] = useState('perfil'); // perfil, estatisticas
   const [showModalidadePicker, setShowModalidadePicker] = useState(false);
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
@@ -58,7 +58,6 @@ const StudentProfile = () => {
     e.preventDefault();
     setMensagem('');
     try {
-      // Sincroniza esportes/modalidades
       const payload = { ...student, esportes: student.modalidades };
 
       const response = await fetch(`/api/students/${id}`, {
@@ -80,18 +79,6 @@ const StudentProfile = () => {
     } catch (error) {
       setMensagem('Erro de conexão ao servidor.');
     }
-  };
-
-  const isMinor = (dob) => {
-    if (!dob) return false;
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age < 18;
   };
 
   const calculateAge = (dob) => {
@@ -138,316 +125,462 @@ const StudentProfile = () => {
   if (loading) return <Layout><div className="text-center py-5"><div className="spinner-border text-primary"></div></div></Layout>;
   if (!student) return <Layout><div className="text-center py-5">Aluno não encontrado.</div></Layout>;
 
+  const fieldStyle = isEditing ? {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
+    border: '1.5px solid var(--border)',
+    fontSize: '0.875rem',
+    fontFamily: 'var(--font)',
+    outline: 'none',
+    transition: 'all var(--transition-fast)',
+    background: 'var(--bg)',
+    minHeight: '44px'
+  } : {
+    width: '100%',
+    padding: '10px 0',
+    border: 'none',
+    borderBottom: '1px dashed var(--border)',
+    borderRadius: 0,
+    fontSize: '0.9375rem',
+    fontWeight: '600',
+    color: 'var(--text)',
+    background: 'transparent',
+    minHeight: 'auto',
+    pointerEvents: 'none'
+  };
+
   return (
     <Layout>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div className="d-flex align-items-center">
-          <button className="btn btn-light rounded-circle shadow-sm me-4 d-flex align-items-center justify-content-center text-muted hover-bg-light" style={{width:'45px', height:'45px'}} onClick={() => navigate('/alunos')}>
-            <i className="bi bi-arrow-left"></i>
-          </button>
-          <div>
-            <h2 className="fw-bold text-blue-dark mb-0">Informações do Atleta</h2>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        {/* Top Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }} className="d-none-print">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button className="btn btn-secondary rounded-circle" style={{ width: '42px', height: '42px', padding: 0 }} onClick={() => navigate('/alunos')}>
+              <i className="bi bi-arrow-left" style={{ fontSize: '1rem' }}></i>
+            </button>
+            <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Informações do Atleta</h2>
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button className="btn btn-outline-secondary" onClick={() => window.print()}>
+              <i className="bi bi-printer-fill me-2"></i>Exportar Ficha (PDF)
+            </button>
+            {userType !== 'estudante' && (
+              <button className="btn btn-outline-danger" onClick={handleDelete}>
+                Excluir Atleta
+              </button>
+            )}
           </div>
         </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-outline-primary shadow-sm fw-bold rounded-pill px-4" onClick={() => window.print()}>
-            <i className="bi bi-printer-fill me-2"></i>Exportar Ficha (PDF)
-          </button>
-          {userType !== 'estudante' && (
-            <button className="btn btn-outline-danger shadow-sm fw-bold rounded-pill px-4" onClick={handleDelete}>
-              Excluir Atleta
-            </button>
-          )}
-        </div>
-      </div>
 
-      {mensagem && <div className={`alert ${mensagem.includes('✅') ? 'alert-success' : 'alert-danger'} fw-bold rounded-3 shadow-sm`}>{mensagem}</div>}
+        {mensagem && (
+          <div style={{
+            background: mensagem.includes('✅') ? 'var(--success-light)' : 'var(--error-light)',
+            color: mensagem.includes('✅') ? '#065F46' : '#991B1B',
+            borderRadius: 'var(--radius-md)',
+            padding: '12px 16px',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            marginBottom: '24px',
+            display: 'flex', alignItems: 'center', gap: '8px'
+          }}>
+            <i className={`bi ${mensagem.includes('✅') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`}></i>{mensagem}
+          </div>
+        )}
 
-      <div className="row g-4">
-        {/* Lado Esquerdo - Info Resumo */}
-        <div className="col-lg-4">
-          <div className="card-flat p-4 text-center h-100 shadow-sm border-0 position-relative" style={{ borderTop: `5px solid #3b82f6` }}>
-            
-            <div className="d-inline-block position-relative mb-4 mt-4">
-              <div className="d-flex align-items-center justify-content-center bg-blue-dark text-white rounded-circle shadow-sm mb-2" style={{ width: '150px', height: '150px', fontSize: '3rem', margin: '0 auto', overflow: 'hidden' }}>
-                {student.foto ? (
-                  <img src={student.foto} alt="Perfil" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+        <div className="row g-4">
+          {/* Lado Esquerdo - Info Resumo */}
+          <div className="col-lg-4">
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-xl)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)',
+              padding: '32px',
+              textAlign: 'center',
+              height: '100%'
+            }}>
+              
+              <div style={{ display: 'inline-block', position: 'relative', marginBottom: '24px' }}>
+                <div style={{
+                  width: '140px', height: '140px', borderRadius: '50%',
+                  background: 'var(--primary)', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '3rem', fontWeight: 700, margin: '0 auto', overflow: 'hidden',
+                  border: '4px solid var(--bg)'
+                }}>
+                  {student.foto ? (
+                    <img src={student.foto} alt="Perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    student.nome.charAt(0).toUpperCase()
+                  )}
+                </div>
+              </div>
+              
+              <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px', fontSize: '1.25rem' }}>{student.nome}</h4>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginBottom: '24px' }}>
+                {student.turma || student.serie || 'S/ Turma'} {student.matricula ? `• ${student.matricula}` : ''}
+              </p>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px', marginBottom: '28px' }}>
+                 {student.modalidades && student.modalidades.map((m, i) => (
+                   <span key={i} style={{
+                     background: 'var(--primary-light)',
+                     color: 'var(--primary)',
+                     padding: '4px 12px',
+                     borderRadius: 'var(--radius-full)',
+                     fontSize: '0.75rem',
+                     fontWeight: 600
+                   }}>{m}</span>
+                 ))}
+              </div>
+
+              {(student.email || student.cpf) && (
+                <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '16px', textAlign: 'left', marginBottom: '16px' }}>
+                  {student.email && <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '8px' }}><i className="bi bi-envelope-fill" style={{ color: 'var(--primary)' }}></i> <strong>{student.email}</strong></div>}
+                  {student.cpf && <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}><i className="bi bi-person-vcard-fill" style={{ color: 'var(--success)' }}></i> <strong>{student.cpf}</strong></div>}
+                </div>
+              )}
+
+              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '16px', textAlign: 'left' }}>
+                <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '12px', fontSize: '0.8125rem' }}>Contato de Emergência</h6>
+                {student.nomeResponsavel || student.telefoneResponsavel ? (
+                  <>
+                    {student.nomeResponsavel && <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}><i className="bi bi-person-fill me-2"></i> {student.nomeResponsavel}</div>}
+                    {student.telefoneResponsavel && <div style={{ fontSize: '0.8125rem', color: 'var(--error)', fontWeight: 600 }}><i className="bi bi-telephone-plus-fill me-2"></i> {student.telefoneResponsavel}</div>}
+                  </>
                 ) : (
-                  student.nome.charAt(0).toUpperCase()
+                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Nenhum contato de emergência.</div>
                 )}
               </div>
             </div>
-            
-            <h4 className="fw-bold text-blue-dark mb-1">{student.nome}</h4>
-            <p className="text-muted mb-4">{student.turma || student.serie || 'S/ Turma'} {student.matricula ? `• ${student.matricula}` : ''}</p>
-
-            <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
-               {student.modalidades && student.modalidades.map((m, i) => <span key={i} className="badge bg-orange-light text-orange border border-orange px-2 py-1">{m}</span>)}
-            </div>
-
-            {(student.email || student.cpf) && (
-              <div className="bg-light rounded-4 p-4 text-start mb-3 border">
-                {student.email && <div className="mb-2"><i className="bi bi-envelope-fill me-2 text-primary"></i> <strong>{student.email}</strong></div>}
-                {student.cpf && <div><i className="bi bi-person-vcard-fill me-2 text-success"></i> <strong>{student.cpf}</strong></div>}
-              </div>
-            )}
-
-            <div className="bg-light rounded-4 p-4 text-start border">
-              <h6 className="fw-bold text-blue-dark mb-2">Contato de Emergência</h6>
-              {student.nomeResponsavel || student.telefoneResponsavel ? (
-                <>
-                  {student.nomeResponsavel && <div className="text-secondary mb-1"><i className="bi bi-person-fill me-2"></i> {student.nomeResponsavel}</div>}
-                  {student.telefoneResponsavel && <div className="text-danger fw-bold"><i className="bi bi-telephone-plus-fill me-2"></i> {student.telefoneResponsavel}</div>}
-                </>
-              ) : (
-                <div className="text-muted small">Nenhum contato de emergência cadastrado.</div>
-              )}
-            </div>
           </div>
-        </div>
 
-        {/* Lado Direito - Tabs Content */}
-        <div className="col-lg-8">
-          <div className="card-flat p-0 h-100 shadow-sm border-0 overflow-hidden">
-            
-            {/* Tabs Navigation */}
-            <ul className="nav nav-tabs px-4 pt-4 border-bottom-0 bg-light">
-              <li className="nav-item">
-                <button className={`nav-link fw-bold ${activeTab === 'perfil' ? 'active bg-white text-blue-dark border-bottom-0' : 'text-muted'}`} onClick={() => setActiveTab('perfil')}>
-                  <i className="bi bi-person-lines-fill me-2"></i> Perfil
-                </button>
-              </li>
-              <li className="nav-item">
-                <button className={`nav-link fw-bold ${activeTab === 'estatisticas' ? 'active bg-white text-blue-dark border-bottom-0' : 'text-muted'}`} onClick={() => setActiveTab('estatisticas')}>
-                  <i className="bi bi-graph-up-arrow me-2"></i> Análises
-                </button>
-              </li>
-            </ul>
-
-            <div className="p-4 bg-white" style={{ minHeight: '500px' }}>
+          {/* Lado Direito - Tabs Content */}
+          <div className="col-lg-8">
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-xl)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)',
+              overflow: 'hidden',
+              height: '100%'
+            }}>
               
-              {/* TAB 1: PERFIL & MÉDICO */}
-              {activeTab === 'perfil' && (
-                <form onSubmit={handleSave}>
-                  <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                     <h5 className="fw-bold text-blue-dark mb-0">Ficha Completa do Atleta</h5>
-                     {userType !== 'estudante' && !isEditing && (
-                       <button type="button" className="btn btn-outline-primary rounded-pill fw-bold px-3 btn-sm" onClick={() => setIsEditing(true)}>
-                         <i className="bi bi-pencil-fill me-2"></i>Editar Dados
-                       </button>
-                     )}
-                  </div>
+              {/* Tabs Navigation */}
+              <div style={{
+                background: 'var(--bg)',
+                padding: '16px 24px 0',
+                borderBottom: '1px solid var(--border-light)',
+                display: 'flex',
+                gap: '8px'
+              }} className="d-none-print">
+                <button 
+                  onClick={() => setActiveTab('perfil')}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+                    border: 'none',
+                    borderBottom: activeTab === 'perfil' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    background: activeTab === 'perfil' ? 'var(--bg-card)' : 'transparent',
+                    color: activeTab === 'perfil' ? 'var(--primary)' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <i className="bi bi-person-lines-fill"></i> Perfil
+                </button>
+                <button 
+                  onClick={() => setActiveTab('estatisticas')}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+                    border: 'none',
+                    borderBottom: activeTab === 'estatisticas' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    background: activeTab === 'estatisticas' ? 'var(--bg-card)' : 'transparent',
+                    color: activeTab === 'estatisticas' ? 'var(--primary)' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <i className="bi bi-graph-up-arrow"></i> Análises
+                </button>
+              </div>
 
-                  <div className="row g-4">
-                    {/* Bloco Escolar e Pessoal */}
-                    <div className="col-12"><h6 className="fw-bold text-orange mb-0"><i className="bi bi-mortarboard-fill me-2"></i>Dados Escolares e Pessoais</h6></div>
-                    
-                    <div className="col-md-6">
-                      <label className="form-label text-muted small fw-bold">Nome Completo</label>
-                      <input type="text" className="form-control bg-light" name="nome" value={student.nome || ''} onChange={handleInputChange} disabled={!isEditing} required />
-                    </div>
-                    <div className="col-md-3">
-                      <label className="form-label text-muted small fw-bold">Matrícula</label>
-                      <input type="text" className="form-control bg-light" name="matricula" value={student.matricula || ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    <div className="col-md-3">
-                      <label className="form-label text-muted small fw-bold">Turma</label>
-                      <select className="form-select bg-light" name="turma" value={student.turma || student.serie || ''} onChange={handleInputChange} disabled={!isEditing}>
-                        <option value="">Selecione...</option>
-                        {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="col-md-3">
-                      <label className="form-label text-muted small fw-bold">Data de Nasc.</label>
-                      <input type="date" className="form-control bg-light" name="dataNascimento" value={student.dataNascimento ? student.dataNascimento.split('T')[0] : ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    <div className="col-md-3">
-                      <label className="form-label text-muted small fw-bold">Idade</label>
-                      <input type="text" className="form-control bg-light" value={`${calculateAge(student.dataNascimento)} anos`} disabled />
-                    </div>
-                    <div className="col-md-3">
-                      <label className="form-label text-muted small fw-bold">Gênero</label>
-                      <select className="form-select bg-light" name="sexo" value={student.sexo || ''} onChange={handleInputChange} disabled={!isEditing} required>
-                        <option value="Feminino">Feminino</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Outro">Outro</option>
-                      </select>
-                    </div>
-                    <div className="col-md-3">
-                      <label className="form-label text-muted small fw-bold">CPF</label>
-                      <input type="text" className="form-control bg-light" name="cpf" value={student.cpf || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="000.000.000-00" />
-                    </div>
-                    
-                    <div className="col-md-12">
-                      <label className="form-label text-muted small fw-bold">Endereço</label>
-                      <input type="text" className="form-control bg-light" name="endereco" value={student.endereco || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Rua, Bairro, Nº" />
-                    </div>
-
-                    {/* Bloco do Responsável */}
-                    <div className="col-12 mt-4"><h6 className="fw-bold text-orange mb-0"><i className="bi bi-people-fill me-2"></i>Dados do Responsável</h6></div>
-                    
-                    <div className="col-md-6">
-                      <label className="form-label text-muted small fw-bold">Nome do Responsável</label>
-                      <input type="text" className="form-control bg-light" name="nomeResponsavel" value={student.nomeResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label text-muted small fw-bold">Telefone do Responsável</label>
-                      <input type="text" className="form-control bg-light" name="telefoneResponsavel" value={student.telefoneResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="(00) 00000-0000" />
-                    </div>
-
-                    {/* Bloco Físico/Esportivo */}
-                    <div className="col-12 mt-5"><h6 className="fw-bold text-orange mb-0"><i className="bi bi-activity me-2"></i>Antropometria e Esporte</h6></div>
-
-                    <div className="col-md-4">
-                      <label className="form-label text-muted small fw-bold">Peso (kg)</label>
-                      <input type="number" step="0.1" className="form-control bg-light" name="peso" value={student.peso || ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label text-muted small fw-bold">Altura (m)</label>
-                      <input type="number" step="0.01" className="form-control bg-light" name="altura" value={student.altura || ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label text-muted small fw-bold">Nº Camisa (Opcional)</label>
-                      <input type="text" className="form-control bg-light" name="numeroCamisa" value={student.numeroCamisa || ''} onChange={handleInputChange} disabled={!isEditing} />
-                    </div>
-                    
-                    <div className="col-12">
-                      <label className="form-label text-muted small fw-bold mb-2">Modalidades Inscritas</label>
-                      <div className={isEditing ? '' : 'pe-none opacity-75'}>
-                        <ModalidadesSelector 
-                          selected={student.modalidades || student.esportes || []}
-                          onChange={(novos) => setStudent({...student, modalidades: novos})}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Bloco Médico */}
-                    <div className="col-12 mt-5"><h6 className="fw-bold text-orange mb-0"><i className="bi bi-heart-pulse-fill me-2"></i>Histórico Médico</h6></div>
-
-                    <div className="col-md-6">
-                      <label className="form-label text-muted small fw-bold">Alergias</label>
-                      <textarea className="form-control bg-light" name="alergias" rows="2" value={student.alergias || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Nenhuma declarada..."></textarea>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label text-muted small fw-bold">Lesões Anteriores</label>
-                      <textarea className="form-control bg-light" name="lesoesAnteriores" rows="2" value={student.lesoesAnteriores || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Nenhuma declarada..."></textarea>
-                    </div>
-                    <div className="col-md-12">
-                      <label className="form-label text-muted small fw-bold">Observações Médicas / Restrições</label>
-                      <textarea className="form-control bg-light" name="observacoesMedicas" rows="2" value={student.observacoesMedicas || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Vazio..."></textarea>
-                    </div>
-
-                    {isEditing && (
-                      <div className="col-12 text-end mt-4 pt-3 border-top">
-                        <button type="button" className="btn btn-light me-3 px-4 fw-bold rounded-pill" onClick={() => { setIsEditing(false); fetchStudent(); }}>Cancelar</button>
-                        <button type="submit" className="btn btn-primary px-5 fw-bold rounded-pill">Salvar Alterações</button>
-                      </div>
-                    )}
-                  </div>
-                </form>
-              )}
-
-              {/* TAB 2: ANÁLISES */}
-              {activeTab === 'estatisticas' && (
-                <div>
-                  <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                     {showModalidadePicker ? (
-                       <h5 className="fw-bold text-blue-dark mb-0">Escolha a modalidade</h5>
-                     ) : (
-                       <h5 className="fw-bold text-blue-dark mb-0">Análises Realizadas</h5>
-                     )}
-                     
-                     <div className="d-flex gap-2">
-                       {showModalidadePicker ? (
-                         <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold border text-muted" onClick={() => setShowModalidadePicker(false)}>
-                           Cancelar
+              <div style={{ padding: '32px' }}>
+                
+                {/* TAB 1: PERFIL */}
+                {activeTab === 'perfil' && (
+                  <form onSubmit={handleSave}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '24px' }}>
+                       <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem' }}>Ficha Completa do Atleta</h5>
+                       {userType !== 'estudante' && !isEditing && (
+                         <button type="button" className="btn btn-outline-primary" onClick={() => setIsEditing(true)} style={{ padding: '6px 16px', fontSize: '0.8125rem' }}>
+                           <i className="bi bi-pencil-fill me-2"></i>Editar Dados
                          </button>
-                       ) : (
-                         <>
-                           {userType !== 'estudante' && (
-                             <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onClick={() => setShowModalidadePicker(true)}>
-                               <i className="bi bi-plus-lg me-1"></i> Nova Análise
-                             </button>
-                           )}
-                         </>
                        )}
-                     </div>
-                  </div>
+                    </div>
 
-                  {showModalidadePicker ? (
-                    <div className="py-2">
-                      {student.modalidades && student.modalidades.length > 0 ? (
-                        <div className="row g-3">
-                          {student.modalidades.map(mod => (
-                            <div key={mod} className="col-md-4">
-                              <button 
-                                className="btn btn-outline-primary w-100 p-4 rounded-4 shadow-sm fw-bold border-2 d-flex flex-column align-items-center justify-content-center gap-2 h-100"
-                                onClick={() => navigate(`/analises?alunoId=${id}&novaAnalise=true&modalidade=${encodeURIComponent(mod)}`)}
-                              >
-                                <i className="bi bi-activity fs-2"></i>
-                                {mod}
-                              </button>
-                            </div>
-                          ))}
+                    <div className="row g-4">
+                      {/* Section: Academic */}
+                      <div className="col-12"><h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dados Escolares e Pessoais</h6></div>
+                      
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small fw-bold">Nome Completo</label>
+                        <input type="text" name="nome" value={student.nome || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} required />
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small fw-bold">Matrícula</label>
+                        <input type="text" name="matricula" value={student.matricula || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small fw-bold">Turma</label>
+                        {isEditing ? (
+                          <select className="form-select" name="turma" value={student.turma || student.serie || ''} onChange={handleInputChange} style={fieldStyle}>
+                            <option value="">Selecione...</option>
+                            {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        ) : (
+                          <input type="text" value={student.turma || student.serie || '-'} readOnly style={fieldStyle} />
+                        )}
+                      </div>
+
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small fw-bold">Data de Nasc.</label>
+                        <input type="date" name="dataNascimento" value={student.dataNascimento ? student.dataNascimento.split('T')[0] : ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small fw-bold">Idade</label>
+                        <input type="text" value={`${calculateAge(student.dataNascimento)} anos`} disabled style={fieldStyle} />
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small fw-bold">Gênero</label>
+                        {isEditing ? (
+                          <select className="form-select" name="sexo" value={student.sexo || ''} onChange={handleInputChange} style={fieldStyle} required>
+                            <option value="Feminino">Feminino</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Outro">Outro</option>
+                          </select>
+                        ) : (
+                          <input type="text" value={student.sexo || '-'} readOnly style={fieldStyle} />
+                        )}
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small fw-bold">CPF</label>
+                        <input type="text" name="cpf" value={student.cpf || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="000.000.000-00" style={fieldStyle} />
+                      </div>
+                      
+                      <div className="col-md-12">
+                        <label className="form-label text-muted small fw-bold">Endereço</label>
+                        <input type="text" name="endereco" value={student.endereco || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Rua, Bairro, Nº" style={fieldStyle} />
+                      </div>
+
+                      {/* Section: Guardian */}
+                      <div className="col-12 mt-4"><h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dados do Responsável</h6></div>
+                      
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small fw-bold">Nome do Responsável</label>
+                        <input type="text" name="nomeResponsavel" value={student.nomeResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small fw-bold">Telefone do Responsável</label>
+                        <input type="text" name="telefoneResponsavel" value={student.telefoneResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="(00) 00000-0000" style={fieldStyle} />
+                      </div>
+
+                      {/* Section: Antropometria */}
+                      <div className="col-12 mt-4"><h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Antropometria e Esporte</h6></div>
+
+                      <div className="col-md-4">
+                        <label className="form-label text-muted small fw-bold">Peso (kg)</label>
+                        <input type="number" step="0.1" name="peso" value={student.peso || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted small fw-bold">Altura (m)</label>
+                        <input type="number" step="0.01" name="altura" value={student.altura || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted small fw-bold">Nº Camisa (Opcional)</label>
+                        <input type="text" name="numeroCamisa" value={student.numeroCamisa || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
+                      </div>
+                      
+                      <div className="col-12">
+                        <label className="form-label text-muted small fw-bold mb-2">Modalidades Inscritas</label>
+                        <div style={isEditing ? {} : { pointerEvents: 'none', opacity: 0.85 }}>
+                          <ModalidadesSelector 
+                            selected={student.modalidades || student.esportes || []}
+                            onChange={(novos) => setStudent({...student, modalidades: novos})}
+                          />
                         </div>
-                      ) : (
-                        <div className="text-center py-5">
-                          <i className="bi bi-exclamation-circle fs-1 text-muted mb-3 d-block"></i>
-                          <p className="text-muted fs-5">Este atleta não possui modalidades cadastradas no perfil.</p>
-                          <button className="btn btn-primary mt-3 rounded-pill fw-bold" onClick={() => { setActiveTab('perfil'); setShowModalidadePicker(false); setIsEditing(true); }}>
-                            Adicionar Modalidade
-                          </button>
+                      </div>
+
+                      {/* Section: Medical */}
+                      <div className="col-12 mt-4"><h6 style={{ fontWeight: 700, color: 'var(--error)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Histórico Médico</h6></div>
+
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small fw-bold">Alergias</label>
+                        {isEditing ? (
+                          <textarea name="alergias" rows="2" value={student.alergias || ''} onChange={handleInputChange} placeholder="Nenhuma declarada..." style={fieldStyle}></textarea>
+                        ) : (
+                          <div style={{ ...fieldStyle, minHeight: '38px', whiteSpace: 'pre-wrap' }}>{student.alergias || '-'}</div>
+                        )}
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small fw-bold">Lesões Anteriores</label>
+                        {isEditing ? (
+                          <textarea name="lesoesAnteriores" rows="2" value={student.lesoesAnteriores || ''} onChange={handleInputChange} placeholder="Nenhuma declarada..." style={fieldStyle}></textarea>
+                        ) : (
+                          <div style={{ ...fieldStyle, minHeight: '38px', whiteSpace: 'pre-wrap' }}>{student.lesoesAnteriores || '-'}</div>
+                        )}
+                      </div>
+                      <div className="col-md-12">
+                        <label className="form-label text-muted small fw-bold">Observações Médicas / Restrições</label>
+                        {isEditing ? (
+                          <textarea name="observacoesMedicas" rows="2" value={student.observacoesMedicas || ''} onChange={handleInputChange} placeholder="Vazio..." style={fieldStyle}></textarea>
+                        ) : (
+                          <div style={{ ...fieldStyle, minHeight: '38px', whiteSpace: 'pre-wrap' }}>{student.observacoesMedicas || '-'}</div>
+                        )}
+                      </div>
+
+                      {isEditing && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px', width: '100%', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                          <button type="button" className="btn btn-secondary" onClick={() => { setIsEditing(false); fetchStudent(); }}>Cancelar</button>
+                          <button type="submit" className="btn btn-primary">Salvar Alterações</button>
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <>
-                  {hasAnalyses ? (
-                    <div>
-                      {Object.keys(groupedAnalyses).map(mod => (
-                        <div key={mod} className="mb-4">
-                          <h6 className="fw-bold text-secondary mb-3 pb-2 border-bottom d-flex align-items-center">
-                            <i className="bi bi-bookmark-fill me-2 text-primary"></i>
-                            {mod}
-                          </h6>
-                          <div className="row g-3">
-                            {groupedAnalyses[mod].map(analise => (
-                              <div key={analise._id} className="col-md-6 col-lg-4">
-                                <div className="card-flat p-3 border h-100 bg-white shadow-sm">
-                                  <div className="d-flex justify-content-between mb-2 align-items-center">
-                                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle">{analise.tipo}</span>
-                                    <span className="text-muted small fw-medium">
-                                      <i className="bi bi-calendar3 me-1"></i>
-                                      {new Date(analise.dataAvaliacao || analise.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                                    </span>
-                                  </div>
-                                  <h6 className="fw-bold text-blue-dark mb-2 mt-3 text-truncate">{analise.subtipo ? `Análise de ${analise.subtipo}` : 'Análise Geral'}</h6>
-                                  <div className="text-muted small mb-3">
-                                    <i className="bi bi-person-badge me-1"></i>
-                                    Treinador: {analise.treinador ? analise.treinador.nome : 'Não informado'}
-                                  </div>
-                                  <button className="btn btn-outline-secondary btn-sm w-100 fw-bold" onClick={() => navigate(`/analises/${analise._id}`)}>
-                                    Visualizar
-                                  </button>
+                  </form>
+                )}
+
+                {/* TAB 2: ANÁLISES */}
+                {activeTab === 'estatisticas' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '24px' }}>
+                       <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem' }}>
+                         {showModalidadePicker ? 'Escolha a modalidade' : 'Análises Realizadas'}
+                       </h5>
+                       
+                       <div style={{ display: 'flex', gap: '8px' }}>
+                         {showModalidadePicker ? (
+                           <button className="btn btn-secondary" onClick={() => setShowModalidadePicker(false)} style={{ padding: '6px 16px', fontSize: '0.8125rem' }}>
+                             Cancelar
+                           </button>
+                         ) : (
+                           userType !== 'estudante' && (
+                             <button className="btn btn-primary" onClick={() => setShowModalidadePicker(true)} style={{ padding: '6px 16px', fontSize: '0.8125rem' }}>
+                               <i className="bi bi-plus-lg me-1"></i> Nova Análise
+                             </button>
+                           )
+                         )}
+                       </div>
+                    </div>
+
+                    {showModalidadePicker ? (
+                      <div style={{ padding: '8px 0' }}>
+                        {student.modalidades && student.modalidades.length > 0 ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
+                            {student.modalidades.map(mod => (
+                              <button 
+                                key={mod} 
+                                className="btn btn-outline-primary"
+                                style={{
+                                  padding: '24px',
+                                  borderRadius: 'var(--radius-lg)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: '12px',
+                                  height: '120px',
+                                  justifyContent: 'center'
+                                }}
+                                onClick={() => navigate(`/analises?alunoId=${id}&novaAnalise=true&modalidade=${encodeURIComponent(mod)}`)}
+                              >
+                                <i className="bi bi-activity" style={{ fontSize: '1.5rem' }}></i>
+                                <span>{mod}</span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ textAlign: 'center', padding: '40px 16px' }}>
+                            <i className="bi bi-exclamation-circle" style={{ fontSize: '2rem', color: 'var(--text-tertiary)', display: 'block', marginBottom: '12px' }}></i>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Este atleta não possui modalidades cadastradas no perfil.</p>
+                            <button className="btn btn-primary" onClick={() => { setActiveTab('perfil'); setShowModalidadePicker(false); setIsEditing(true); }} style={{ marginTop: '12px' }}>
+                              Adicionar Modalidade
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        {hasAnalyses ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                            {Object.keys(groupedAnalyses).map(mod => (
+                              <div key={mod}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                                  <i className="bi bi-bookmark-fill" style={{ color: 'var(--primary)' }}></i>
+                                  <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>{mod}</h6>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                                  {groupedAnalyses[mod].map(analise => (
+                                    <div key={analise._id} style={{
+                                      background: 'var(--bg)',
+                                      borderRadius: 'var(--radius-md)',
+                                      padding: '16px',
+                                      border: '1px solid var(--border)',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'space-between',
+                                      minHeight: '150px'
+                                    }}>
+                                      <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                          <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.6875rem', fontWeight: 600 }}>
+                                            {analise.tipo}
+                                          </span>
+                                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                                            <i className="bi bi-calendar3 me-1"></i>
+                                            {new Date(analise.dataAvaliacao || analise.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                          </span>
+                                        </div>
+                                        <h6 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.875rem', margin: '0 0 6px' }}>
+                                          {analise.subtipo ? `Análise de ${analise.subtipo}` : 'Análise Geral'}
+                                        </h6>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block', marginBottom: '16px' }}>
+                                          Treinador: {analise.treinador ? analise.treinador.nome : 'Não informado'}
+                                        </span>
+                                      </div>
+                                      <button className="btn btn-secondary btn-sm" style={{ width: '100%', borderRadius: 'var(--radius-sm)' }} onClick={() => navigate(`/analises/${analise._id}`)}>
+                                        Visualizar
+                                      </button>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             ))}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-5 bg-light rounded-4 border border-dashed">
-                      <i className="bi bi-clipboard-x fs-1 text-muted mb-3 d-block"></i>
-                      <p className="text-muted fs-5 mb-0">Este atleta ainda não possui análises registradas.</p>
-                    </div>
-                  )}
-                    </>
-                  )}
-                </div>
-              )}
+                        ) : (
+                          <div style={{
+                            textAlign: 'center', padding: '48px 16px',
+                            background: 'var(--bg)', borderRadius: 'var(--radius-md)',
+                            border: '1.5px dashed var(--border)'
+                          }}>
+                            <i className="bi bi-clipboard-x" style={{ fontSize: '2rem', color: 'var(--text-tertiary)', display: 'block', marginBottom: '12px' }}></i>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>Este atleta ainda não possui análises registradas.</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
+              </div>
             </div>
           </div>
         </div>

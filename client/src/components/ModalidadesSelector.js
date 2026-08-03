@@ -53,26 +53,38 @@ const TreeNode = ({ node, selectedIds, onToggle }) => {
   const active = hasSub ? isAnyChildSelected(node) : isSelected;
 
   return (
-    <div className="mb-2 w-100">
+    <div style={{ marginBottom: '6px', width: '100%' }}>
       <div 
-        className={`d-flex align-items-center p-2 rounded-3 border ${active ? 'bg-orange-active border-orange text-blue-dark fw-bold' : 'bg-light text-muted'}`}
-        style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-sm)',
+          border: `1.5px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+          background: active ? 'var(--primary-light)' : 'var(--bg)',
+          color: active ? 'var(--primary)' : 'var(--text-secondary)',
+          fontWeight: active ? 600 : 500,
+          fontSize: '0.8125rem',
+          cursor: 'pointer',
+          transition: 'all var(--transition-fast)',
+          fontFamily: 'var(--font)'
+        }}
         onClick={() => {
           if (hasSub) setExpanded(!expanded);
           else onToggle(node.id);
         }}
       >
         {hasSub && (
-          <i className={`bi bi-chevron-${expanded ? 'down' : 'right'} me-2`}></i>
+          <i className={`bi bi-chevron-${expanded ? 'down' : 'right'}`} style={{ marginRight: '8px', fontSize: '0.75rem' }}></i>
         )}
         {!hasSub && (
-           <i className={`bi bi-${isSelected ? 'check-square-fill text-orange' : 'square'} me-2`}></i>
+          <i className={`bi bi-${isSelected ? 'check-square-fill' : 'square'}`} style={{ marginRight: '8px', color: isSelected ? 'var(--primary)' : 'var(--text-tertiary)' }}></i>
         )}
         <span>{node.nome}</span>
       </div>
 
       {hasSub && expanded && (
-        <div className="ps-4 pt-2 border-start border-2 ms-2 border-orange-light">
+        <div style={{ paddingLeft: '20px', paddingTop: '6px', borderLeft: '2px solid var(--primary-light)', marginLeft: '10px' }}>
           {node.sub.map(child => (
             <TreeNode key={child.id} node={child} selectedIds={selectedIds} onToggle={onToggle} />
           ))}
@@ -92,9 +104,9 @@ const ModalidadesSelector = ({ selected, onChange }) => {
   };
 
   return (
-    <div className="modalidades-tree row g-2">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px' }}>
       {estruturaModalidades.map(mod => (
-        <div key={mod.id} className="col-md-6">
+        <div key={mod.id}>
           <TreeNode node={mod} selectedIds={selected} onToggle={handleToggle} />
         </div>
       ))}

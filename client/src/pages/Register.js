@@ -170,50 +170,50 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
   };
 
   return (
-    <div className={isEmbedded ? "w-100" : "min-vh-100 d-flex align-items-center justify-content-center bg-main py-5"}>
-      <div className={`card-flat p-5 ${!isEmbedded ? 'shadow-sm' : 'border'}`} style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', borderRadius: '16px', backgroundColor: isEmbedded ? '#f8fafc' : '#ffffff' }}>
+    <div className={isEmbedded ? "w-100" : ""} style={isEmbedded ? {} : { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '48px 24px' }}>
+      <div style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: '40px', boxShadow: isEmbedded ? 'none' : 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
         
-        <div className="text-center mb-5">
-          <h2 className="fw-bold text-blue-dark">Criação de Conta</h2>
-          <p className="text-muted">
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <h2 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.375rem', marginBottom: '8px' }}>Criação de Conta</h2>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '0 0 20px' }}>
             {step === 1 && 'Etapa 1 de 3: Informações de Acesso'}
             {step === 2 && 'Etapa 2 de 3: Dados Complementares'}
             {step === 3 && 'Etapa 3 de 3: Confirmação dos Dados'}
           </p>
           
-          <div className="progress mt-3 mx-auto" style={{ height: '8px', maxWidth: '300px' }}>
-            <div className="progress-bar bg-primary" role="progressbar" style={{ width: `${(step / 3) * 100}%` }}></div>
+          <div style={{ maxWidth: '300px', margin: '0 auto', height: '6px', background: 'var(--border-light)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+            <div style={{ width: `${(step / 3) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: 'var(--radius-full)', transition: 'width 0.3s ease' }}></div>
           </div>
         </div>
 
-        {error && <div className="alert alert-danger rounded-3 fw-bold small"><i className="bi bi-exclamation-triangle-fill me-2"></i>{error}</div>}
+        {error && <div style={{ background: 'var(--error-light)', color: '#991B1B', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="bi bi-exclamation-triangle-fill"></i>{error}</div>}
 
         {/* ETAPA 1 */}
         {step === 1 && (
           <div>
             <div className="row g-3 mb-4">
               <div className="col-md-12">
-                <label className="form-label fw-bold small text-blue-dark">Tipo de Usuário *</label>
-                <select className="form-select bg-light border-0" name="tipo" value={formData.tipo} onChange={handleInputChange} disabled={isEmbedded}>
+                <label className="form-label">Tipo de Usuário *</label>
+                <select className="form-select" name="tipo" value={formData.tipo} onChange={handleInputChange} disabled={isEmbedded}>
                   <option value="Treinador">Treinador</option>
                   <option value="estudante">Estudante / Atleta</option>
                 </select>
               </div>
               <div className="col-md-12">
-                <label className="form-label fw-bold small text-blue-dark">Nome Completo *</label>
-                <input type="text" className="form-control bg-light border-0" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Seu nome completo" />
+                <label className="form-label">Nome Completo *</label>
+                <input type="text" className="form-control" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Seu nome completo" />
               </div>
               <div className="col-md-12">
-                <label className="form-label fw-bold small text-blue-dark">E-mail *</label>
-                <input type="email" className="form-control bg-light border-0" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@instituicao.edu.br" />
+                <label className="form-label">E-mail *</label>
+                <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@instituicao.edu.br" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-blue-dark">Senha *</label>
-                <input type="password" className="form-control bg-light border-0" name="senha" value={formData.senha} onChange={handleInputChange} placeholder="Mínimo 8 caracteres" />
+                <label className="form-label">Senha *</label>
+                <input type="password" className="form-control" name="senha" value={formData.senha} onChange={handleInputChange} placeholder="Mínimo 8 caracteres" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-blue-dark">Confirmar Senha *</label>
-                <input type="password" className="form-control bg-light border-0" name="confirmarSenha" value={formData.confirmarSenha} onChange={handleInputChange} placeholder="Repita a senha" />
+                <label className="form-label">Confirmar Senha *</label>
+                <input type="password" className="form-control" name="confirmarSenha" value={formData.confirmarSenha} onChange={handleInputChange} placeholder="Repita a senha" />
               </div>
             </div>
 
@@ -231,15 +231,15 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
         {/* ETAPA 2 */}
         {step === 2 && formData.tipo === 'Treinador' && (
           <div>
-            <h6 className="fw-bold text-blue-dark mb-3"><i className="bi bi-shield-lock-fill me-2"></i>Validação de Acesso</h6>
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="bi bi-shield-lock-fill" style={{ color: 'var(--primary)' }}></i>Validação de Acesso</h6>
             <div className="row g-3 mb-4">
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Código de Acesso (Fornecido pela direção) *</label>
-                <input type="text" className="form-control bg-light border-0" name="codigoConvite" value={formData.codigoConvite} onChange={handleInputChange} placeholder="Ex: 123" />
+                <label className="form-label">Código de Acesso (Fornecido pela direção) *</label>
+                <input type="text" className="form-control" name="codigoConvite" value={formData.codigoConvite} onChange={handleInputChange} placeholder="Ex: 123" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Telefone (Opcional)</label>
-                <input type="text" className="form-control bg-light border-0" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" />
+                <label className="form-label">Telefone (Opcional)</label>
+                <input type="text" className="form-control" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" />
               </div>
             </div>
 
@@ -252,7 +252,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
 
         {step === 2 && formData.tipo === 'estudante' && (
           <div>
-            <h6 className="fw-bold text-blue-dark mb-3"><i className="bi bi-person-lines-fill me-2"></i>Dados do Estudante</h6>
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="bi bi-person-lines-fill" style={{ color: 'var(--primary)' }}></i>Dados do Estudante</h6>
             <div className="row g-3 mb-4">
               <div className="col-md-6">
                 <label className="form-label fw-bold small text-muted">Gênero *</label>
@@ -310,7 +310,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
               </div>
 
               <div className="col-md-12 mt-4 mb-2">
-                <h6 className="fw-bold text-blue-dark border-bottom pb-2"><i className="bi bi-heart-pulse-fill me-2 text-danger"></i>Informações Esportivas e Médicas</h6>
+                <h6 style={{ fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="bi bi-heart-pulse-fill" style={{ color: 'var(--error)' }}></i>Informações Esportivas e Médicas</h6>
               </div>
               
               <div className="col-md-3">
@@ -334,7 +334,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
 
             <hr className="my-4 text-muted" />
 
-            <h6 className="fw-bold text-blue-dark mb-3"><i className="bi bi-trophy-fill me-2"></i>Modalidade(s) de Interesse (Opcional)</h6>
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="bi bi-trophy-fill" style={{ color: 'var(--primary)' }}></i>Modalidade(s) de Interesse (Opcional)</h6>
             <div className="row g-4">
               {Object.entries(modalidadesDisponiveis).map(([categoria, lista]) => (
                 <div key={categoria} className="col-md-6 col-lg-4">
@@ -369,15 +369,15 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
         {/* ETAPA 3 */}
         {step === 3 && (
           <div>
-            <div className="alert alert-success bg-green-light border-0 text-success d-flex align-items-center mb-4 rounded-3 p-4">
-              <i className="bi bi-check-circle-fill fs-2 me-3"></i>
+            <div style={{ background: 'var(--success-light)', borderRadius: 'var(--radius-md)', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <i className="bi bi-check-circle-fill" style={{ fontSize: '1.5rem', color: 'var(--success)' }}></i>
               <div>
-                <h6 className="fw-bold mb-1">Quase lá, {formData.nome.split(' ')[0]}!</h6>
-                <small>Confirme se os dados abaixo estão corretos antes de finalizar.</small>
+                <h6 style={{ fontWeight: 700, color: '#065F46', marginBottom: '2px', fontSize: '0.9375rem' }}>Quase lá, {formData.nome.split(' ')[0]}!</h6>
+                <small style={{ color: '#065F46', opacity: 0.8 }}>Confirme se os dados abaixo estão corretos antes de finalizar.</small>
               </div>
             </div>
 
-            <div className="bg-light p-4 rounded-3 mb-4">
+            <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
               <div className="row g-3 text-muted small">
                 <div className="col-6"><strong>Nome:</strong> {formData.nome}</div>
                 <div className="col-6"><strong>Email:</strong> {formData.email}</div>

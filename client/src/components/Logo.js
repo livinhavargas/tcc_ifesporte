@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Logo = ({ className = '', style = {}, width, height, circleColor = '#295593', textColor = '#E8A958' }) => {
+const Logo = ({ className = '', style = {}, width, height, circleColor = '#1E5EFF', textColor = '#FF8A00' }) => {
   return (
     <svg 
       className={className} 
@@ -31,7 +31,7 @@ const Logo = ({ className = '', style = {}, width, height, circleColor = '#29559
       <text 
         x="80" 
         y="80" 
-        fontFamily="'Poppins', sans-serif" 
+        fontFamily="'Inter', 'Plus Jakarta Sans', sans-serif" 
         fontWeight="700" 
         fontSize="92px" 
         letterSpacing="-2px"

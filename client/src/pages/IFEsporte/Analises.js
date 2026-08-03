@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
+import AtletismoForm from './components/AtletismoForm';
+import BasqueteForm from './components/BasqueteForm';
+import FutebolForm from './components/FutebolForm';
+import FutsalForm from './components/FutsalForm';
+import HandebolForm from './components/HandebolForm';
+import VoleiForm from './components/VoleiForm';
 
 const dicionarioAtributos = {
   'Futebol/Futsal': {
@@ -38,7 +44,19 @@ const getAtributos = (mod, sub) => {
 };
 
 const RadarChart = ({ respostas }) => {
-  const entries = Object.entries(respostas || {});
+  let entries = Object.entries(respostas || {});
+  
+  if (entries.length > 0 && entries[0][0].includes(' - ')) {
+    const groups = {};
+    entries.forEach(([key, val]) => {
+      const section = key.split(' - ')[0];
+      if (!groups[section]) groups[section] = { sum: 0, count: 0 };
+      groups[section].sum += Number(val);
+      groups[section].count += 1;
+    });
+    entries = Object.entries(groups).map(([section, data]) => [section, data.sum / data.count]);
+  }
+
   if(entries.length === 0) return null;
   const numAttrs = entries.length;
   const angleStep = (Math.PI * 2) / numAttrs;
@@ -64,22 +82,22 @@ const RadarChart = ({ respostas }) => {
            return `${p.x},${p.y}`;
          }).join(' ');
          const isEdge = level === 5;
-         return <polygon key={level} points={pts} fill={isEdge ? "#f8fafc" : "none"} stroke={isEdge ? "#cbd5e1" : "#e2e8f0"} strokeWidth={isEdge ? "1" : "0.5"}/>
+         return <polygon key={level} points={pts} fill={isEdge ? "var(--bg)" : "none"} stroke={isEdge ? "var(--border)" : "var(--border-light)"} strokeWidth={isEdge ? "1" : "0.5"}/>
        })}
        
        {entries.map((_, i) => {
          const p = getPoint(5, i);
-         return <line key={`l${i}`} x1="50" y1="50" x2={p.x} y2={p.y} stroke="#e2e8f0" strokeWidth="0.5"/>
+         return <line key={`l${i}`} x1="50" y1="50" x2={p.x} y2={p.y} stroke="var(--border-light)" strokeWidth="0.5"/>
        })}
        
-       <polygon points={points} fill="rgba(249, 115, 22, 0.4)" stroke="#f97316" strokeWidth="1.5"/>
+       <polygon points={points} fill="rgba(30, 94, 255, 0.2)" stroke="var(--primary)" strokeWidth="1.5"/>
        {entries.map(([, val], i) => {
          const p = getPoint(val, i);
-         return <circle key={`c${i}`} cx={p.x} cy={p.y} r="1.5" fill="#ea580c" />
+         return <circle key={`c${i}`} cx={p.x} cy={p.y} r="1.5" fill="var(--primary)" />
        })}
        
        {entries.map(([atr], i) => {
-         const p = getPoint(5, i, 47); // push label slightly outside the edge
+         const p = getPoint(5, i, 47);
          let anchor = "middle";
          if (p.x < 45) anchor = "end";
          else if (p.x > 55) anchor = "start";
@@ -89,13 +107,13 @@ const RadarChart = ({ respostas }) => {
          const formatAttr = s => s.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
          const label = formatAttr(atr);
          const shortLabel = label.length > 10 ? label.substring(0,8)+'.' : label;
-         return <text key={`t${i}`} x={p.x} y={p.y+dy} fontSize="3.5" textAnchor={anchor} fill="#475569" fontWeight="bold">{shortLabel}</text>;
+         return <text key={`t${i}`} x={p.x} y={p.y+dy} fontSize="3.5" textAnchor={anchor} fill="var(--text-secondary)" fontWeight="bold">{shortLabel}</text>;
        })}
     </svg>
   );
 };
 
-const Analises = ({ embebed = false, defaultModalidade = '' }) => {
+const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' }) => {
   const [students, setStudents] = useState([]);
   const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +132,7 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
   const [formData, setFormData] = useState({
     aluno: '',
     modalidade: '',
+    categoria: '',
     data: new Date().toISOString().split('T')[0],
     subtipo: 'Geral',
     observacoes: '',
@@ -121,10 +140,10 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
   });
 
   useEffect(() => {
-    if (embebed && defaultModalidade) {
-      setFormData(prev => ({ ...prev, modalidade: defaultModalidade }));
+    if (embebed) {
+      setFormData(prev => ({ ...prev, modalidade: defaultModalidade, categoria: defaultGenero }));
     }
-  }, [embebed, defaultModalidade]);
+  }, [embebed, defaultModalidade, defaultGenero]);
 
   useEffect(() => {
     const attrs = getAtributos(formData.modalidade, formData.subtipo);
@@ -149,13 +168,56 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
     }
   }, [novaAnaliseParam, alunoIdParam, modalidadeParam]);
 
+  const checkMatch = (esp, keyword) => {
+    const e = (esp || '').toLowerCase();
+    const k = (keyword || '').toLowerCase();
+    if (e.includes(k)) return true;
+    
+    const parts = k.split('-').map(p => p.trim());
+    
+    if (k === 'atletismo') {
+      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lançamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distância', 'altura', 'triplo', 'peso', 'disco', 'dardo'];
+      return termos.some(t => e.includes(t));
+    }
+    
+    if (parts.length === 2 && parts[0] === 'atletismo') {
+      const cat = parts[1];
+      if (cat.includes('corrida')) {
+        const termos = ['corrida', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento'];
+        return termos.some(t => e.includes(t));
+      }
+      if (cat.includes('salto')) {
+        const termos = ['salto', 'distância', 'altura', 'triplo'];
+        return termos.some(t => e.includes(t));
+      }
+      if (cat.includes('lançamento') || cat.includes('arremesso')) {
+        const termos = ['lançamento', 'arremesso', 'peso', 'disco', 'dardo'];
+        return termos.some(t => e.includes(t));
+      }
+    }
+    
+    if (parts.length === 3 && parts[0] === 'atletismo') {
+      const leaf = parts[2];
+      if (e.includes(leaf)) return true;
+    }
+    
+    return false;
+  };
+
   const fetchStudents = async () => {
     try {
       const response = await fetch('/api/students', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
-        const data = await response.json();
+        let data = await response.json();
+        if (embebed && defaultModalidade) {
+          data = data.filter(s => {
+            if (defaultGenero && s.sexo !== defaultGenero) return false;
+            const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
+            return arr.some(esp => checkMatch(esp, defaultModalidade));
+          });
+        }
         setStudents(data);
       }
     } catch (error) {
@@ -170,13 +232,22 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
       });
       if (response.ok) {
         const data = await response.json();
+        
+        let filteredData = data;
+        if (embebed) {
+          filteredData = data.filter(a => 
+            a.modalidade === defaultModalidade && 
+            a.categoria === defaultGenero
+          );
+        }
+
         if (alunoIdParam) {
-          setAnalyses(data.filter(a => a.aluno && a.aluno._id === alunoIdParam));
+          setAnalyses(filteredData.filter(a => a.aluno && a.aluno._id === alunoIdParam));
         } else if (userType === 'estudante') {
           const userEmail = localStorage.getItem('userEmail');
-          setAnalyses(data.filter(a => a.aluno && a.aluno.email === userEmail));
+          setAnalyses(filteredData.filter(a => a.aluno && a.aluno.email === userEmail));
         } else {
-          setAnalyses(data);
+          setAnalyses(filteredData);
         }
       }
     } catch (error) {
@@ -198,7 +269,7 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, diagnosticoStr = null, tipoAnaliseStr = 'Individual') => {
     e.preventDefault();
     setMensagem('');
 
@@ -208,13 +279,18 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
     }
 
     try {
+      const payload = { ...formData, tipoAnalise: tipoAnaliseStr };
+      if (diagnosticoStr) {
+         payload.diagnostico = diagnosticoStr;
+      }
+      
       const response = await fetch('/api/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -228,6 +304,7 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
         setFormData(prev => ({ 
           aluno: '', 
           modalidade: embebed ? defaultModalidade : prev.modalidade, 
+          categoria: embebed ? defaultGenero : prev.categoria,
           data: new Date().toISOString().split('T')[0], 
           subtipo: 'Geral', 
           observacoes: '', 
@@ -257,15 +334,28 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
 
   const currentAttrs = Object.keys(formData.respostas || {});
 
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
+    border: '1.5px solid var(--border)',
+    fontSize: '0.875rem',
+    fontFamily: 'var(--font)',
+    outline: 'none',
+    transition: 'all var(--transition-fast)',
+    background: 'var(--bg)',
+    minHeight: '44px'
+  };
+
   const content = (
-    <div className={embebed ? "" : "container-fluid p-0"}>
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+    <div style={embebed ? {} : { maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 className="fw-bold text-blue-dark mb-1">Inteligência Esportiva</h2>
-          <p className="text-muted mb-0">Avalie os atletas e deixe o sistema gerar os diagnósticos.</p>
+          <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Inteligência Esportiva</h2>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Avalie os atletas e deixe o sistema gerar os diagnósticos.</p>
         </div>
         {userType !== 'estudante' && (
-          <button className="btn btn-primary shadow-sm rounded-pill px-4 py-2 fw-bold" onClick={() => setShowForm(!showForm)}>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
             <i className={`bi bi-${showForm ? 'x-lg' : 'clipboard-data'} me-2`}></i>
             {showForm ? 'Cancelar Avaliação' : 'Nova Avaliação'}
           </button>
@@ -273,46 +363,127 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
       </div>
 
       {showForm && userType !== 'estudante' && (
-        <div className="card-flat shadow-sm mb-5 border p-4 bg-white border-top border-4 border-orange">
-          <h5 className="fw-bold mb-4 text-blue-dark">Motor Analítico</h5>
-          {mensagem && <div className={`alert ${mensagem.includes('✅') ? 'alert-success' : 'alert-danger'} fw-bold`}>{mensagem}</div>}
+        formData.modalidade && formData.modalidade.includes('Atletismo') ? (
+          <AtletismoForm 
+            formData={formData} 
+            setFormData={setFormData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            students={students} 
+            setMensagem={setMensagem} 
+          />
+        ) : formData.modalidade && formData.modalidade.includes('Basquete') ? (
+          <BasqueteForm
+            formData={formData} 
+            setFormData={setFormData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            students={students} 
+            setMensagem={setMensagem} 
+          />
+        ) : formData.modalidade && formData.modalidade.includes('Futebol') ? (
+          <FutebolForm
+            formData={formData} 
+            setFormData={setFormData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            students={students} 
+            setMensagem={setMensagem} 
+          />
+        ) : formData.modalidade && formData.modalidade.includes('Futsal') ? (
+          <FutsalForm
+            formData={formData} 
+            setFormData={setFormData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            students={students} 
+            setMensagem={setMensagem} 
+          />
+        ) : formData.modalidade && formData.modalidade.includes('Handebol') ? (
+          <HandebolForm
+            formData={formData} 
+            setFormData={setFormData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            students={students} 
+            setMensagem={setMensagem} 
+          />
+        ) : formData.modalidade && (formData.modalidade.includes('Vôlei') || formData.modalidade.includes('Voleibol')) ? (
+          <VoleiForm
+            formData={formData} 
+            setFormData={setFormData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            students={students} 
+            setMensagem={setMensagem} 
+          />
+        ) : (
+        <div style={{
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--border-light)',
+          boxShadow: 'var(--shadow-md)',
+          padding: '32px',
+          marginBottom: '32px'
+        }}>
+          <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '24px', fontSize: '1rem' }}>Motor Analítico</h5>
+          {mensagem && (
+            <div style={{
+              background: mensagem.includes('✅') ? 'var(--success-light)' : 'var(--error-light)',
+              color: mensagem.includes('✅') ? '#065F46' : '#991B1B',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px 16px',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              marginBottom: '20px',
+              display: 'flex', alignItems: 'center', gap: '8px'
+            }}>{mensagem}</div>
+          )}
           <form onSubmit={handleSubmit}>
             <div className="row g-3 mb-4">
               <div className="col-md-4">
-                <label className="form-label fw-bold small text-muted">Aluno Avaliado</label>
-                <select className="form-select bg-light" name="aluno" value={formData.aluno} onChange={handleInputChange} required>
-                  <option value="">Selecione um aluno...</option>
+                <label className="form-label text-muted small fw-bold">Aluno Avaliado</label>
+                <select className="form-select" name="aluno" value={formData.aluno} onChange={handleInputChange} required style={inputStyle}>
+                  {students.length === 0 ? (
+                    <option value="">Nenhum atleta cadastrado nesta modalidade.</option>
+                  ) : (
+                    <option value="">Selecione um aluno...</option>
+                  )}
                   {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
                 </select>
               </div>
               <div className="col-md-3">
-                <label className="form-label fw-bold small text-muted">Data</label>
-                <input type="date" className="form-control bg-light" name="data" value={formData.data} onChange={handleInputChange} required />
+                <label className="form-label text-muted small fw-bold">Data</label>
+                <input type="date" className="form-control" name="data" value={formData.data} onChange={handleInputChange} required style={inputStyle} />
               </div>
-              <div className="col-md-3">
-                <label className="form-label fw-bold small text-muted">Modalidade Referência</label>
-                <select className="form-select bg-light" name="modalidade" value={formData.modalidade} onChange={handleInputChange} required>
-                  <option value="">Selecione...</option>
-                  {modalidadesValidas.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-              <div className="col-md-2">
-                <label className="form-label fw-bold small text-muted">Posição/Função</label>
-                <select className="form-select bg-light" name="subtipo" value={formData.subtipo} onChange={handleInputChange} required>
+              {!embebed && (
+                <div className="col-md-3">
+                  <label className="form-label text-muted small fw-bold">Modalidade Referência</label>
+                  <select className="form-select" name="modalidade" value={formData.modalidade} onChange={handleInputChange} required style={inputStyle}>
+                    <option value="">Selecione...</option>
+                    {modalidadesValidas.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className={embebed ? "col-md-5" : "col-md-2"}>
+                <label className="form-label text-muted small fw-bold">Posição/Função</label>
+                <select className="form-select" name="subtipo" value={formData.subtipo} onChange={handleInputChange} required style={inputStyle}>
                   {subtipos.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
             </div>
 
             {formData.modalidade && currentAttrs.length > 0 && (
-              <div className="bg-light p-4 rounded-4 mb-4 border">
-                <h6 className="fw-bold text-orange mb-3"><i className="bi bi-sliders me-2"></i>Avaliação Específica: {formData.modalidade} ({formData.subtipo})</h6>
+              <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px', border: '1px solid var(--border-light)' }}>
+                <h6 style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '20px', fontSize: '0.875rem' }}>
+                  <i className="bi bi-sliders me-2"></i>Avaliação Específica: {formData.modalidade} ({formData.subtipo})
+                </h6>
                 <div className="row g-4">
                   {currentAttrs.map(atr => (
                     <div key={atr} className="col-md-6">
-                      <div className="d-flex justify-content-between mb-1">
-                        <label className="fw-bold text-blue-dark text-capitalize">{atr.replace(/([A-Z])/g, ' $1')}</label>
-                        <span className="badge bg-blue-dark text-white fw-bold">{formData.respostas[atr]} / 5</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                        <label style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.8125rem' }} className="text-capitalize">{atr.replace(/([A-Z])/g, ' $1')}</label>
+                        <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.75rem' }}>{formData.respostas[atr]} / 5</span>
                       </div>
                       <input 
                         type="range" 
@@ -321,7 +492,7 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
                         value={formData.respostas[atr] || 3} 
                         onChange={(e) => handleRespostaChange(atr, e.target.value)} 
                       />
-                      <div className="d-flex justify-content-between small text-muted">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>
                         <span>Fraco</span>
                         <span>Excelente</span>
                       </div>
@@ -333,21 +504,22 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
 
             <div className="row">
               <div className="col-12 mb-4">
-                <label className="form-label fw-bold small text-muted">Observações Adicionais (Opcional)</label>
-                <textarea className="form-control bg-light" name="observacoes" rows="2" value={formData.observacoes} onChange={handleInputChange} placeholder="Comentários sobre a avaliação..."></textarea>
+                <label className="form-label text-muted small fw-bold">Observações Adicionais (Opcional)</label>
+                <textarea className="form-control" name="observacoes" rows="2" value={formData.observacoes} onChange={handleInputChange} placeholder="Comentários sobre a avaliação..." style={inputStyle}></textarea>
               </div>
               <div className="col-12 text-end">
-                <button type="submit" className="btn btn-orange px-5 py-2 fw-bold rounded-pill text-white shadow-sm">
+                <button type="submit" className="btn btn-primary">
                   <i className="bi bi-magic me-2"></i> Processar e Salvar Avaliação
                 </button>
               </div>
             </div>
           </form>
         </div>
+        )
       )}
 
       {loading ? (
-         <div className="text-center py-5"><div className="spinner-border text-primary" role="status"></div></div>
+         <div style={{ textAlign: 'center', padding: '48px' }}><div className="spinner-border" style={{ color: 'var(--primary)' }}></div></div>
       ) : analyses.length > 0 ? (
         <div className="row g-4">
           {analyses.map(analise => {
@@ -355,60 +527,83 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
                           analise.resultados?.indiceGeral >= 3.5 ? 'Bom' :
                           analise.resultados?.indiceGeral >= 2.5 ? 'Regular' : 'Atenção';
                           
-            const color = nivel === 'Excelente' ? '#22c55e' :
-                          nivel === 'Bom' ? '#3b82f6' :
-                          nivel === 'Regular' ? '#f59e0b' : '#ef4444';
+            const color = nivel === 'Excelente' ? 'var(--success)' :
+                          nivel === 'Bom' ? 'var(--primary)' :
+                          nivel === 'Regular' ? 'var(--warning)' : 'var(--error)';
                           
             return (
               <div key={analise._id} className="col-md-6">
-                <div className="card-flat p-4 h-100 shadow-sm border position-relative">
+                <div style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-light)',
+                  boxShadow: 'var(--shadow-sm)',
+                  padding: '24px',
+                  position: 'relative',
+                  height: '100%'
+                }}>
                   {userType !== 'estudante' && (
                     <button 
-                      className="btn btn-sm btn-light text-danger position-absolute top-0 end-0 mt-3 me-3 rounded-circle shadow-sm"
+                      className="btn btn-light rounded-circle shadow-sm"
                       onClick={() => handleDelete(analise._id)}
                       title="Excluir Análise"
+                      style={{ position: 'absolute', top: '16px', right: '16px', width: '32px', height: '32px', padding: 0 }}
                     >
-                      <i className="bi bi-trash"></i>
+                      <i className="bi bi-trash" style={{ color: 'var(--error)' }}></i>
                     </button>
                   )}
                   
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="rounded-circle bg-light d-flex align-items-center justify-content-center text-blue-dark fw-bold fs-4 shadow-sm" style={{width: '60px', height: '60px', border: `3px solid ${color}`}}>
-                        {analise.resultados?.indiceGeral || '?'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '16px' }}>
+                      <div style={{
+                        width: '64px', height: '64px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, shadow: 'var(--shadow-xs)', border: `2px solid ${color}`,
+                        overflow: 'hidden', fontSize: '1.25rem', flexShrink: 0
+                      }}>
+                        {analise.aluno?.foto ? (
+                          <img src={analise.aluno.foto} alt={analise.aluno.nome} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                        ) : (
+                          analise.aluno?.nome ? analise.aluno.nome.charAt(0).toUpperCase() : '?'
+                        )}
                       </div>
-                      <div>
-                        <h5 className="fw-bold text-blue-dark mb-1">{analise.aluno?.nome || 'Atleta Removido'}</h5>
-                        <div className="text-muted small">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 4px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {analise.aluno?.nome || 'Atleta Removido'} 
+                          <span className="badge" style={{ background: color, color: '#fff', fontSize: '0.6875rem' }}>
+                            <i className="bi bi-star-fill me-1"></i>
+                            {analise.resultados?.indiceGeral || '?'}
+                          </span>
+                        </h5>
+                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
                           <i className="bi bi-calendar-event me-1"></i> {new Date(analise.data).toLocaleDateString('pt-BR')} 
                           <span className="mx-2">•</span> 
-                          <span className="badge bg-light text-dark border">{analise.modalidade} ({analise.subtipo || 'Geral'})</span>
+                          <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>{analise.modalidade} ({analise.subtipo || 'Geral'})</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="row align-items-center mt-4">
-                    <div className="col-5 text-center">
+                  <div className="row align-items-center mt-3">
+                    <div className="col-12 col-xl-5 text-center mb-3 mb-xl-0">
                       <div style={{ width: '100%', maxWidth: '160px', margin: '0 auto' }}>
                         {analise.respostas && Object.keys(analise.respostas).length > 0 ? (
                           <RadarChart respostas={analise.respostas} />
                         ) : (
-                          <div className="text-muted small py-4 border rounded bg-light">Sem dados de Radar</div>
+                          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', padding: '24px 0', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)' }}>Sem dados de Radar</div>
                         )}
                       </div>
                     </div>
-                    <div className="col-7">
-                      <h6 className="fw-bold text-orange mb-2"><i className="bi bi-robot me-2"></i>Diagnóstico Inteligente</h6>
-                      <p className="small text-secondary mb-0" style={{ lineHeight: '1.5' }}>
+                    <div className="col-12 col-xl-7">
+                      <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '8px', fontSize: '0.8125rem' }}>
+                        <i className="bi bi-robot me-2"></i>Diagnóstico Inteligente
+                      </h6>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, textAlign: 'justify' }}>
                         {analise.diagnostico || 'Avaliação legada (sem diagnóstico automático).'}
                       </p>
                     </div>
                   </div>
                   
                   {analise.observacoes && (
-                    <div className="mt-3 pt-3 border-top small text-muted">
-                      <i className="bi bi-chat-quote-fill me-2 text-primary opacity-50"></i>
+                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                      <i className="bi bi-chat-quote-fill me-2" style={{ color: 'var(--primary)', opacity: 0.7 }}></i>
                       {analise.observacoes}
                     </div>
                   )}
@@ -419,10 +614,14 @@ const Analises = ({ embebed = false, defaultModalidade = '' }) => {
           })}
         </div>
       ) : (
-        <div className="text-center py-5 card-flat border bg-light mt-4">
-          <i className="bi bi-graph-up-arrow text-muted mb-3 d-block" style={{ fontSize: '3rem' }}></i>
-          <h5 className="text-blue-dark fw-bold">Sem Diagnósticos</h5>
-          <p className="text-muted">Crie a primeira avaliação para visualizar os dados.</p>
+        <div style={{
+          textAlign: 'center', padding: '48px 16px',
+          background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border-light)'
+        }}>
+          <i className="bi bi-graph-up-arrow" style={{ color: 'var(--text-tertiary)', fontSize: '2rem', display: 'block', marginBottom: '12px' }}></i>
+          <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Nenhuma análise encontrada</h5>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Ainda não existem análises registradas para esta modalidade.</p>
         </div>
       )}
     </div>

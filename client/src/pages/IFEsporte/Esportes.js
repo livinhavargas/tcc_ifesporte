@@ -5,7 +5,6 @@ import Layout from '../../components/Layout';
 const Esportes = () => {
   const [genero, setGenero] = useState('Feminino');
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStudents();
@@ -22,21 +21,19 @@ const Esportes = () => {
       }
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const modalidadesIndividuais = [
     { id: 'atletismo', nome: 'Atletismo', icone: 'bi-person-walking' },
-    { id: 'badminton', nome: 'Badminton', icone: 'bi-usb-drive' }, // using best match for shuttlecock
+    { id: 'badminton', nome: 'Badminton', icone: 'bi-usb-drive' },
     { id: 'tenis-de-mesa', nome: 'Tênis de Mesa', icone: 'bi-circle' },
     { id: 'xadrez', nome: 'Xadrez', icone: 'bi-puzzle-fill' }
   ];
 
   const modalidadesEquipe = [
     { id: 'basquete', nome: 'Basquete', icone: 'bi-dribbble' },
-    { id: 'futsal', nome: 'Futsal', icone: 'bi-circle-fill' }, // soccer ball
+    { id: 'futsal', nome: 'Futsal', icone: 'bi-circle-fill' },
     { id: 'futebol', nome: 'Futebol', icone: 'bi-circle-half' },
     { id: 'handebol', nome: 'Handebol', icone: 'bi-person-arms-up' },
     { id: 'volei-quadra', nome: 'Vôlei de Quadra', icone: 'bi-record-circle' },
@@ -63,67 +60,113 @@ const Esportes = () => {
     }).length;
   };
 
+  const SportCard = ({ mod }) => {
+    const count = getCount(mod.nome);
+    return (
+      <Link to={`/esportes/${mod.id}?genero=${genero}`} style={{ textDecoration: 'none' }}>
+        <div style={{
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border-light)',
+          boxShadow: 'var(--shadow-sm)',
+          padding: '28px 24px',
+          textAlign: 'center',
+          transition: 'all var(--transition-base)',
+          cursor: 'pointer',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px'
+        }}
+        className="hover-lift"
+        >
+          <div style={{
+            width: '56px', height: '56px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--primary-light)',
+            color: 'var(--primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.5rem',
+            marginBottom: '4px'
+          }}>
+            <i className={`bi ${mod.icone}`}></i>
+          </div>
+          <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>{mod.nome}</h5>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+            {count} {count === 1 ? 'aluno cadastrado' : 'alunos cadastrados'}
+          </span>
+        </div>
+      </Link>
+    );
+  };
+
   return (
     <Layout>
-      <div className="d-flex justify-content-center mb-5">
-        <div className="d-flex bg-white rounded-pill p-1 shadow-sm" style={{ width: '400px' }}>
-          <button 
-            className={`flex-fill btn rounded-pill fw-bold d-flex align-items-center justify-content-center ${genero === 'Feminino' ? 'bg-blue-dark text-orange' : 'bg-white text-blue-dark border-0'}`}
-            onClick={() => setGenero('Feminino')}
-            style={{ padding: '12px' }}
-          >
-            <i className="bi bi-gender-female fs-4 me-2"></i> Feminino
-          </button>
-          <button 
-            className={`flex-fill btn rounded-pill fw-bold d-flex align-items-center justify-content-center ${genero === 'Masculino' ? 'bg-blue-dark text-orange' : 'bg-white text-blue-dark border-0'}`}
-            onClick={() => setGenero('Masculino')}
-            style={{ padding: '12px' }}
-          >
-            <i className="bi bi-gender-male fs-4 me-2"></i> Masculino
-          </button>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        {/* Gender Toggle */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
+          <div style={{
+            display: 'flex',
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-full)',
+            padding: '4px',
+            border: '1px solid var(--border-light)',
+            boxShadow: 'var(--shadow-xs)'
+          }}>
+            {['Feminino', 'Masculino'].map(g => (
+              <button
+                key={g}
+                onClick={() => setGenero(g)}
+                style={{
+                  padding: '10px 28px',
+                  borderRadius: 'var(--radius-full)',
+                  border: 'none',
+                  fontFamily: 'var(--font)',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  transition: 'all var(--transition-base)',
+                  background: genero === g ? 'var(--primary)' : 'transparent',
+                  color: genero === g ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <i className={`bi bi-gender-${g === 'Feminino' ? 'female' : 'male'}`}></i> {g}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="mb-5">
-        <h4 className="fw-bold text-orange mb-4">Modalidades individuais</h4>
-        <div className="row g-4">
-          {modalidadesIndividuais.map(mod => (
-            <div className="col-md-3" key={mod.id}>
-              <Link to={`/esportes/${mod.id}?genero=${genero}`} className="text-decoration-none">
-                <div className="card-flat shadow-sm text-center p-4 d-flex flex-column align-items-center justify-content-center h-100 transition-hover">
-                  <i className={`bi ${mod.icone} mb-3`} style={{ fontSize: '4.5rem', color: '#B08851' }}></i>
-                  <h4 className="fw-bold text-blue-dark mb-2">{mod.nome}</h4>
-                  <div className="text-blue-dark small">{getCount(mod.nome)} alunos cadastrados</div>
-                </div>
-              </Link>
-            </div>
-          ))}
+        {/* Modalidades Individuais */}
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ width: '4px', height: '20px', borderRadius: '2px', background: 'var(--accent)' }}></div>
+            <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem' }}>Modalidades Individuais</h4>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            {modalidadesIndividuais.map(mod => (
+              <SportCard key={mod.id} mod={mod} />
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div>
-        <h4 className="fw-bold text-orange mb-4">Modalidades em equipe</h4>
-        <div className="row g-4">
-          {modalidadesEquipe.map(mod => (
-            <div className="col-md-3" key={mod.id}>
-              <Link to={`/esportes/${mod.id}?genero=${genero}`} className="text-decoration-none">
-                <div className="card-flat shadow-sm text-center p-4 d-flex flex-column align-items-center justify-content-center h-100 transition-hover">
-                  <i className={`bi ${mod.icone} mb-3`} style={{ fontSize: '4.5rem', color: '#B08851' }}></i>
-                  <h4 className="fw-bold text-blue-dark mb-2">{mod.nome}</h4>
-                  <div className="text-blue-dark small">{getCount(mod.nome)} alunos cadastrados</div>
-                </div>
-              </Link>
-            </div>
-          ))}
+        {/* Modalidades em Equipe */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ width: '4px', height: '20px', borderRadius: '2px', background: 'var(--accent)' }}></div>
+            <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem' }}>Modalidades em Equipe</h4>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            {modalidadesEquipe.map(mod => (
+              <SportCard key={mod.id} mod={mod} />
+            ))}
+          </div>
         </div>
       </div>
-      
-      <style>{`
-        .transition-hover:hover {
-          transform: translateY(-5px);
-          transition: transform 0.2s ease-in-out;
-        }
-      `}</style>
     </Layout>
   );
 };

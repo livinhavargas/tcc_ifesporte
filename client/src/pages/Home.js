@@ -92,22 +92,18 @@ const Home = () => {
     });
     setShowModal(true);
   };
-
-  const [goals, setGoals] = useState(() => {
-    const saved = localStorage.getItem('agenda_goals');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, text: 'Preparar equipe para campeonato', done: false },
-      { id: 2, text: 'Finalizar avaliações físicas', done: false },
-      { id: 3, text: 'Organizar amistoso', done: false }
-    ];
-  });
+  const goals = [
+    { id: 1, text: 'Preparar equipe para campeonato', done: false },
+    { id: 2, text: 'Finalizar avaliações físicas', done: false },
+    { id: 3, text: 'Organizar amistoso', done: false }
+  ];
 
   useEffect(() => {
     if (tipo !== 'estudante') {
       fetchEvents();
       fetchCronogramas();
     } else {
-      setLoading(false); // StudentHome does its own loading
+      setLoading(false);
     }
   }, [tipo]);
 
@@ -120,7 +116,6 @@ const Home = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Prioridades
       const priorityEvents = data
         .filter(ev => ev.eventoObrigatorio && ev.data && new Date(ev.data.split('T')[0] + 'T12:00:00') >= today)
         .sort((a, b) => a.data.localeCompare(b.data))
@@ -181,251 +176,275 @@ const Home = () => {
     );
   }
 
+  const getEventIcon = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t === 'treino') return { icon: 'bi-lightning-charge-fill', color: 'var(--primary)', bg: 'var(--primary-light)' };
+    if (t === 'amistoso') return { icon: 'bi-people-fill', color: 'var(--success)', bg: 'var(--success-light)' };
+    if (t === 'campeonato') return { icon: 'bi-trophy-fill', color: 'var(--accent)', bg: 'var(--accent-light)' };
+    if (t === 'jogo') return { icon: 'bi-controller', color: 'var(--success)', bg: 'var(--success-light)' };
+    return { icon: 'bi-calendar-event-fill', color: 'var(--info)', bg: 'var(--info-light)' };
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming = events
+    .filter(ev => ev.data && new Date(ev.data.split('T')[0] + 'T12:00:00') >= today)
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .slice(0, 5);
+
   return (
     <Layout>
-      <div className="container-fluid p-0 pb-5">
-        
-        {/* Saudação */}
-        <div className="mb-5 d-flex justify-content-between align-items-end">
-          <div>
-            <h2 className="fw-bold text-blue-dark mb-1">Olá, {userName.split(' ')[0]} 👋</h2>
-            <p className="text-muted mb-0">Acompanhe rapidamente seus atletas, próximos compromissos e o planejamento das modalidades em um único lugar.</p>
-          </div>
-        </div>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
-        {/* 1. Dashboard Superior (Atletas Ativos + Próximos Eventos) */}
-        <div className="row g-4 mb-5">
-          {/* Atletas Ativos */}
-          <div className="col-lg-4 col-xl-3">
-            <div className="card-flat p-4 h-100 shadow-sm d-flex flex-column justify-content-center align-items-center text-center bg-white" style={{ borderRadius: '16px' }}>
-              <div className="bg-orange-light text-orange rounded-circle d-flex align-items-center justify-content-center mb-3 transition hover-scale" style={{width: '64px', height: '64px', fontSize: '1.75rem'}}>
-                <i className="bi bi-people-fill"></i>
+        {/* ── Section: Próximos Eventos ── */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.125rem' }}>
+              Próximos Eventos
+            </h3>
+            <Link to="/agenda" style={{
+              textDecoration: 'none',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              Ver Agenda <i className="bi bi-arrow-right"></i>
+            </Link>
+          </div>
+
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-light)',
+            boxShadow: 'var(--shadow-sm)',
+            overflow: 'hidden'
+          }}>
+            {upcoming.length === 0 ? (
+              <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+                <i className="bi bi-calendar-x" style={{ fontSize: '2rem', color: 'var(--text-tertiary)', opacity: 0.5, display: 'block', marginBottom: '12px' }}></i>
+                <h6 style={{ fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>Sem próximos eventos</h6>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Não há eventos programados no momento.</p>
               </div>
-              <h1 className="fw-bold text-blue-dark mb-0 lh-1">45</h1>
-              <span className="text-muted small fw-bold mt-2 text-uppercase" style={{ letterSpacing: '1px' }}>Atletas Ativos</span>
-            </div>
-          </div>
-          
-          {/* Próximos Eventos (Lista Compacta) */}
-          <div className="col-lg-8 col-xl-9">
-            <div className="card-flat p-4 h-100 shadow-sm bg-white d-flex flex-column" style={{ borderRadius: '16px' }}>
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="fw-bold text-blue-dark mb-0 d-flex align-items-center">
-                  <i className="bi bi-calendar2-week-fill text-success me-2"></i>Próximos Eventos
-                </h5>
-                <Link to="/agenda" className="btn btn-outline-success btn-sm fw-bold rounded-pill px-4 shadow-sm transition hover-scale">Ver Agenda Completa</Link>
-              </div>
-
-              <div className="d-flex flex-column gap-3 flex-grow-1">
-                {(() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const upcoming = events
-                    .filter(ev => ev.data && new Date(ev.data.split('T')[0] + 'T12:00:00') >= today)
-                    .sort((a, b) => a.data.localeCompare(b.data))
-                    .slice(0, 5);
-
-                  if (upcoming.length === 0) {
-                    return (
-                      <div className="h-100 d-flex flex-column justify-content-center align-items-center text-center p-4 bg-light rounded-3">
-                        <i className="bi bi-calendar-x fs-2 text-muted opacity-50 mb-2"></i>
-                        <h6 className="fw-bold text-dark mb-1">Sem próximos eventos</h6>
-                        <p className="text-muted small mb-3">Não há eventos programados no momento.</p>
-                        <Link to="/agenda" className="btn btn-sm btn-primary rounded-pill px-3 fw-bold transition hover-scale">Ir para Agenda</Link>
-                      </div>
-                    );
-                  }
-
-                  return upcoming.map(ev => {
-                    let icon = 'bi-calendar-event';
-                    let colorClass = 'text-info';
-                    let bgClass = 'bg-info bg-opacity-10';
-
-                    if (ev.tipo?.toLowerCase() === 'treino') { 
-                      icon = 'bi-activity'; 
-                      colorClass = 'text-primary'; 
-                      bgClass = 'bg-primary bg-opacity-10'; 
-                    }
-                    if (ev.tipo?.toLowerCase() === 'amistoso') { 
-                      icon = 'bi-people-fill'; 
-                      colorClass = 'text-success'; 
-                      bgClass = 'bg-success bg-opacity-10'; 
-                    }
-                    if (ev.tipo?.toLowerCase() === 'campeonato') { 
-                      icon = 'bi-trophy-fill'; 
-                      colorClass = 'text-warning'; 
-                      bgClass = 'bg-warning bg-opacity-10'; 
-                    }
-
-                    return (
-                      <div 
-                        key={ev._id} 
-                        className="d-flex align-items-center p-3 border rounded-3 bg-light transition hover-scale-sm"
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => handleSelectEvent(ev)}
-                      >
-                        <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0 ${bgClass} ${colorClass}`} style={{ width: '48px', height: '48px' }}>
-                          <i className={`bi ${icon} fs-5`}></i>
-                        </div>
-                        <div className="flex-grow-1 min-w-0">
-                          <div className="d-flex justify-content-between align-items-center mb-1">
-                            <h6 className="fw-bold text-dark mb-0 text-truncate" title={ev.titulo}>
-                              {ev.titulo} <span className="text-muted fw-normal small">({ev.tipo || 'Evento'})</span>
-                            </h6>
-                            <span className="badge bg-white text-dark border ms-2 flex-shrink-0 shadow-sm">
-                              <i className="bi bi-clock me-1 text-muted"></i>{formatarData(ev.data)} às {ev.horaInicial || ev.hora || '12:00'}
-                            </span>
-                          </div>
-                          {ev.local && (
-                            <small className="text-muted text-truncate d-block" title={ev.local}>
-                              <i className="bi bi-geo-alt-fill me-1 text-danger"></i> {ev.local}
-                            </small>
-                          )}
-                        </div>
-                        <div className="ms-3 flex-shrink-0">
-                          <button className="btn btn-sm btn-light border rounded-circle shadow-sm transition hover-scale d-flex align-items-center justify-content-center" title="Visualizar" style={{ width: '36px', height: '36px' }}>
-                            <i className="bi bi-chevron-right text-muted"></i>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Planejamento (Metas Gerais + Prioridades) */}
-        <div className="mb-5">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h4 className="fw-bold text-blue-dark mb-0 d-flex align-items-center">
-              <i className="bi bi-kanban text-primary me-3 fs-3"></i>Planejamento
-            </h4>
-            <Link to="/agenda" className="btn btn-outline-primary btn-sm fw-bold rounded-pill px-4 shadow-sm transition hover-scale">Gerenciar Planejamento</Link>
-          </div>
-
-          <div className="card-flat p-4 shadow-sm border-0 bg-white" style={{ borderRadius: '16px' }}>
-            <div className="row g-5">
-              {/* Metas Gerais */}
-              <div className="col-lg-6">
-                <h5 className="fw-bold text-dark mb-4 d-flex align-items-center">
-                  <i className="bi bi-bullseye text-orange me-2 fs-5"></i>Metas Gerais
-                </h5>
-                <div className="d-flex flex-column gap-3">
-                  {goals.map(g => (
-                    <div key={g.id} className="p-3 border rounded-3 position-relative overflow-hidden bg-light transition hover-scale-sm">
-                      <div className="position-absolute top-0 start-0 h-100" style={{ width: '4px', backgroundColor: g.done ? '#22c55e' : '#f97316' }}></div>
-                      <div className="d-flex justify-content-between align-items-center ms-2">
-                        <h6 className={`fw-bold mb-0 ${g.done ? 'text-muted text-decoration-line-through' : 'text-blue-dark'}`} style={{ fontSize: '0.95rem' }}>
-                          {g.text}
-                        </h6>
-                        {g.done ? <i className="bi bi-check-circle-fill text-success fs-5"></i> : <i className="bi bi-circle text-muted fs-5"></i>}
-                      </div>
-                      {(g.prazo || g.descricao) && (
-                        <div className="ms-2 mt-2">
-                          {g.prazo && (
-                             <div className={`small fw-bold ${g.done ? 'text-muted' : 'text-danger'} mb-1`} style={{ fontSize: '0.80rem' }}>
-                               <i className="bi bi-calendar-event me-1"></i>
-                               Prazo: {new Date(g.prazo + 'T12:00:00').toLocaleDateString('pt-BR')}
-                             </div>
-                          )}
-                          {g.descricao && (
-                             <div className={`small ${g.done ? 'text-muted' : 'text-secondary'}`} style={{ fontSize: '0.85rem' }}>
-                               {g.descricao}
-                             </div>
-                          )}
-                        </div>
-                      )}
+            ) : (
+              upcoming.map((ev, i) => {
+                const evStyle = getEventIcon(ev.tipo);
+                return (
+                  <div
+                    key={ev._id}
+                    onClick={() => handleSelectEvent(ev)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '16px 24px',
+                      gap: '16px',
+                      cursor: 'pointer',
+                      borderBottom: i < upcoming.length - 1 ? '1px solid var(--border-light)' : 'none',
+                      transition: 'background var(--transition-fast)'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'}
+                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{
+                      width: '42px', height: '42px', borderRadius: 'var(--radius-sm)',
+                      background: evStyle.bg, color: evStyle.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, fontSize: '1.125rem'
+                    }}>
+                      <i className={`bi ${evStyle.icon}`}></i>
                     </div>
-                  ))}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {ev.titulo}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                        {ev.tipo || 'Evento'}{ev.modalidade ? ` · ${ev.modalidade}` : ''}
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      background: 'var(--bg)',
+                      padding: '4px 12px',
+                      borderRadius: 'var(--radius-full)',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
+                    }}>
+                      {formatarData(ev.data)} · {ev.horaInicial || ev.hora || '12:00'}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* ── Section: Planejamento (Metas + Prioridades) ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+          {/* Metas */}
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-light)',
+            boxShadow: 'var(--shadow-sm)',
+            padding: '24px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="bi bi-bullseye" style={{ fontSize: '0.875rem' }}></i>
+              </div>
+              <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Metas Gerais</h5>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {goals.map(g => (
+                <div key={g.id} style={{
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderLeft: `3px solid ${g.done ? 'var(--success)' : 'var(--accent)'}`,
+                  transition: 'all var(--transition-fast)'
+                }}>
+                  <span style={{
+                    fontWeight: 500, fontSize: '0.8125rem',
+                    color: g.done ? 'var(--text-tertiary)' : 'var(--text)',
+                    textDecoration: g.done ? 'line-through' : 'none'
+                  }}>{g.text}</span>
+                  <i className={`bi ${g.done ? 'bi-check-circle-fill' : 'bi-circle'}`}
+                    style={{ color: g.done ? 'var(--success)' : 'var(--text-tertiary)', fontSize: '1rem' }}></i>
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              {/* Prioridades */}
-              <div className="col-lg-6">
-                <h5 className="fw-bold text-dark mb-4 d-flex align-items-center">
-                  <i className="bi bi-exclamation-triangle-fill text-danger me-2 fs-5"></i>Prioridades
-                </h5>
-                <div className="d-flex flex-column gap-3">
-                  {priorities.length > 0 ? priorities.map(ev => (
-                    <div key={ev._id} className="p-3 border rounded-3 position-relative overflow-hidden bg-light transition hover-scale-sm">
-                      <div className="position-absolute top-0 start-0 h-100" style={{ width: '4px', backgroundColor: '#ef4444' }}></div>
-                      <div className="ms-2">
-                        <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.95rem' }}>{ev.titulo}</h6>
-                        <div className="d-flex align-items-center text-muted small fw-bold">
-                          <i className="bi bi-calendar-event me-2 text-danger"></i>
-                          {formatarData(ev.data)} às {ev.horaInicial || ev.hora || '12:00'}
-                        </div>
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="p-4 border rounded-3 text-center bg-light h-100 d-flex flex-column justify-content-center align-items-center">
-                      <i className="bi bi-emoji-smile fs-2 text-muted opacity-50 mb-2"></i>
-                      <h6 className="text-muted fw-bold mb-0">Nenhuma prioridade urgente.</h6>
-                    </div>
-                  )}
-                </div>
+          {/* Prioridades */}
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-light)',
+            boxShadow: 'var(--shadow-sm)',
+            padding: '24px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: 'var(--error-light)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '0.875rem' }}></i>
               </div>
+              <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Prioridades</h5>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {priorities.length > 0 ? priorities.map(ev => (
+                <div key={ev._id} style={{
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg)',
+                  borderLeft: '3px solid var(--error)',
+                  transition: 'all var(--transition-fast)'
+                }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)', marginBottom: '4px' }}>{ev.titulo}</div>
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <i className="bi bi-clock"></i>
+                    {formatarData(ev.data)} às {ev.horaInicial || ev.hora || '12:00'}
+                  </div>
+                </div>
+              )) : (
+                <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+                  <i className="bi bi-emoji-smile" style={{ fontSize: '1.5rem', color: 'var(--text-tertiary)', opacity: 0.5, display: 'block', marginBottom: '8px' }}></i>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontWeight: 500 }}>Nenhuma prioridade urgente.</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-
-        {/* 4. Cronogramas */}
-        <div className="mb-2 pt-3">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h4 className="fw-bold text-blue-dark mb-0 d-flex align-items-center">
-              <i className="bi bi-calendar-range-fill text-primary me-3 fs-3"></i>Cronogramas
-            </h4>
+        {/* ── Section: Cronogramas ── */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.125rem' }}>Cronogramas</h3>
           </div>
-          
+
           {loading ? (
-             <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+            <div style={{ textAlign: 'center', padding: '48px' }}>
+              <div className="spinner-border" style={{ color: 'var(--primary)' }}></div>
+            </div>
           ) : cronogramas.length > 0 ? (
-            <div className="row g-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
               {cronogramas.map(cron => (
-                <div key={cron._id} className="col-md-6 col-lg-4">
-                  <div className="card-flat p-0 h-100 shadow-sm border-0 d-flex flex-column bg-white overflow-hidden" style={{ borderRadius: '16px' }}>
-                    <div className="p-4 d-flex flex-column flex-grow-1">
-                      <div className="d-flex justify-content-between align-items-start mb-3">
-                        <span className="badge bg-blue-light text-blue-dark px-3 py-2 rounded-pill fw-bold" style={{ fontSize: '0.75rem' }}>
-                          {cron.modalidade}
-                        </span>
-                        <div className="text-muted opacity-50"><i className="bi bi-clipboard-data fs-5"></i></div>
-                      </div>
-                      
-                      <h5 className="fw-bold text-blue-dark mb-3 lh-base">{cron.titulo}</h5>
-                      
-                      <div className="d-flex align-items-center text-muted small fw-medium mt-auto bg-light p-2 rounded-3">
-                        <i className="bi bi-calendar3 me-2 text-primary"></i>
-                        {new Date(cron.dataInicio).toLocaleDateString('pt-BR')} a {new Date(cron.dataFim).toLocaleDateString('pt-BR')}
-                      </div>
+                <div key={cron._id} style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-light)',
+                  boxShadow: 'var(--shadow-sm)',
+                  overflow: 'hidden',
+                  transition: 'all var(--transition-base)',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }} className="hover-lift">
+                  <div style={{ padding: '24px 24px 16px', flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                      <span style={{
+                        background: 'var(--primary-light)',
+                        color: 'var(--primary)',
+                        padding: '4px 12px',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: '0.6875rem',
+                        fontWeight: 600
+                      }}>
+                        {cron.modalidade}
+                      </span>
                     </div>
-                    
-                    <div className="bg-light px-4 py-3 border-top d-flex justify-content-between align-items-center">
-                      <small className="text-muted fw-medium" style={{ fontSize: '0.75rem' }}>Acesso rápido</small>
-                      <Link to={`/esportes/${formatModalityToId(cron.modalidade)}`} className="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm transition hover-scale">
-                        Abrir <i className="bi bi-arrow-right ms-1"></i>
-                      </Link>
+                    <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '12px', fontSize: '0.9375rem', lineHeight: 1.4 }}>{cron.titulo}</h5>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.75rem',
+                      color: 'var(--text-tertiary)',
+                      background: 'var(--bg)',
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius-sm)'
+                    }}>
+                      <i className="bi bi-calendar3"></i>
+                      {new Date(cron.dataInicio).toLocaleDateString('pt-BR')} — {new Date(cron.dataFim).toLocaleDateString('pt-BR')}
                     </div>
+                  </div>
+                  <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'flex-end' }}>
+                    <Link to={`/esportes/${formatModalityToId(cron.modalidade)}`} style={{
+                      textDecoration: 'none',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      color: 'var(--primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      Abrir <i className="bi bi-arrow-right"></i>
+                    </Link>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center text-muted p-5 border-0 shadow-sm" style={{ backgroundColor: '#F8FAFC', borderRadius: '16px' }}>
-              <i className="bi bi-calendar-x fs-1 text-muted mb-3 d-block opacity-50"></i>
-              <h5 className="fw-bold text-blue-dark mb-2">Nenhum cronograma</h5>
-              <p className="mb-4 text-muted">Nenhum cronograma foi criado até o momento.</p>
-              <Link to="/esportes" className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm transition hover-scale">
-                Criar Cronograma
-              </Link>
+            <div style={{
+              textAlign: 'center',
+              padding: '48px 24px',
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-light)'
+            }}>
+              <i className="bi bi-calendar-x" style={{ fontSize: '2rem', color: 'var(--text-tertiary)', opacity: 0.5, display: 'block', marginBottom: '12px' }}></i>
+              <h6 style={{ fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>Nenhum cronograma</h6>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '16px' }}>Nenhum cronograma foi criado até o momento.</p>
+              <Link to="/esportes" className="btn btn-primary btn-sm rounded-pill px-4">Criar Cronograma</Link>
             </div>
           )}
         </div>
 
-        {/* Modal Editar Evento (Agenda) */}
+        {/* Modal Editar Evento */}
         <EventModal 
           show={showModal} 
           eventData={selectedEvent} 

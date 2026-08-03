@@ -117,7 +117,7 @@ const initializeSports = async (req, res) => {
         subcategorias: []
       },
       {
-        nome: 'Vôlei de Praia (Duplas)',
+        nome: 'Vôlei de Praia',
         tipo: 'coletivo',
         subcategorias: []
       }

@@ -72,7 +72,6 @@ const CalendarSidebar = ({
     }
   };
 
-  // Filtrar Próximos Eventos (A partir de hoje)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -83,7 +82,6 @@ const CalendarSidebar = ({
     .sort((a, b) => new Date(a.start) - new Date(b.start))
     .slice(0, limitEvents);
 
-  // Filtrar Prioridades (Eventos com eventoObrigatorio = true)
   const priorityEvents = events
     .filter(ev => ev.eventoObrigatorio && new Date(ev.start) >= today)
     .sort((a, b) => new Date(a.start) - new Date(b.start))
@@ -113,17 +111,23 @@ const CalendarSidebar = ({
   };
 
   return (
-    <div className="calendar-sidebar bg-white h-100 p-3 overflow-auto border-end d-flex flex-column">
+    <div style={{
+      height: '100%',
+      padding: '24px',
+      overflowY: 'auto',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px'
+    }}>
       
-      {/* Mini Calendário */}
-      <div className="mb-4 d-flex justify-content-center w-100 mini-calendar-container">
+      {/* Mini Calendar container */}
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }} className="mini-calendar-container">
         <Calendar 
           onChange={onDateChange} 
           value={currentDate} 
           className="border-0 shadow-none"
           locale="pt-BR"
           tileClassName={({ date, view }) => {
-             // Highlight days with events
              if (view === 'month') {
                const hasEvent = events.some(ev => new Date(ev.start).toDateString() === date.toDateString());
                return hasEvent ? 'has-event-tile' : null;
@@ -133,131 +137,175 @@ const CalendarSidebar = ({
       </div>
 
       {/* Próximos Eventos */}
-      <div className={`mb-2 ${userType === 'estudante' ? 'flex-grow-1 overflow-auto pe-1' : 'mb-4'}`}>
-        <h6 className="text-muted fw-bold mb-3 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>Próximos Eventos</h6>
+      <div style={{ display: 'flex', flexDirection: 'column' }} className={userType === 'estudante' ? 'flex-grow-1 overflow-auto' : ''}>
+        <h6 style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Próximos Eventos</h6>
         {upcomingEvents.length > 0 ? (
-          upcomingEvents.map(ev => (
-            <div key={ev._id || ev.id} className="d-flex align-items-start mb-3 p-2 rounded event-sidebar-card shadow-sm border">
-              <div className="me-3 mt-1">
-                {getEventIcon(ev.tipo)}
-              </div>
-              <div>
-                <div className="fw-bold text-dark mb-1" style={{ fontSize: '0.9rem' }}>{ev.title}</div>
-                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                  {formatDateLabel(ev.start)} • {new Date(ev.start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {upcomingEvents.map(ev => (
+              <div key={ev._id || ev.id} style={{
+                display: 'flex',
+                alignItems: 'start',
+                padding: '12px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg)',
+                border: '1px solid var(--border-light)',
+                gap: '12px'
+              }} className="hover-scale-sm">
+                <div style={{ marginTop: '2px' }}>
+                  {getEventIcon(ev.tipo)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
+                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', marginTop: '2px' }}>
+                    {formatDateLabel(ev.start)} • {new Date(ev.start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' })}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <p className="text-muted small">Nenhum evento próximo.</p>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Nenhum evento próximo.</p>
         )}
       </div>
 
       {userType !== 'estudante' && (
         <>
-          {/* Prioridades da Semana */}
-          <div className="mb-4">
-            <h6 className="text-muted fw-bold mb-3 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>Prioridades</h6>
+          {/* Prioridades */}
+          <div>
+            <h6 style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Prioridades</h6>
             {priorityEvents.length > 0 ? (
-              priorityEvents.map(ev => (
-                <div key={`prio-${ev._id || ev.id}`} className="d-flex align-items-center mb-2">
-                  <Warning fontSize="small" className="text-danger me-2" />
-                  <div className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>
-                    {ev.title}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {priorityEvents.map(ev => (
+                  <div key={`prio-${ev._id || ev.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--error-light)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--error)' }}>
+                    <Warning fontSize="small" className="text-danger" />
+                    <div style={{ fontWeight: 700, color: '#991B1B', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ev.title}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
-              <p className="text-muted small">Sem prioridades urgentes.</p>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Sem prioridades urgentes.</p>
             )}
           </div>
 
           {/* Metas Gerais */}
-          <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h6 className="text-muted fw-bold mb-0 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>Metas Gerais</h6>
-              {userType !== 'estudante' && (
-                <button 
-                  className="btn btn-sm btn-link text-primary p-0 fw-bold text-decoration-none" 
-                  onClick={() => {
-                    setEditingGoal(null);
-                    setGoalFormData({ text: '', descricao: '', prazo: '' });
-                    setShowGoalForm(!showGoalForm);
-                  }}
-                >
-                  <i className={`bi bi-${showGoalForm ? 'x' : 'plus-lg'} me-1`}></i>
-                  {showGoalForm ? 'Cancelar' : 'Nova Meta'}
-                </button>
-              )}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h6 style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Metas Gerais</h6>
+              <button 
+                onClick={() => {
+                  setEditingGoal(null);
+                  setGoalFormData({ text: '', descricao: '', prazo: '' });
+                  setShowGoalForm(!showGoalForm);
+                }}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--primary)',
+                  fontWeight: 600, fontSize: '0.75rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '4px'
+                }}
+              >
+                <i className={`bi bi-${showGoalForm ? 'x' : 'plus-lg'}`}></i>
+                {showGoalForm ? 'Cancelar' : 'Nova Meta'}
+              </button>
             </div>
 
             {showGoalForm && (
-              <div className="card-flat p-3 bg-light border mb-3 rounded-3 shadow-sm">
+              <div style={{
+                background: 'var(--bg)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px',
+                border: '1.5px solid var(--border)',
+                marginBottom: '16px'
+              }}>
                 <form onSubmit={handleGoalSubmit}>
-                  <div className="mb-2">
+                  <div style={{ marginBottom: '8px' }}>
                     <input 
                       type="text" 
-                      className="form-control form-control-sm border-0" 
                       placeholder="Título da meta *" 
                       value={goalFormData.text}
                       onChange={(e) => setGoalFormData({...goalFormData, text: e.target.value})}
                       required
+                      style={{
+                        width: '100%', padding: '8px 12px', border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', fontFamily: 'var(--font)',
+                        outline: 'none', background: 'var(--bg-card)'
+                      }}
                     />
                   </div>
-                  <div className="mb-2">
+                  <div style={{ marginBottom: '8px' }}>
                     <textarea 
-                      className="form-control form-control-sm border-0" 
                       placeholder="Descrição (opcional)"
                       rows="2"
                       value={goalFormData.descricao}
                       onChange={(e) => setGoalFormData({...goalFormData, descricao: e.target.value})}
+                      style={{
+                        width: '100%', padding: '8px 12px', border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', fontFamily: 'var(--font)',
+                        outline: 'none', background: 'var(--bg-card)', resize: 'vertical'
+                      }}
                     ></textarea>
                   </div>
-                  <div className="mb-3">
+                  <div style={{ marginBottom: '12px' }}>
                     <input 
                       type="date" 
-                      className="form-control form-control-sm border-0 text-muted" 
                       value={goalFormData.prazo}
                       onChange={(e) => setGoalFormData({...goalFormData, prazo: e.target.value})}
+                      style={{
+                        width: '100%', padding: '8px 12px', border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', fontFamily: 'var(--font)',
+                        outline: 'none', background: 'var(--bg-card)', color: 'var(--text-secondary)'
+                      }}
                     />
                   </div>
-                  <button type="submit" className="btn btn-sm btn-primary w-100 fw-bold rounded-pill">
+                  <button type="submit" className="btn btn-primary btn-sm" style={{ width: '100%', borderRadius: 'var(--radius-sm)' }}>
                     {editingGoal ? 'Salvar Meta' : 'Adicionar Meta'}
                   </button>
                 </form>
               </div>
             )}
 
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {goals.map(g => (
-                <div key={g.id} className="d-flex flex-column mb-2 p-2 rounded event-sidebar-card shadow-sm border bg-white">
-                  <div className="d-flex align-items-start" style={{ cursor: 'pointer' }} onClick={() => toggleGoal(g.id)}>
-                    <div className="mt-1">
-                      {g.done ? <CheckCircle fontSize="small" className="text-success me-2" /> : <RadioButtonUnchecked fontSize="small" className="text-muted me-2" />}
+                <div key={g.id} style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '12px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border-light)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'start', cursor: 'pointer', gap: '8px' }} onClick={() => toggleGoal(g.id)}>
+                    <div style={{ marginTop: '2px', display: 'flex', alignItems: 'center' }}>
+                      {g.done ? <CheckCircle fontSize="small" className="text-success" /> : <RadioButtonUnchecked fontSize="small" className="text-muted" />}
                     </div>
-                    <div className="flex-grow-1">
-                      <span className={g.done ? 'text-decoration-line-through text-muted fw-bold' : 'text-dark fw-bold'} style={{ fontSize: '0.85rem' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{
+                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        color: g.done ? 'var(--text-tertiary)' : 'var(--text)',
+                        textDecoration: g.done ? 'line-through' : 'none'
+                      }}>
                         {g.text}
                       </span>
                       {g.prazo && (
-                         <div className="text-muted mt-1" style={{ fontSize: '0.70rem' }}>
-                           <i className="bi bi-calendar-event me-1"></i>
+                         <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                           <i className="bi bi-calendar-event"></i>
                            Prazo: {new Date(g.prazo + 'T12:00:00').toLocaleDateString('pt-BR')}
                          </div>
                       )}
                       {g.descricao && (
-                         <div className="text-muted mt-1" style={{ fontSize: '0.75rem' }}>
+                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: '4px 0 0' }}>
                            {g.descricao}
-                         </div>
+                         </p>
                       )}
                     </div>
                     {userType !== 'estudante' && (
-                      <div className="d-flex ms-2">
-                        <button className="btn btn-sm btn-link text-muted p-0 me-2" onClick={(e) => handleEditGoal(e, g)}>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <button style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '2px' }} onClick={(e) => handleEditGoal(e, g)}>
                           <i className="bi bi-pencil-fill" style={{ fontSize: '0.75rem' }}></i>
                         </button>
-                        <button className="btn btn-sm btn-link text-danger p-0" onClick={(e) => handleDeleteGoal(e, g.id)}>
+                        <button style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '2px' }} onClick={(e) => handleDeleteGoal(e, g.id)}>
                           <i className="bi bi-trash-fill" style={{ fontSize: '0.75rem' }}></i>
                         </button>
                       </div>
@@ -266,7 +314,7 @@ const CalendarSidebar = ({
                 </div>
               ))}
               {goals.length === 0 && !showGoalForm && (
-                <p className="text-muted small">Nenhuma meta cadastrada.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Nenhuma meta cadastrada.</p>
               )}
             </div>
           </div>

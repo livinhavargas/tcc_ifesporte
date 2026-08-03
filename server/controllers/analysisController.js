@@ -19,7 +19,8 @@ const createAnalysis = async (req, res) => {
       data, 
       subtipo = 'Geral', 
       respostas = {}, 
-      observacoes 
+      observacoes,
+      diagnostico: reqDiagnostico
     } = req.body;
 
     let indiceGeral = 0;
@@ -52,16 +53,20 @@ const createAnalysis = async (req, res) => {
         return s.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
       };
       
-      diagnostico = `O atleta atingiu um Índice Geral ${nivel} (${indiceGeral}). `;
-      
-      if (maxNota >= 4) {
-        diagnostico += `O seu grande destaque foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
+      if (reqDiagnostico) {
+        diagnostico = reqDiagnostico;
       } else {
-        diagnostico += `Seu melhor desempenho foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
-      }
-      
-      if (minNota !== maxNota) {
-        diagnostico += `Para as próximas semanas, a sugestão é focar em treinos para melhorar ${formatAttr(piorAtr)} (Nota ${minNota}).`;
+        diagnostico = `O atleta atingiu um Índice Geral ${nivel} (${indiceGeral}). `;
+        
+        if (maxNota >= 4) {
+          diagnostico += `O seu grande destaque foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
+        } else {
+          diagnostico += `Seu melhor desempenho foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
+        }
+        
+        if (minNota !== maxNota) {
+          diagnostico += `Para as próximas semanas, a sugestão é focar em treinos para melhorar ${formatAttr(piorAtr)} (Nota ${minNota}).`;
+        }
       }
     }
 

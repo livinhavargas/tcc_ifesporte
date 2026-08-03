@@ -9,7 +9,6 @@ const sportRoutes = require('./routes/sportRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const analysisRoutes = require('./routes/analysisRoutes');
 const cronogramaRoutes = require('./routes/cronogramaRoutes');
-const scheduleRoutes = require('./routes/scheduleRoutes');
 const { PORT } = require('./config');
 
 const app = express();
@@ -34,7 +33,6 @@ app.use('/api/sports', sportRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/cronogramas', cronogramaRoutes);
-app.use('/api/schedules', scheduleRoutes);
 
 // 2. ARQUIVOS ESTÁTICOS DO REACT
 const buildPath = path.join(__dirname, '..', 'client', 'build');

@@ -86,110 +86,213 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="d-flex min-vh-100 bg-white">
-      {/* Área Institucional - Lado Esquerdo (40%) */}
-      <div className="d-none d-lg-flex flex-column justify-content-center align-items-center bg-blue-dark text-white p-5" style={{ flex: '0 0 40%' }}>
-        <div className="text-center w-100 d-flex flex-column align-items-center" style={{ maxWidth: '400px' }}>
-          <div className="mb-5 d-flex justify-content-center w-100">
-            <Logo height="80px" circleColor="#fff" textColor="#fff" />
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font)' }}>
+      {/* Left Panel — Branding */}
+      <div style={{
+        flex: '0 0 42%',
+        background: 'linear-gradient(160deg, #1E5EFF 0%, #1A4FDB 50%, #0F3299 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '64px 48px',
+        position: 'relative',
+        overflow: 'hidden'
+      }} className="d-none d-lg-flex">
+        {/* Decorative circles */}
+        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }}></div>
+        <div style={{ position: 'absolute', bottom: '-120px', left: '-60px', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }}></div>
+
+        <div style={{ maxWidth: '360px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <div style={{ marginBottom: '40px' }}>
+            <Logo height="72px" circleColor="#fff" textColor="#fff" />
           </div>
-          <h4 className="fw-light mb-4 text-center">Tecnologia e esporte trabalhando juntos.</h4>
-          <p className="text-white-50 text-center" style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
+          <h3 style={{ color: '#fff', fontWeight: 300, fontSize: '1.375rem', marginBottom: '20px', lineHeight: 1.5 }}>
+            Tecnologia e esporte<br/>trabalhando juntos.
+          </h3>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9375rem', lineHeight: 1.7 }}>
             Gerencie atletas, modalidades, treinamentos, eventos e análises de desempenho em um único ambiente moderno, seguro e intuitivo.
           </p>
         </div>
       </div>
 
-      {/* Área de Autenticação - Lado Direito (60%) */}
-      <div className="d-flex flex-column justify-content-center align-items-center p-4 p-md-5 w-100 bg-main">
-        <div className="card-flat p-4 p-md-5 shadow-sm" style={{ width: '100%', maxWidth: '480px', borderRadius: '16px' }}>
-          <div className="text-center mb-5 d-flex flex-column align-items-center">
-            <h2 className="fw-bold text-blue-dark mb-4">Bem-vindo ao</h2>
-            <div className="mb-4 d-flex justify-content-center w-100">
-              <Logo height="56px" />
+      {/* Right Panel — Login Form */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '48px 32px',
+        background: 'var(--bg)'
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: '420px',
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '40px 36px',
+          boxShadow: 'var(--shadow-md)',
+          border: '1px solid var(--border-light)'
+        }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+            <div style={{ marginBottom: '20px' }} className="d-flex justify-content-center">
+              <Logo height="48px" />
             </div>
-            <p className="text-muted">Faça login para continuar.</p>
+            <h2 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
+              Bem-vindo de volta
+            </h2>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0 }}>
+              Faça login para continuar.
+            </p>
           </div>
 
-          {error && <div className="alert alert-danger rounded-3 fw-bold small"><i className="bi bi-exclamation-triangle-fill me-2"></i>{error}</div>}
+          {/* Error */}
+          {error && (
+            <div style={{
+              background: 'var(--error-light)',
+              color: '#991B1B',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px 16px',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <i className="bi bi-exclamation-triangle-fill"></i>{error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="form-label fw-bold small text-blue-dark">E-mail</label>
-              <div className={`input-group ${emailError ? 'border border-danger rounded' : ''}`}>
-                <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '10px 0 0 10px' }}>
+            {/* Email */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)', marginBottom: '6px' }}>E-mail</label>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--text-tertiary)', fontSize: '0.875rem'
+                }}>
                   <i className="bi bi-envelope"></i>
                 </span>
                 <input
                   type="email"
-                  className="form-control border-start-0 ps-0"
                   name="email"
                   placeholder="exemplo@instituicao.edu.br"
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  style={{ borderRadius: '0 10px 10px 0' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px 12px 40px',
+                    borderRadius: 'var(--radius-md)',
+                    border: `1.5px solid ${emailError ? 'var(--error)' : 'var(--border)'}`,
+                    fontSize: '0.875rem',
+                    fontFamily: 'var(--font)',
+                    outline: 'none',
+                    transition: 'all var(--transition-fast)',
+                    background: 'var(--bg-input)'
+                  }}
+                  onFocus={e => { if (!emailError) e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = 'var(--shadow-focus)'; }}
+                  onBlur={e => { if (!emailError) e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
                 />
               </div>
-              {emailError && <div className="text-danger small mt-1 fw-bold">{emailError}</div>}
+              {emailError && <div style={{ color: 'var(--error)', fontSize: '0.75rem', fontWeight: 600, marginTop: '4px' }}>{emailError}</div>}
             </div>
 
-            <div className="mb-3">
-              <label className="form-label fw-bold small text-blue-dark">Senha</label>
-              <div className="input-group">
-                <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '10px 0 0 10px' }}>
+            {/* Password */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text)', marginBottom: '6px' }}>Senha</label>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--text-tertiary)', fontSize: '0.875rem'
+                }}>
                   <i className="bi bi-lock"></i>
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className="form-control border-start-0 ps-0 border-end-0"
                   name="senha"
                   placeholder="Sua senha de acesso"
                   value={formData.senha}
                   onChange={handleInputChange}
                   required
+                  style={{
+                    width: '100%',
+                    padding: '12px 44px 12px 40px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1.5px solid var(--border)',
+                    fontSize: '0.875rem',
+                    fontFamily: 'var(--font)',
+                    outline: 'none',
+                    transition: 'all var(--transition-fast)',
+                    background: 'var(--bg-input)'
+                  }}
+                  onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = 'var(--shadow-focus)'; }}
+                  onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
                 />
-                <span 
-                  className="input-group-text bg-white cursor-pointer text-muted" 
-                  style={{ borderRadius: '0 10px 10px 0' }}
+                <span
                   onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                    color: 'var(--text-tertiary)', cursor: 'pointer', fontSize: '0.9375rem'
+                  }}
                 >
                   <i className={`bi bi-eye${showPassword ? '-slash' : ''}`}></i>
                 </span>
               </div>
             </div>
 
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <div className="form-check">
-                <input 
-                  className="form-check-input" 
-                  type="checkbox" 
-                  id="rememberMe" 
+            {/* Remember + Forgot */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8125rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                <input
+                  type="checkbox"
                   checked={rememberMe}
                   onChange={handleRememberMeChange}
+                  style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }}
                 />
-                <label className="form-check-label text-muted small fw-bold cursor-pointer" htmlFor="rememberMe">
-                  Lembrar-me
-                </label>
-              </div>
-              <Link to="/esqueci-senha" className="text-decoration-none fw-bold small text-blue-dark">
+                Lembrar-me
+              </label>
+              <Link to="/esqueci-senha" style={{ textDecoration: 'none', fontWeight: 600, fontSize: '0.8125rem', color: 'var(--primary)' }}>
                 Esqueci minha senha
               </Link>
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
-              className="btn btn-primary w-100 py-3 mb-4 fw-bold"
               disabled={loading || !!emailError}
-              style={{ borderRadius: '10px', transition: '0.3s' }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: 'var(--radius-md)',
+                border: 'none',
+                background: loading || emailError ? '#94A3B8' : 'var(--primary)',
+                color: '#fff',
+                fontFamily: 'var(--font)',
+                fontWeight: 700,
+                fontSize: '0.9375rem',
+                cursor: loading || emailError ? 'not-allowed' : 'pointer',
+                transition: 'all var(--transition-base)',
+                boxShadow: '0 2px 8px rgba(30, 94, 255, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
             >
-              {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
+              {loading && <span className="spinner-border spinner-border-sm"></span>}
               Entrar
             </button>
           </form>
 
-          <div className="text-center text-muted small fw-bold">
-            Não tem uma conta? <Link to="/register" className="text-blue-dark text-decoration-none ms-1">Criar Conta</Link>
+          {/* Register Link */}
+          <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+            Não tem uma conta?{' '}
+            <Link to="/register" style={{ textDecoration: 'none', fontWeight: 700, color: 'var(--primary)' }}>Criar Conta</Link>
           </div>
         </div>
       </div>

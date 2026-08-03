@@ -1,55 +1,70 @@
-
 /* ==========================================================================
-   Google Calendar Clone Custom Styles (Agenda)
+   Agenda — Calendar Styles (IFEsporte Design System v2.0)
    ========================================================================== */
 
-/* Layout da Agenda para preencher a tela */
+/* Layout */
 .agenda-layout {
   height: 100vh;
   overflow: hidden;
 }
 
-/* Sidebar Customizações */
 .calendar-sidebar {
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--border-light);
 }
 
-/* Mini Calendário (react-calendar overrides) */
+/* Mini Calendar (react-calendar overrides) */
 .mini-calendar-container .react-calendar {
   width: 100%;
   border: none;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font);
+  background: transparent;
 }
 .react-calendar__navigation button {
-  font-weight: bold;
-  color: var(--blue-dark);
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.875rem;
 }
 .react-calendar__navigation button:enabled:hover,
 .react-calendar__navigation button:enabled:focus {
-  background-color: transparent;
-  color: var(--orange-secondary);
+  background-color: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
 }
 .react-calendar__month-view__days__day--weekend {
-  color: #ef4444;
+  color: var(--error);
+}
+.react-calendar__month-view__weekdays__weekday {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
 }
 .react-calendar__tile {
   padding: 8px 6px;
   border-radius: 50%;
   margin: 2px 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  transition: all var(--transition-fast);
 }
 .react-calendar__tile:enabled:hover,
 .react-calendar__tile:enabled:focus {
-  background-color: #f1f5f9;
+  background-color: var(--bg-hover);
   border-radius: 50%;
 }
 .react-calendar__tile--now {
-  background-color: var(--blue-light) !important;
-  color: var(--blue-dark);
-  font-weight: bold;
+  background-color: var(--primary-light) !important;
+  color: var(--primary);
+  font-weight: 700;
 }
 .react-calendar__tile--active {
-  background-color: var(--blue-dark) !important;
-  color: white !important;
+  background-color: var(--primary) !important;
+  color: var(--text-inverse) !important;
 }
 .has-event-tile {
   position: relative;
@@ -57,50 +72,51 @@
 .has-event-tile::after {
   content: '';
   position: absolute;
-  bottom: 2px;
+  bottom: 3px;
   left: 50%;
   transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  background-color: var(--orange-secondary);
+  width: 5px;
+  height: 5px;
+  background-color: var(--accent);
   border-radius: 50%;
 }
 
 /* Main Calendar (react-big-calendar overrides) */
 .main-calendar-container .rbc-calendar {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font);
   border: none;
 }
 .rbc-header {
-  padding: 10px 0;
+  padding: 12px 0;
   font-weight: 600;
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-light);
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
 }
 .rbc-month-view {
   border: none;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-light);
 }
 .rbc-day-bg {
-  border-left: 1px solid #f1f5f9;
+  border-left: 1px solid var(--border-light);
 }
 .rbc-month-row {
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-light);
 }
 .rbc-date-cell {
   padding: 8px;
   font-weight: 500;
-  font-size: 0.9rem;
-  color: #475569;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
 }
 .rbc-date-cell.rbc-now {
-  font-weight: bold;
+  font-weight: 700;
 }
 .rbc-date-cell.rbc-now > a {
-  background-color: var(--blue-dark);
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   border-radius: 50%;
   padding: 2px 8px;
   display: inline-block;
@@ -108,43 +124,71 @@
 .rbc-event {
   border: none;
   box-shadow: none;
-  border-radius: 4px;
-  padding: 2px 6px;
+  border-radius: 6px;
+  padding: 3px 8px;
   margin-top: 2px;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
 }
 .rbc-today {
-  background-color: rgba(64, 109, 177, 0.05); /* subtle blue */
+  background-color: var(--primary-lighter);
 }
 .rbc-time-view {
   border: none;
 }
 .rbc-time-header {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-light);
 }
 .rbc-time-content {
   border-top: none;
 }
 .rbc-timeslot-group {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-light);
 }
 .rbc-time-column {
-  border-left: 1px solid #f1f5f9;
+  border-left: 1px solid var(--border-light);
 }
 .rbc-allday-cell {
-  display: none; /* Hide all-day row for cleaner look if not needed */
+  display: none;
 }
 .rbc-time-gutter .rbc-timeslot-group {
-  font-size: 0.75rem;
-  color: #94a3b8;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* Toolbar override */
+.rbc-toolbar {
+  margin-bottom: 16px;
+  gap: 8px;
+}
+.rbc-toolbar button {
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  transition: all var(--transition-fast);
+}
+.rbc-toolbar button:hover {
+  background-color: var(--bg-hover);
+  color: var(--text);
+}
+.rbc-toolbar button.rbc-active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-inverse);
 }
 
 /* Event Sidebar Cards */
 .event-sidebar-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background-color: white;
+  transition: all var(--transition-base);
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md) !important;
 }
 .event-sidebar-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--shadow-md) !important;
 }

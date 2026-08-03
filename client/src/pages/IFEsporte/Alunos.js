@@ -159,193 +159,245 @@ const Alunos = () => {
     return matchesSearch && matchesTurma && matchesGenero && matchesIdade;
   }).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
 
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
+    border: '1.5px solid var(--border)',
+    fontSize: '0.875rem',
+    fontFamily: 'var(--font)',
+    outline: 'none',
+    transition: 'all var(--transition-fast)',
+    background: 'var(--bg)',
+    minHeight: '44px'
+  };
+
   return (
     <Layout>
-      <div className="container-fluid p-0">
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
-        {/* Header e Filtros */}
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h2 className="fw-bold text-blue-dark mb-1">Meus Atletas</h2>
-            <p className="text-muted mb-0">Gerencie todos os alunos inscritos nos seus esportes.</p>
+            <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Meus Atletas</h2>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Gerencie todos os alunos inscritos nos seus esportes.</p>
           </div>
           {userType !== 'estudante' && (
-            <button 
-              className="btn btn-primary shadow-sm rounded-pill px-4 py-2 fw-bold"
-              onClick={() => setShowForm(!showForm)}
-            >
-              <i className={`bi bi-${showForm ? 'x-lg' : 'plus-lg'} me-2`}></i> 
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}
+              style={{ borderRadius: 'var(--radius-md)', padding: '10px 24px', fontSize: '0.875rem' }}>
+              <i className={`bi bi-${showForm ? 'x-lg' : 'plus-lg'} me-2`}></i>
               {showForm ? 'Cancelar' : 'Novo Aluno'}
             </button>
           )}
         </div>
 
-        {/* Painel de Filtros */}
-        <div className="card-flat p-3 mb-4 shadow-sm border">
+        {/* Filters */}
+        <div style={{
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border-light)',
+          boxShadow: 'var(--shadow-xs)',
+          padding: '16px 20px',
+          marginBottom: '24px'
+        }}>
           <div className="row g-3 align-items-center">
             <div className="col-12 col-lg-3">
-              <div className="input-group">
-                <span className="input-group-text bg-white border-end-0 text-muted"><i className="bi bi-search"></i></span>
-                <input type="text" className="form-control border-start-0 ps-0" placeholder="Buscar aluno..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <div style={{ position: 'relative' }}>
+                <i className="bi bi-search" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}></i>
+                <input type="text" placeholder="Buscar aluno..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: '38px', background: 'var(--bg)' }} />
               </div>
             </div>
-            <div className="col-12 col-lg-3">
-              <div className="d-flex align-items-center bg-light rounded px-3 py-1 border">
-                <i className="bi bi-building me-2 text-muted"></i>
-                <select className="form-select form-select-sm border-0 bg-transparent shadow-none" value={filterTurma} onChange={(e) => setFilterTurma(e.target.value)}>
-                  <option value="">Todas as Turmas</option>
-                  {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
+            <div className="col-6 col-lg-3">
+              <select className="form-select" value={filterTurma} onChange={(e) => setFilterTurma(e.target.value)} style={inputStyle}>
+                <option value="">Todas as Turmas</option>
+                {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
-            <div className="col-12 col-lg-3">
-              <div className="d-flex align-items-center bg-light rounded px-3 py-1 border">
-                <i className="bi bi-gender-ambiguous me-2 text-muted"></i>
-                <select className="form-select form-select-sm border-0 bg-transparent shadow-none" value={filterGenero} onChange={(e) => setFilterGenero(e.target.value)}>
-                  <option value="">Todos (Gênero)</option>
-                  {generosDisponiveis.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
+            <div className="col-6 col-lg-3">
+              <select className="form-select" value={filterGenero} onChange={(e) => setFilterGenero(e.target.value)} style={inputStyle}>
+                <option value="">Todos (Gênero)</option>
+                {generosDisponiveis.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
             </div>
-            <div className="col-12 col-lg-3">
-              <div className="d-flex align-items-center bg-light rounded px-3 py-1 border">
-                <i className="bi bi-calendar-event me-2 text-muted"></i>
-                <select className="form-select form-select-sm border-0 bg-transparent shadow-none" value={filterIdade} onChange={(e) => setFilterIdade(e.target.value)}>
-                  <option value="">Todas as Idades</option>
-                  {faixasEtarias.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
+            <div className="col-6 col-lg-3">
+              <select className="form-select" value={filterIdade} onChange={(e) => setFilterIdade(e.target.value)} style={inputStyle}>
+                <option value="">Todas as Idades</option>
+                {faixasEtarias.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Formulário Customizado de Cadastro de Aluno pelo Treinador */}
+        {/* Registration Form */}
         {showForm && userType !== 'estudante' && (
-          <div className="card-flat p-4 p-md-5 mb-5 shadow-sm border rounded-4" style={{ backgroundColor: '#f8fafc' }}>
-            <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-              <h4 className="fw-bold text-blue-dark mb-0"><i className="bi bi-person-plus-fill me-2"></i>Cadastrar Novo Atleta</h4>
-              <button className="btn-close" onClick={() => setShowForm(false)}></button>
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--border-light)',
+            boxShadow: 'var(--shadow-md)',
+            padding: '32px',
+            marginBottom: '32px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '24px' }}>
+              <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.0625rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <i className="bi bi-person-plus-fill" style={{ color: 'var(--primary)' }}></i>Cadastrar Novo Atleta
+              </h4>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-tertiary)', cursor: 'pointer' }}>
+                <i className="bi bi-x-lg"></i>
+              </button>
             </div>
             
-            {mensagem && <div className={`alert ${mensagem.includes('✅') ? 'alert-success bg-green-light border-0 text-success' : 'alert-danger'} fw-bold rounded-3`}><i className={`bi ${mensagem.includes('✅') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2`}></i>{mensagem}</div>}
+            {mensagem && (
+              <div style={{
+                background: mensagem.includes('✅') ? 'var(--success-light)' : 'var(--error-light)',
+                color: mensagem.includes('✅') ? '#065F46' : '#991B1B',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 16px',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                marginBottom: '20px',
+                display: 'flex', alignItems: 'center', gap: '8px'
+              }}>
+                <i className={`bi ${mensagem.includes('✅') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`}></i>{mensagem}
+              </div>
+            )}
             
             <form onSubmit={handleAddStudent}>
-              
-              {/* Seção A: Dados Pessoais e Acadêmicos */}
-              <h6 className="fw-bold text-blue-dark mb-3"><i className="bi bi-person-lines-fill me-2 text-primary"></i>Dados Pessoais e Acadêmicos</h6>
-              <div className="row g-3 mb-4 bg-white p-3 rounded-3 border shadow-sm">
-                <div className="col-md-8">
-                  <label className="form-label small fw-bold text-muted">Nome Completo *</label>
-                  <input type="text" className="form-control bg-light border-0" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Nome do estudante" required />
+              {/* Section A: Personal Data */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                  <i className="bi bi-person-lines-fill"></i>
                 </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-bold text-muted">Gênero *</label>
-                  <select className="form-select bg-light border-0" name="sexo" value={formData.sexo} onChange={handleInputChange} required>
-                    {generosDisponiveis.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                
-                <div className="col-md-4">
-                  <label className="form-label small fw-bold text-muted">Data de Nascimento *</label>
-                  <input type="date" className="form-control bg-light border-0" name="dataNascimento" value={formData.dataNascimento} onChange={handleInputChange} required />
-                </div>
-                <div className="col-md-8">
-                  <label className="form-label small fw-bold text-muted">CPF *</label>
-                  <input type="text" className="form-control bg-light border-0" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" required />
-                </div>
-                
-                <div className="col-md-12">
-                  <label className="form-label small fw-bold text-muted">Endereço</label>
-                  <input type="text" className="form-control bg-light border-0" name="endereco" value={formData.endereco} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" />
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label small fw-bold text-muted">Matrícula *</label>
-                  <input type="text" className="form-control bg-light border-0" name="matricula" value={formData.matricula} onChange={handleInputChange} required />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-bold text-muted">Turma</label>
-                  <select className="form-select bg-light border-0" name="turma" value={formData.turma} onChange={handleInputChange}>
-                    <option value="">Selecione...</option>
-                    {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label small fw-bold text-muted">Telefone (Contato) *</label>
-                  <input type="text" className="form-control bg-light border-0" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" required />
+                <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Dados Pessoais e Acadêmicos</h6>
+              </div>
+              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
+                <div className="row g-3">
+                  <div className="col-md-8">
+                    <label className="form-label">Nome Completo *</label>
+                    <input type="text" className="form-control" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Nome do estudante" required />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Gênero *</label>
+                    <select className="form-select" name="sexo" value={formData.sexo} onChange={handleInputChange} required>
+                      {generosDisponiveis.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Data de Nascimento *</label>
+                    <input type="date" className="form-control" name="dataNascimento" value={formData.dataNascimento} onChange={handleInputChange} required />
+                  </div>
+                  <div className="col-md-8">
+                    <label className="form-label">CPF *</label>
+                    <input type="text" className="form-control" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" required />
+                  </div>
+                  <div className="col-md-12">
+                    <label className="form-label">Endereço</label>
+                    <input type="text" className="form-control" name="endereco" value={formData.endereco} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Matrícula *</label>
+                    <input type="text" className="form-control" name="matricula" value={formData.matricula} onChange={handleInputChange} required />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Turma</label>
+                    <select className="form-select" name="turma" value={formData.turma} onChange={handleInputChange}>
+                      <option value="">Selecione...</option>
+                      {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Telefone *</label>
+                    <input type="text" className="form-control" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" required />
+                  </div>
                 </div>
               </div>
 
               <div className="row g-4 mb-4">
-                {/* Seção B: Dados do Responsável */}
+                {/* Section B: Guardian */}
                 <div className="col-lg-6">
-                  <h6 className="fw-bold text-blue-dark mb-3"><i className="bi bi-people-fill me-2 text-primary"></i>Dados do Responsável</h6>
-                  <div className="bg-white p-3 rounded-3 border shadow-sm h-100">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                      <i className="bi bi-people-fill"></i>
+                    </div>
+                    <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Dados do Responsável</h6>
+                  </div>
+                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', height: 'calc(100% - 44px)' }}>
                     <div className="mb-3">
-                      <label className="form-label small fw-bold text-muted">Nome do Responsável</label>
-                      <input type="text" className="form-control bg-light border-0" name="nomeResponsavel" value={formData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do pai, mãe ou responsável" />
+                      <label className="form-label">Nome do Responsável</label>
+                      <input type="text" className="form-control" name="nomeResponsavel" value={formData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do pai, mãe ou responsável" />
                     </div>
                     <div>
-                      <label className="form-label small fw-bold text-muted">Telefone do Responsável</label>
-                      <input type="text" className="form-control bg-light border-0" name="telefoneResponsavel" value={formData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" />
+                      <label className="form-label">Telefone do Responsável</label>
+                      <input type="text" className="form-control" name="telefoneResponsavel" value={formData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" />
                     </div>
                   </div>
                 </div>
 
-                {/* Seção C: Informações Físicas */}
+                {/* Section C: Medical */}
                 <div className="col-lg-6">
-                  <h6 className="fw-bold text-blue-dark mb-3"><i className="bi bi-heart-pulse-fill me-2 text-danger"></i>Informações Físicas e Médicas</h6>
-                  <div className="bg-white p-3 rounded-3 border shadow-sm h-100">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--error-light)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                      <i className="bi bi-heart-pulse-fill"></i>
+                    </div>
+                    <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Informações Físicas e Médicas</h6>
+                  </div>
+                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', height: 'calc(100% - 44px)' }}>
                     <div className="row g-2 mb-3">
                       <div className="col-6">
-                        <label className="form-label small fw-bold text-muted">Peso (kg)</label>
-                        <input type="number" step="0.1" className="form-control bg-light border-0" name="peso" value={formData.peso} onChange={handleInputChange} placeholder="Ex: 65.5" />
+                        <label className="form-label">Peso (kg)</label>
+                        <input type="number" step="0.1" className="form-control" name="peso" value={formData.peso} onChange={handleInputChange} placeholder="Ex: 65.5" />
                       </div>
                       <div className="col-6">
-                        <label className="form-label small fw-bold text-muted">Altura (m)</label>
-                        <input type="number" step="0.01" className="form-control bg-light border-0" name="altura" value={formData.altura} onChange={handleInputChange} placeholder="Ex: 1.75" />
+                        <label className="form-label">Altura (m)</label>
+                        <input type="number" step="0.01" className="form-control" name="altura" value={formData.altura} onChange={handleInputChange} placeholder="Ex: 1.75" />
                       </div>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label small fw-bold text-muted">Alergias</label>
-                      <input type="text" className="form-control bg-light border-0" name="alergias" value={formData.alergias} onChange={handleInputChange} placeholder="Medicamentos, insetos, etc." />
+                      <label className="form-label">Alergias</label>
+                      <input type="text" className="form-control" name="alergias" value={formData.alergias} onChange={handleInputChange} placeholder="Medicamentos, insetos, etc." />
                     </div>
                     <div className="row g-2">
                       <div className="col-6">
-                        <label className="form-label small fw-bold text-muted">Lesões Anteriores</label>
-                        <textarea className="form-control bg-light border-0" name="lesoesAnteriores" rows="2" value={formData.lesoesAnteriores} onChange={handleInputChange}></textarea>
+                        <label className="form-label">Lesões Anteriores</label>
+                        <textarea className="form-control" name="lesoesAnteriores" rows="2" value={formData.lesoesAnteriores} onChange={handleInputChange}></textarea>
                       </div>
                       <div className="col-6">
-                        <label className="form-label small fw-bold text-muted">Restrições Médicas</label>
-                        <textarea className="form-control bg-light border-0" name="restricoesMedicas" rows="2" value={formData.restricoesMedicas} onChange={handleInputChange}></textarea>
+                        <label className="form-label">Restrições Médicas</label>
+                        <textarea className="form-control" name="restricoesMedicas" rows="2" value={formData.restricoesMedicas} onChange={handleInputChange}></textarea>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Seção D: Perfil Esportivo */}
-              <h6 className="fw-bold text-blue-dark mb-3"><i className="bi bi-trophy-fill me-2 text-primary"></i>Perfil Esportivo</h6>
-              <div className="bg-white p-3 rounded-3 border shadow-sm mb-4">
+              {/* Section D: Sports */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                  <i className="bi bi-trophy-fill"></i>
+                </div>
+                <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Perfil Esportivo</h6>
+              </div>
+              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                 <div className="mb-4" style={{ maxWidth: '200px' }}>
-                  <label className="form-label small fw-bold text-muted">Número da Camisa</label>
-                  <input type="number" className="form-control bg-light border-0" name="numeroCamisa" value={formData.numeroCamisa} onChange={handleInputChange} placeholder="Ex: 10" />
+                  <label className="form-label">Número da Camisa</label>
+                  <input type="number" className="form-control" name="numeroCamisa" value={formData.numeroCamisa} onChange={handleInputChange} placeholder="Ex: 10" />
                 </div>
                 <div>
-                  <label className="form-label small fw-bold text-muted mb-3">Vincular Modalidades</label>
+                  <label className="form-label" style={{ marginBottom: '12px' }}>Vincular Modalidades</label>
                   <ModalidadesSelector 
                     selected={formData.modalidades}
                     onChange={(novos) => setFormData({...formData, modalidades: novos})}
                   />
-                  <small className="text-muted d-block mt-2">Isso adicionará o aluno imediatamente aos elencos selecionados.</small>
+                  <small style={{ color: 'var(--text-tertiary)', display: 'block', marginTop: '8px', fontSize: '0.75rem' }}>Isso adicionará o aluno imediatamente aos elencos selecionados.</small>
                 </div>
               </div>
 
-              <div className="d-flex justify-content-end pt-3 border-top gap-2">
-                <button type="button" className="btn btn-outline-secondary fw-bold px-4 rounded-pill" onClick={() => setShowForm(false)}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '16px', borderTop: '1px solid var(--border-light)', gap: '12px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)} style={{ borderRadius: 'var(--radius-md)', padding: '10px 24px' }}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary fw-bold px-5 rounded-pill">
+                <button type="submit" className="btn btn-primary" style={{ borderRadius: 'var(--radius-md)', padding: '10px 32px' }}>
                   Salvar Atleta
                 </button>
               </div>
@@ -353,59 +405,78 @@ const Alunos = () => {
           </div>
         )}
 
-        {/* Grid de Listagem */}
+        {/* Student Grid */}
         {loading ? (
-          <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+          <div style={{ textAlign: 'center', padding: '64px' }}>
+            <div className="spinner-border" style={{ color: 'var(--primary)' }}></div>
+          </div>
         ) : (
-          <div className="row g-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
             {filteredStudents.map(student => {
-              // Fallback para modalidades ou esportes (retrocompatibilidade)
               const arrEsportes = student.modalidades?.length > 0 ? student.modalidades : (student.esportes || []);
-
               return (
-                <div className="col-md-6 col-xl-4" key={student._id}>
-                  <div 
-                    className="card-flat p-4 h-100 position-relative shadow-sm cursor-pointer hover-bg-light" 
-                    onClick={() => window.location.href=`/alunos/${student._id}`} 
-                    style={{transition: '0.2s', borderTop: `4px solid #3b82f6`}}
-                  >
-                    
-                    {/* Header: Avatar and Name */}
-                    <div className="d-flex align-items-center mb-3 mt-2">
-                      {student.foto ? (
-                        <img src={student.foto} alt="Perfil" className="rounded-circle shadow-sm me-3 flex-shrink-0" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
-                      ) : (
-                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm bg-blue-dark text-white flex-shrink-0" style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>
-                          {student.nome ? student.nome.charAt(0).toUpperCase() : 'A'}
-                        </div>
-                      )}
-                      <div className="pe-4">
-                        <h5 className="fw-bold text-blue-dark mb-0 text-truncate" style={{maxWidth: '180px'}}>{student.nome}</h5>
-                        <div className="text-muted small fw-bold mt-1">{student.turma || student.serie || 'S/ Turma'} {student.matricula ? `• ${student.matricula}` : ''}</div>
+                <div key={student._id}
+                  onClick={() => window.location.href=`/alunos/${student._id}`}
+                  style={{
+                    background: 'var(--bg-card)',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--border-light)',
+                    boxShadow: 'var(--shadow-sm)',
+                    padding: '20px',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-base)'
+                  }}
+                  className="hover-lift"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+                    {student.foto ? (
+                      <img src={student.foto} alt="Perfil" style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-full)', objectFit: 'cover', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{
+                        width: '48px', height: '48px',
+                        borderRadius: 'var(--radius-full)',
+                        background: 'var(--primary)',
+                        color: 'var(--text-inverse)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '1.125rem', flexShrink: 0
+                      }}>
+                        {student.nome ? student.nome.charAt(0).toUpperCase() : 'A'}
                       </div>
+                    )}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nome}</h6>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                        {student.turma || student.serie || 'S/ Turma'}{student.matricula ? ` · ${student.matricula}` : ''}
+                      </span>
                     </div>
+                    <i className="bi bi-chevron-right" style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}></i>
+                  </div>
 
-                    {/* Sports Pills */}
-                    <div className="d-flex flex-wrap gap-2 mb-3 mt-3">
-                      {arrEsportes && arrEsportes.length > 0 ? (
-                        arrEsportes.map((esp, idx) => (
-                          <span key={idx} className="badge bg-light text-blue-dark border px-2 py-1">{esp}</span>
-                        ))
-                      ) : (
-                        <span className="text-muted small fst-italic">Sem modalidades vinculadas</span>
-                      )}
-                    </div>
-
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {arrEsportes && arrEsportes.length > 0 ? (
+                      arrEsportes.map((esp, idx) => (
+                        <span key={idx} style={{
+                          background: 'var(--primary-light)',
+                          color: 'var(--primary)',
+                          padding: '3px 10px',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: '0.6875rem',
+                          fontWeight: 600
+                        }}>{esp}</span>
+                      ))
+                    ) : (
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Sem modalidades vinculadas</span>
+                    )}
                   </div>
                 </div>
               );
             })}
             
             {filteredStudents.length === 0 && (
-              <div className="col-12 text-center py-5">
-                <i className="bi bi-people text-muted" style={{ fontSize: '3rem' }}></i>
-                <h5 className="fw-bold text-blue-dark mt-3">Nenhum aluno encontrado</h5>
-                <p className="text-muted">Ajuste os filtros ou cadastre um novo aluno.</p>
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '64px 24px' }}>
+                <i className="bi bi-people" style={{ fontSize: '2.5rem', color: 'var(--text-tertiary)', opacity: 0.4, display: 'block', marginBottom: '12px' }}></i>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Nenhum aluno encontrado</h5>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>Ajuste os filtros ou cadastre um novo aluno.</p>
               </div>
             )}
           </div>

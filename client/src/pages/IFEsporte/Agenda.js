@@ -6,14 +6,14 @@ import EventModal from './components/EventModal';
 import '../../agenda.css';
 
 const categoriesColors = {
-  'Treino': '#3b82f6',       // Azul
-  'Jogo': '#22c55e',         // Verde
-  'Campeonato': '#f97316',   // Laranja
-  'Reunião': '#8b5cf6',      // Roxo
-  'Avaliação': '#06b6d4',    // Ciano (como não especificado, escolhi ciano para não confundir com outros)
-  'Amistoso': '#14b8a6',     // Teal
-  'Urgente': '#ef4444',      // Vermelho
-  'Outro': '#64748b'         // Cinza
+  'Treino': '#3b82f6',
+  'Jogo': '#22c55e',
+  'Campeonato': '#f97316',
+  'Reunião': '#8b5cf6',
+  'Avaliação': '#06b6d4',
+  'Amistoso': '#14b8a6',
+  'Urgente': '#ef4444',
+  'Outro': '#64748b'
 };
 
 const Agenda = () => {
@@ -31,12 +31,10 @@ const Agenda = () => {
   }, []);
 
   const parseEventForCalendar = (ev) => {
-    // A data é guardada no backend como YYYY-MM-DD ou Date ISOS
     const dateStr = ev.data ? ev.data.split('T')[0] : new Date().toISOString().split('T')[0];
     
     const startStr = ev.horaInicial || ev.hora || '12:00';
     const endStr = ev.horaFinal || (
-      // se não tem hora final, assume 1 hora de duração
       `${String(parseInt(startStr.split(':')[0]) + 1).padStart(2, '0')}:${startStr.split(':')[1]}`
     );
 
@@ -75,7 +73,6 @@ const Agenda = () => {
   const handleSelectSlot = ({ start, end }) => {
     if (userType === 'estudante') return;
     
-    // Create new event
     setSelectedEvent({
       start,
       end,
@@ -91,7 +88,7 @@ const Agenda = () => {
     setShowModal(true);
   };
 
-  const handleEventDrop = async ({ event, start, end, isAllDay: droppedOnAllDaySlot }) => {
+  const handleEventDrop = async ({ event, start, end }) => {
     if (userType === 'estudante') return;
     
     const updatedEvent = {
@@ -103,7 +100,6 @@ const Agenda = () => {
       horaFinal: end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     };
 
-    // Update in local state for immediate feedback
     setEvents(prev => prev.map(ev => ev._id === event._id ? updatedEvent : ev));
     await saveEventToApi(updatedEvent);
   };
@@ -149,7 +145,7 @@ const Agenda = () => {
       }
     } catch (err) {
       console.error(err);
-      fetchEvents(); // Revert on failure
+      fetchEvents();
     }
   };
 
@@ -176,42 +172,55 @@ const Agenda = () => {
 
   return (
     <Layout>
-      <div className="container-fluid p-0 h-100 d-flex flex-column agenda-layout">
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: 'calc(100vh - 128px)',
+        margin: '-32px',
+        background: 'var(--bg-card)',
+        overflow: 'hidden'
+      }}>
         
-        {/* Header Superior */}
-        <div className="d-flex justify-content-between align-items-center bg-white px-4 py-3 border-bottom shadow-sm">
-          <div className="d-flex align-items-center gap-3">
-            <h4 className="mb-0 fw-bold text-dark d-flex align-items-center">
-              <i className="bi bi-calendar-range me-2 text-primary"></i> 
+        {/* Agenda Inner Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 32px',
+          borderBottom: '1px solid var(--border-light)',
+          background: 'var(--bg-card)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="bi bi-calendar-range" style={{ color: 'var(--primary)' }}></i> 
               Agenda
             </h4>
-            <button className="btn btn-outline-secondary btn-sm rounded-pill px-3 ms-3 fw-bold" onClick={() => setCurrentDate(new Date())}>Hoje</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setCurrentDate(new Date())} style={{ borderRadius: 'var(--radius-sm)' }}>
+              Hoje
+            </button>
           </div>
           
-          <div className="d-flex align-items-center gap-2">
-             <div className="input-group input-group-sm rounded-pill overflow-hidden border">
-                <span className="input-group-text bg-white border-0"><i className="bi bi-search text-muted"></i></span>
-                <input type="text" className="form-control border-0 shadow-none bg-white" placeholder="Pesquisar..." style={{width: '150px'}} />
-             </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
              {userType !== 'estudante' && (
               <button 
-                className="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center"
+                className="btn btn-primary"
+                style={{ padding: '8px 20px', fontSize: '0.8125rem' }}
                 onClick={() => {
                   setSelectedEvent(null);
                   setShowModal(true);
                 }}
               >
-                <i className="bi bi-plus-lg me-1"></i> Criar
+                <i className="bi bi-plus-lg me-1"></i> Criar Evento
               </button>
              )}
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="d-flex flex-grow-1 overflow-hidden" style={{ height: 'calc(100vh - 150px)' }}>
+        {/* Content Panel */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           
-          {/* Sidebar */}
-          <div className="d-none d-lg-block" style={{ width: '280px', flexShrink: 0 }}>
+          {/* Calendar Sidebar */}
+          <div className="d-none d-lg-block" style={{ width: '280px', flexShrink: 0, borderRight: '1px solid var(--border-light)' }}>
             <CalendarSidebar 
               currentDate={currentDate} 
               onDateChange={handleDateChange} 
@@ -220,11 +229,11 @@ const Agenda = () => {
             />
           </div>
 
-          {/* Main Calendar */}
-          <div className="flex-grow-1 overflow-auto bg-light">
+          {/* Main Calendar Panel */}
+          <div style={{ flex: 1, overflow: 'auto', background: 'var(--bg-card)' }} className="main-calendar-container">
             {loading ? (
-              <div className="d-flex justify-content-center align-items-center h-100">
-                <div className="spinner-border text-primary"></div>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <div className="spinner-border" style={{ color: 'var(--primary)' }}></div>
               </div>
             ) : (
               <MainCalendar 
@@ -242,7 +251,7 @@ const Agenda = () => {
 
         </div>
 
-        {/* Modal Novo/Editar */}
+        {/* Create/Edit Modal */}
         <EventModal 
           show={showModal} 
           eventData={selectedEvent} 

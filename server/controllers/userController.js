@@ -85,15 +85,16 @@ const registerUser = async (req, res) => {
     const senhaHash = await bcrypt.hash(senha, salt);
 
     const novoUsuario = new User({
-      nome, email, senha: senhaHash, tipo, telefone, sexo, idade, cpf, endereco,
+      nome, email, senha: senhaHash, tipo, telefone, sexo, cpf, endereco,
       dataNascimento: dataNascimento === '' ? null : dataNascimento,
       nomeResponsavel, telefoneResponsavel,
       alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
       matricula: tipo === 'estudante' ? matValida : undefined,
       esportes: tipo === 'estudante' ? (modalidades || []) : undefined,
       turma: tipo === 'estudante' ? turma : undefined,
-      peso: tipo === 'estudante' ? peso : undefined,
-      altura: tipo === 'estudante' ? altura : undefined,
+      peso: (tipo === 'estudante' && peso !== '') ? peso : undefined,
+      altura: (tipo === 'estudante' && altura !== '') ? altura : undefined,
+      idade: (idade !== undefined && idade !== '') ? idade : undefined,
     });
 
     await novoUsuario.save();
@@ -105,10 +106,10 @@ const registerUser = async (req, res) => {
         matricula: matValida,
         esportes: modalidades || [],
         sexo: sexo || 'Feminino',
-        idade,
+        idade: (idade !== undefined && idade !== '') ? idade : undefined,
         turma,
-        peso,
-        altura,
+        peso: (peso !== undefined && peso !== '') ? peso : undefined,
+        altura: (altura !== undefined && altura !== '') ? altura : undefined,
         telefone,
         cpf,
         endereco,
