@@ -8,6 +8,7 @@ const analysisSchema = new mongoose.Schema({
   
   modalidade: { type: String, required: true },
   categoria: { type: String },
+  contexto: { type: String, enum: ['Treino', 'Jogo', 'Competição'] },
   data: { type: Date, required: true },
   avaliador: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   

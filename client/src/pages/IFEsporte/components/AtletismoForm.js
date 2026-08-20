@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import ContextoSelector from './ContextoSelector';
 
 const atletismoForms = {
   '100m': {
@@ -36,12 +37,40 @@ const atletismoForms = {
     'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
     'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe']
   },
+  'Revezamento 4x100': {
+    'Corredor 1': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Corredor 2': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Corredor 3': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe']
+  },
   'Revezamento 400m': {
     'Corredor 1': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
     'Corredor 2': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
     'Corredor 3': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
     'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
     'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe', 'Estratégia da ordem dos corredores', 'Distribuição do esforço da equipe', 'Manutenção do ritmo coletivo']
+  },
+  'Revezamento 4x400': {
+    'Corredor 1': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Corredor 2': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Corredor 3': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
+    'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe', 'Estratégia da ordem dos corredores', 'Distribuição do esforço da equipe', 'Manutenção do ritmo coletivo']
+  },
+  'Pentatlo': {
+    'Provas e Transições': ['Ritmo e Distribuição do Esforço', 'Técnica de Prova', 'Recuperação entre Provas', 'Manutenção da Eficiência'],
+    'Desempenho Geral': ['Resistência à Fadiga', 'Consistência do Desempenho', 'Preparação Física e Mental']
+  },
+  '100m com Barreiras': {
+    'Largada e Aproximação': ['Tempo de reação', 'Explosão na saída', 'Ritmo de aproximação à 1ª barreira'],
+    'Transposição de Barreiras': ['Ataque à barreira', 'Perda de altura', 'Ação da perna de ataque e de reboque', 'Manutenção do ritmo entre barreiras'],
+    'Sprint Final': ['Aceleração pós-última barreira', 'Manutenção da velocidade', 'Resistência à fadiga']
+  },
+  '110m com Barreiras': {
+    'Largada e Aproximação': ['Tempo de reação', 'Explosão na saída', 'Ritmo de aproximação à 1ª barreira'],
+    'Transposição de Barreiras': ['Ataque à barreira', 'Perda de altura', 'Ação da perna de ataque e de reboque', 'Manutenção do ritmo entre barreiras'],
+    'Sprint Final': ['Aceleração pós-última barreira', 'Manutenção da velocidade', 'Resistência à fadiga']
   },
   'Distância': {
     'Corrida de aproximação': ['Velocidade', 'Ritmo', 'Estabilidade'],
@@ -79,9 +108,9 @@ const AtletismoForm = ({ formData, setFormData, handleInputChange, handleSubmit,
   const structure = formInfo?.structure || {};
   const isRevezamento = formInfo?.key?.includes('Revezamento');
 
-  // Inicializa respostas vazias ao montar ou alterar a modalidade
+  // Inicializa respostas vazias ao montar se nao estiver editando
   useEffect(() => {
-    if (formInfo) {
+    if (formInfo && !formData.editingId && (!formData.respostas || Object.keys(formData.respostas).length === 0)) {
       const novasRespostas = {};
       Object.entries(structure).forEach(([section, items]) => {
         items.forEach(item => {
@@ -90,7 +119,7 @@ const AtletismoForm = ({ formData, setFormData, handleInputChange, handleSubmit,
       });
       setFormData(prev => ({ ...prev, respostas: novasRespostas }));
     }
-  }, [formData.modalidade]); // Apenas quando a modalidade mudar
+  }, [formData.modalidade, formData.editingId]);
 
   const handleRespostaChange = (key, val) => {
     setFormData(prev => ({
@@ -207,14 +236,28 @@ const AtletismoForm = ({ formData, setFormData, handleInputChange, handleSubmit,
           <div className="col-md-6">
             <label className="form-label fw-bold small text-muted">Aluno(s) Avaliado(s) / Equipe</label>
             <select className="form-select bg-light" name="aluno" value={formData.aluno} onChange={handleInputChange} required>
-              {students.length === 0 ? (
-                <option value="">Nenhum atleta cadastrado nesta modalidade.</option>
-              ) : (
-                <option value="">Selecione o aluno/líder da equipe...</option>
-              )}
-              {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
+              {(() => {
+                const filteredStudents = students.filter(s => {
+                  if (formData.modalidade?.includes('100m com Barreiras')) return s.sexo === 'Feminino';
+                  if (formData.modalidade?.includes('110m com Barreiras')) return s.sexo === 'Masculino';
+                  return true;
+                });
+
+                if (filteredStudents.length === 0) {
+                  return <option value="">Nenhum atleta elegível cadastrado nesta modalidade.</option>;
+                }
+                return (
+                  <>
+                    <option value="">Selecione o aluno/líder da equipe...</option>
+                    {filteredStudents.map(s => <option key={s._id} value={s._id}>{s.nome} ({s.sexo})</option>)}
+                  </>
+                );
+              })()}
             </select>
             {isRevezamento && <small className="text-muted mt-1 d-block">Para análise de revezamento, selecione o líder ou um dos membros da equipe. A avaliação englobará todos.</small>}
+          </div>
+          <div className="col-md-6">
+            <ContextoSelector modalidade={formData.modalidade || 'Atletismo'} value={formData.contexto} onChange={handleInputChange} />
           </div>
           <div className="col-md-6">
             <label className="form-label fw-bold small text-muted">Data da Análise</label>
@@ -255,7 +298,8 @@ const AtletismoForm = ({ formData, setFormData, handleInputChange, handleSubmit,
         <div className="row mt-4">
           <div className="col-12 text-end">
             <button type="submit" className="btn btn-orange px-5 py-2 fw-bold rounded-pill text-white shadow-sm">
-              <i className="bi bi-magic me-2"></i> Gerar Relatório Técnico
+              <i className="bi bi-check-circle-fill me-2"></i>
+              {formData?.editingId ? 'Salvar Alterações' : 'Salvar Análise'}
             </button>
           </div>
         </div>

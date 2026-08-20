@@ -7,6 +7,7 @@ router.use(authMiddleware);
 
 router.get('/', analysisController.getAllAnalyses);
 router.post('/', analysisController.createAnalysis);
+router.put('/:id', analysisController.updateAnalysis);
 router.get('/student/:studentId', analysisController.getAnalysisByStudent);
 router.delete('/:id', analysisController.deleteAnalysis);
 

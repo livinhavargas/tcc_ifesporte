@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Logo from '../components/Logo';
 
 const Login = ({ onLogin }) => {
@@ -103,14 +104,14 @@ const Login = ({ onLogin }) => {
         <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }}></div>
         <div style={{ position: 'absolute', bottom: '-120px', left: '-60px', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }}></div>
 
-        <div style={{ maxWidth: '360px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ marginBottom: '40px' }}>
-            <Logo height="72px" circleColor="#fff" textColor="#fff" />
+        <div style={{ maxWidth: '360px', textAlign: 'center', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+            <Logo height="72px" circleColor="#fff" textColor="#fff" style={{ marginLeft: '29px' }} />
           </div>
-          <h3 style={{ color: '#fff', fontWeight: 300, fontSize: '1.375rem', marginBottom: '20px', lineHeight: 1.5 }}>
+          <h3 style={{ color: '#fff', fontWeight: 300, fontSize: '1.375rem', marginBottom: '20px', lineHeight: 1.5, textAlign: 'center' }}>
             Tecnologia e esporte<br/>trabalhando juntos.
           </h3>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9375rem', lineHeight: 1.7 }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9375rem', lineHeight: 1.7, textAlign: 'center' }}>
             Gerencie atletas, modalidades, treinamentos, eventos e análises de desempenho em um único ambiente moderno, seguro e intuitivo.
           </p>
         </div>
@@ -136,14 +137,14 @@ const Login = ({ onLogin }) => {
           border: '1px solid var(--border-light)'
         }}>
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-            <div style={{ marginBottom: '20px' }} className="d-flex justify-content-center">
-              <Logo height="48px" />
+          <div style={{ textAlign: 'center', marginBottom: '36px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+              <Logo height="48px" style={{ marginLeft: '20px' }} />
             </div>
-            <h2 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', marginBottom: '8px', textAlign: 'center' }}>
               Bem-vindo de volta
             </h2>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0 }}>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0, textAlign: 'center' }}>
               Faça login para continuar.
             </p>
           </div>
@@ -162,7 +163,8 @@ const Login = ({ onLogin }) => {
               alignItems: 'center',
               gap: '8px'
             }}>
-              <i className="bi bi-exclamation-triangle-fill"></i>{error}
+              <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+              <span>{error}</span>
             </div>
           )}
 
@@ -173,9 +175,9 @@ const Login = ({ onLogin }) => {
               <div style={{ position: 'relative' }}>
                 <span style={{
                   position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)',
-                  color: 'var(--text-tertiary)', fontSize: '0.875rem'
+                  color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center'
                 }}>
-                  <i className="bi bi-envelope"></i>
+                  <Mail size={18} />
                 </span>
                 <input
                   type="email"
@@ -208,9 +210,9 @@ const Login = ({ onLogin }) => {
               <div style={{ position: 'relative' }}>
                 <span style={{
                   position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)',
-                  color: 'var(--text-tertiary)', fontSize: '0.875rem'
+                  color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center'
                 }}>
-                  <i className="bi bi-lock"></i>
+                  <Lock size={18} />
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -237,10 +239,10 @@ const Login = ({ onLogin }) => {
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
                     position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
-                    color: 'var(--text-tertiary)', cursor: 'pointer', fontSize: '0.9375rem'
+                    color: 'var(--text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center'
                   }}
                 >
-                  <i className={`bi bi-eye${showPassword ? '-slash' : ''}`}></i>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </span>
               </div>
             </div>

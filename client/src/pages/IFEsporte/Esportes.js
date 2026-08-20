@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Venus, Mars } from 'lucide-react';
 import Layout from '../../components/Layout';
+import SportIcon from '../../components/SportIcon';
 
 const Esportes = () => {
   const [genero, setGenero] = useState('Feminino');
@@ -25,29 +27,40 @@ const Esportes = () => {
   };
 
   const modalidadesIndividuais = [
-    { id: 'atletismo', nome: 'Atletismo', icone: 'bi-person-walking' },
-    { id: 'badminton', nome: 'Badminton', icone: 'bi-usb-drive' },
-    { id: 'tenis-de-mesa', nome: 'Tênis de Mesa', icone: 'bi-circle' },
-    { id: 'xadrez', nome: 'Xadrez', icone: 'bi-puzzle-fill' }
+    { id: 'atletismo', nome: 'Atletismo' },
+    { id: 'badminton', nome: 'Badminton' },
+    { id: 'tenis-de-mesa', nome: 'Tênis de Mesa' },
+    { id: 'xadrez', nome: 'Xadrez' }
   ];
 
   const modalidadesEquipe = [
-    { id: 'basquete', nome: 'Basquete', icone: 'bi-dribbble' },
-    { id: 'futsal', nome: 'Futsal', icone: 'bi-circle-fill' },
-    { id: 'futebol', nome: 'Futebol', icone: 'bi-circle-half' },
-    { id: 'handebol', nome: 'Handebol', icone: 'bi-person-arms-up' },
-    { id: 'volei-quadra', nome: 'Vôlei de Quadra', icone: 'bi-record-circle' },
-    { id: 'volei-praia', nome: 'Vôlei de Praia', icone: 'bi-sun' }
+    { id: 'basquete', nome: 'Basquete' },
+    { id: 'futsal', nome: 'Futsal' },
+    { id: 'futebol', nome: 'Futebol' },
+    { id: 'handebol', nome: 'Handebol' },
+    { id: 'voleibol', nome: 'Voleibol' },
+    { id: 'volei-praia', nome: 'Vôlei de Praia' }
   ];
 
   const checkMatch = (esp, keyword) => {
-    const e = (esp || '').toLowerCase();
-    const k = (keyword || '').toLowerCase();
+    const normalize = (str) => {
+      return (str || '')
+        .toLowerCase()
+        .replace(/[\s-()]/g, '');
+    };
+    const e = normalize(esp);
+    const k = normalize(keyword);
     if (e.includes(k)) return true;
+
+    // Fallbacks para compatibilidade entre os formatos legados e novos
+    if (k.includes('tênisdemesamisto') && e.includes('tênisdemesadupla')) return true;
+    if (k.includes('tênisdemesadupla') && e.includes('tênisdemesamisto')) return true;
     
-    if (k === 'atletismo') {
+    const kLower = (keyword || '').toLowerCase();
+    const eLower = (esp || '').toLowerCase();
+    if (kLower === 'atletismo') {
       const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lançamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distância', 'altura', 'triplo', 'peso', 'disco', 'dardo'];
-      return termos.some(t => e.includes(t));
+      return termos.some(t => eLower.includes(t));
     }
     return false;
   };
@@ -69,7 +82,7 @@ const Esportes = () => {
           borderRadius: 'var(--radius-lg)',
           border: '1px solid var(--border-light)',
           boxShadow: 'var(--shadow-sm)',
-          padding: '28px 24px',
+          padding: '24px 20px',
           textAlign: 'center',
           transition: 'all var(--transition-base)',
           cursor: 'pointer',
@@ -77,24 +90,22 @@ const Esportes = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px'
+          justifyContent: 'center'
         }}
         className="hover-lift"
         >
           <div style={{
-            width: '56px', height: '56px',
+            width: '64px', height: '64px',
             borderRadius: 'var(--radius-md)',
             background: 'var(--primary-light)',
             color: 'var(--primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.5rem',
-            marginBottom: '4px'
+            marginBottom: '16px'
           }}>
-            <i className={`bi ${mod.icone}`}></i>
+            <SportIcon sport={mod.nome} size={32} />
           </div>
-          <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>{mod.nome}</h5>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+          <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 6px 0', fontSize: '0.9375rem', lineHeight: 1.3 }}>{mod.nome}</h5>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500, margin: 0 }}>
             {count} {count === 1 ? 'aluno cadastrado' : 'alunos cadastrados'}
           </span>
         </div>
@@ -128,14 +139,15 @@ const Esportes = () => {
                   fontSize: '0.875rem',
                   cursor: 'pointer',
                   transition: 'all var(--transition-base)',
-                  background: genero === g ? 'var(--primary)' : 'transparent',
-                  color: genero === g ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                  background: genero === g ? 'var(--primary-light)' : 'transparent',
+                  color: genero === g ? 'var(--primary)' : 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}
               >
-                <i className={`bi bi-gender-${g === 'Feminino' ? 'female' : 'male'}`}></i> {g}
+                {g === 'Feminino' ? <Venus size={18} /> : <Mars size={18} />}
+                <span>{g}</span>
               </button>
             ))}
           </div>

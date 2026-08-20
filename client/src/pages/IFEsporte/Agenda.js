@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { CalendarRange, Plus } from 'lucide-react';
 import Layout from '../../components/Layout';
 import CalendarSidebar from './components/CalendarSidebar';
 import MainCalendar from './components/MainCalendar';
 import EventModal from './components/EventModal';
+import { addNotification } from '../../utils/notifications';
 import '../../agenda.css';
 
 const categoriesColors = {
@@ -23,12 +26,27 @@ const Agenda = () => {
   
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [searchParams] = useSearchParams();
 
   const userType = localStorage.getItem('tipo');
 
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'metas') {
+      setTimeout(() => {
+        const el = document.getElementById('metas-gerais-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.transition = 'all 0.5s ease';
+          el.style.outline = '2px solid var(--primary)';
+          setTimeout(() => { el.style.outline = 'none'; }, 2500);
+        }
+      }, 400);
+    }
+  }, [searchParams]);
 
   const parseEventForCalendar = (ev) => {
     const dateStr = ev.data ? ev.data.split('T')[0] : new Date().toISOString().split('T')[0];
@@ -128,7 +146,7 @@ const Agenda = () => {
     const payload = {
       ...eventData,
       titulo: eventData.titulo || eventData.title,
-      cor: categoriesColors[eventData.tipo] || categoriesColors.Outro
+      cor: categoriesColors[eventData.tipo] || categoriesColors.Outros
     };
 
     try {
@@ -141,6 +159,7 @@ const Agenda = () => {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
+        addNotification(isNew ? 'Novo Evento Criado' : 'Evento Atualizado', `Evento "${payload.titulo}" agendado na Agenda.`);
         fetchEvents();
       }
     } catch (err) {
@@ -162,6 +181,7 @@ const Agenda = () => {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
+      addNotification('Evento Excluído', 'Um compromisso foi removido da Agenda.');
       fetchEvents();
       setShowModal(false);
       setSelectedEvent(null);
@@ -173,10 +193,12 @@ const Agenda = () => {
   return (
     <Layout>
       <div style={{
+        height: 'calc(100vh - 120px)',
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - 128px)',
-        margin: '-32px',
+        borderRadius: 'var(--radius-xl)',
+        border: '1px solid var(--border-light)',
+        boxShadow: 'var(--shadow-md)',
         background: 'var(--bg-card)',
         overflow: 'hidden'
       }}>
@@ -192,8 +214,8 @@ const Agenda = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <i className="bi bi-calendar-range" style={{ color: 'var(--primary)' }}></i> 
-              Agenda
+              <CalendarRange size={20} style={{ color: 'var(--primary)' }} /> 
+              <span>Agenda</span>
             </h4>
             <button className="btn btn-secondary btn-sm" onClick={() => setCurrentDate(new Date())} style={{ borderRadius: 'var(--radius-sm)' }}>
               Hoje
@@ -204,13 +226,13 @@ const Agenda = () => {
              {userType !== 'estudante' && (
               <button 
                 className="btn btn-primary"
-                style={{ padding: '8px 20px', fontSize: '0.8125rem' }}
+                style={{ padding: '8px 20px', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                 onClick={() => {
                   setSelectedEvent(null);
                   setShowModal(true);
                 }}
               >
-                <i className="bi bi-plus-lg me-1"></i> Criar Evento
+                <Plus size={16} /> <span>Criar Evento</span>
               </button>
              )}
           </div>

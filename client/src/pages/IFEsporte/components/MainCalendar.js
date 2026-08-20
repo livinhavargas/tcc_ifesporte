@@ -6,6 +6,7 @@ import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
+import SportIcon, { detectSport } from '../../../components/SportIcon';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
@@ -23,6 +24,18 @@ const localizer = dateFnsLocalizer({
 });
 
 const DnDCalendar = withDragAndDrop(Calendar);
+
+const EventComponent = ({ event }) => {
+  const textToMatch = `${event.title || ''} ${event.titulo || ''} ${event.descricao || ''} ${event.modalidade || ''}`;
+  const detected = detectSport(textToMatch);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden' }}>
+      {detected && <SportIcon sport={detected} size={14} color="#fff" style={{ flexShrink: 0 }} />}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{event.title}</span>
+    </div>
+  );
+};
 
 const MainCalendar = ({
   events,
@@ -72,6 +85,9 @@ const MainCalendar = ({
         showMultiDayTimes
         selectable
         resizable
+        components={{
+          event: EventComponent
+        }}
         onSelectEvent={onSelectEvent}
         onSelectSlot={onSelectSlot}
         onEventDrop={onEventDrop}

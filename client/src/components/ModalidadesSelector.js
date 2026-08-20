@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import SportIcon from './SportIcon';
 
 export const estruturaModalidades = [
   { id: 'Basquete', nome: 'Basquete' },
   { id: 'Futsal', nome: 'Futsal' },
   { id: 'Futebol', nome: 'Futebol' },
   { id: 'Handebol', nome: 'Handebol' },
-  { id: 'Vôlei de Quadra', nome: 'Vôlei de Quadra' },
+  { id: 'Voleibol', nome: 'Voleibol' },
   { id: 'Vôlei de Praia', nome: 'Vôlei de Praia' },
   { id: 'Badminton', nome: 'Badminton' },
   { id: 'Xadrez', nome: 'Xadrez' },
@@ -18,8 +19,11 @@ export const estruturaModalidades = [
       { id: 'Atletismo - Corridas - 1500m', nome: '1500m' },
       { id: 'Atletismo - Corridas - 3000m', nome: '3000m' },
       { id: 'Atletismo - Corridas - 5000m', nome: '5000m' },
-      { id: 'Atletismo - Corridas - Revezamento 100m', nome: 'Revezamento 100m' },
-      { id: 'Atletismo - Corridas - Revezamento 400m', nome: 'Revezamento 400m' }
+      { id: 'Atletismo - Corridas - Revezamento 4x100', nome: 'Revezamento 4x100' },
+      { id: 'Atletismo - Corridas - Revezamento 4x400', nome: 'Revezamento 4x400' },
+      { id: 'Atletismo - Corridas - Pentatlo', nome: 'Pentatlo' },
+      { id: 'Atletismo - Corridas - 100m com Barreiras', nome: '100m com Barreiras', genero: 'Feminino' },
+      { id: 'Atletismo - Corridas - 110m com Barreiras', nome: '110m com Barreiras', genero: 'Masculino' }
     ]},
     { id: 'Atletismo - Saltos', nome: 'Saltos', sub: [
       { id: 'Atletismo - Saltos - Distância', nome: 'Distância' },
@@ -33,15 +37,22 @@ export const estruturaModalidades = [
     ]}
   ]},
   { id: 'Tênis de Mesa', nome: 'Tênis de Mesa', sub: [
-    { id: 'Tênis de Mesa - Individual', nome: 'Individual' },
-    { id: 'Tênis de Mesa - Dupla', nome: 'Dupla' }
+    { id: 'Tênis de Mesa (Individual)', nome: 'Individual' },
+    { id: 'Tênis de Mesa (Misto)', nome: 'Misto' }
   ]}
 ];
 
-const TreeNode = ({ node, selectedIds, onToggle }) => {
+const TreeNode = ({ node, selectedIds, onToggle, gender }) => {
   const [expanded, setExpanded] = useState(false);
-  const hasSub = node.sub && node.sub.length > 0;
   
+  // Filter subnodes by gender if gender is specified
+  const filteredSub = node.sub ? node.sub.filter(child => {
+    if (!gender) return true;
+    if (child.genero && child.genero !== gender) return false;
+    return true;
+  }) : [];
+
+  const hasSub = filteredSub.length > 0;
   const isSelected = selectedIds.includes(node.id);
 
   const isAnyChildSelected = (n) => {
@@ -80,13 +91,14 @@ const TreeNode = ({ node, selectedIds, onToggle }) => {
         {!hasSub && (
           <i className={`bi bi-${isSelected ? 'check-square-fill' : 'square'}`} style={{ marginRight: '8px', color: isSelected ? 'var(--primary)' : 'var(--text-tertiary)' }}></i>
         )}
+        <SportIcon sport={node.id} size={16} style={{ marginRight: '6px' }} />
         <span>{node.nome}</span>
       </div>
 
       {hasSub && expanded && (
         <div style={{ paddingLeft: '20px', paddingTop: '6px', borderLeft: '2px solid var(--primary-light)', marginLeft: '10px' }}>
-          {node.sub.map(child => (
-            <TreeNode key={child.id} node={child} selectedIds={selectedIds} onToggle={onToggle} />
+          {filteredSub.map(child => (
+            <TreeNode key={child.id} node={child} selectedIds={selectedIds} onToggle={onToggle} gender={gender} />
           ))}
         </div>
       )}
@@ -94,8 +106,26 @@ const TreeNode = ({ node, selectedIds, onToggle }) => {
   );
 };
 
-const ModalidadesSelector = ({ selected, onChange }) => {
+const ModalidadesSelector = ({ selected = [], onChange, gender }) => {
+  // Efeito de sanitização estrita caso o gênero mude ou já possua itens incompatíveis
+  useEffect(() => {
+    if (!gender || !selected || selected.length === 0) return;
+    const sanitized = selected.filter(item => {
+      if (gender === 'Masculino' && item.includes('100m com Barreiras')) return false;
+      if (gender === 'Feminino' && item.includes('110m com Barreiras')) return false;
+      return true;
+    });
+
+    if (sanitized.length !== selected.length) {
+      onChange(sanitized);
+    }
+  }, [gender, selected, onChange]);
+
   const handleToggle = (id) => {
+    // Impedimento duplo por segurança lógica
+    if (gender === 'Masculino' && id.includes('100m com Barreiras')) return;
+    if (gender === 'Feminino' && id.includes('110m com Barreiras')) return;
+
     if (selected.includes(id)) {
       onChange(selected.filter(x => x !== id));
     } else {
@@ -107,7 +137,7 @@ const ModalidadesSelector = ({ selected, onChange }) => {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px' }}>
       {estruturaModalidades.map(mod => (
         <div key={mod.id}>
-          <TreeNode node={mod} selectedIds={selected} onToggle={handleToggle} />
+          <TreeNode node={mod} selectedIds={selected} onToggle={handleToggle} gender={gender} />
         </div>
       ))}
     </div>

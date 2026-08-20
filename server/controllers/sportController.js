@@ -67,6 +67,9 @@ const initializeSports = async (req, res) => {
           'Corridas - 5000m',
           'Corridas - Revezamento 4x100',
           'Corridas - Revezamento 4x400',
+          'Corridas - Pentatlo',
+          'Corridas - 100m com Barreiras',
+          'Corridas - 110m com Barreiras',
           'Saltos - Salto em Distância',
           'Saltos - Salto em Altura',
           'Saltos - Salto Triplo',
@@ -83,7 +86,7 @@ const initializeSports = async (req, res) => {
       {
         nome: 'Tênis de Mesa',
         tipo: 'individual',
-        subcategorias: ['Individual', 'Dupla']
+        subcategorias: ['Individual', 'Misto']
       },
       {
         nome: 'Xadrez',
@@ -112,7 +115,7 @@ const initializeSports = async (req, res) => {
         subcategorias: []
       },
       {
-        nome: 'Vôlei de Quadra',
+        nome: 'Voleibol',
         tipo: 'coletivo',
         subcategorias: []
       },

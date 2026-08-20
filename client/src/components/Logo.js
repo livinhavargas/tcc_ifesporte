@@ -1,12 +1,10 @@
 import React from 'react';
 
-const Logo = ({ className = '', style = {}, width, height, circleColor = '#1E5EFF', textColor = '#FF8A00' }) => {
+const Logo = ({ className = '', style = {}, width, height = "100%", circleColor = '#1E5EFF', textColor = '#FF8A00' }) => {
   return (
     <svg 
       className={className} 
-      style={style} 
-      width={width || "100%"} 
-      height={height || "100%"} 
+      style={{ display: 'inline-block', maxWidth: '100%', height: height, width: width || 'auto', verticalAlign: 'middle', ...style }} 
       viewBox="0 -10 520 110" 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"

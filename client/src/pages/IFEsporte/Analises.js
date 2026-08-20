@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
+import SportIcon from '../../components/SportIcon';
+import { addNotification } from '../../utils/notifications';
 import AtletismoForm from './components/AtletismoForm';
 import BasqueteForm from './components/BasqueteForm';
 import FutebolForm from './components/FutebolForm';
 import FutsalForm from './components/FutsalForm';
 import HandebolForm from './components/HandebolForm';
 import VoleiForm from './components/VoleiForm';
+import ContextoSelector, { isCollectiveSport } from './components/ContextoSelector';
+import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
 
 const dicionarioAtributos = {
   'Futebol/Futsal': {
@@ -15,7 +19,7 @@ const dicionarioAtributos = {
     'Atacante': ['finalizacao', 'drible', 'velocidade', 'visaoDeJogo', 'posicionamento'],
     'Geral': ['passe', 'fisico', 'tatica', 'coletividade', 'finalizacao']
   },
-  'Vôlei de Quadra': {
+  'Voleibol': {
     'Levantador': ['precisao', 'visaoDeJogo', 'saque', 'defesa', 'agilidade'],
     'Líbero': ['recepcao', 'defesa', 'reflexo', 'agilidade', 'posicionamento'],
     'Atacante': ['cortada', 'bloqueio', 'salto', 'saque', 'forca'],
@@ -34,7 +38,7 @@ const dicionarioAtributos = {
 const getAtributos = (mod, sub) => {
   let cat = 'Geral';
   if (mod && (mod.includes('Futebol') || mod.includes('Futsal'))) cat = 'Futebol/Futsal';
-  else if (mod && mod.includes('Vôlei')) cat = 'Vôlei de Quadra';
+  else if (mod && (mod.includes('Vôlei') || mod.includes('Volei') || mod.includes('Voleibol'))) cat = 'Voleibol';
   else if (mod && mod.includes('Basquete')) cat = 'Basquete';
 
   if (dicionarioAtributos[cat] && dicionarioAtributos[cat][sub]) {
@@ -43,101 +47,53 @@ const getAtributos = (mod, sub) => {
   return dicionarioAtributos['Geral']['Geral'];
 };
 
-const RadarChart = ({ respostas }) => {
-  let entries = Object.entries(respostas || {});
-  
-  if (entries.length > 0 && entries[0][0].includes(' - ')) {
-    const groups = {};
-    entries.forEach(([key, val]) => {
-      const section = key.split(' - ')[0];
-      if (!groups[section]) groups[section] = { sum: 0, count: 0 };
-      groups[section].sum += Number(val);
-      groups[section].count += 1;
-    });
-    entries = Object.entries(groups).map(([section, data]) => [section, data.sum / data.count]);
-  }
-
-  if(entries.length === 0) return null;
-  const numAttrs = entries.length;
-  const angleStep = (Math.PI * 2) / numAttrs;
-  
-  const getPoint = (val, i, maxR = 40) => {
-    const r = (val / 5) * maxR;
-    const angle = i * angleStep - Math.PI / 2;
-    const x = 50 + r * Math.cos(angle);
-    const y = 50 + r * Math.sin(angle);
-    return {x, y};
-  };
-
-  const points = entries.map(([, val], i) => {
-    const p = getPoint(val, i);
-    return `${p.x},${p.y}`;
-  }).join(' ');
-
-  return (
-    <svg viewBox="0 0 100 100" className="w-100 h-100">
-       {[1,2,3,4,5].map(level => {
-         const pts = entries.map((_, i) => {
-           const p = getPoint(level, i);
-           return `${p.x},${p.y}`;
-         }).join(' ');
-         const isEdge = level === 5;
-         return <polygon key={level} points={pts} fill={isEdge ? "var(--bg)" : "none"} stroke={isEdge ? "var(--border)" : "var(--border-light)"} strokeWidth={isEdge ? "1" : "0.5"}/>
-       })}
-       
-       {entries.map((_, i) => {
-         const p = getPoint(5, i);
-         return <line key={`l${i}`} x1="50" y1="50" x2={p.x} y2={p.y} stroke="var(--border-light)" strokeWidth="0.5"/>
-       })}
-       
-       <polygon points={points} fill="rgba(30, 94, 255, 0.2)" stroke="var(--primary)" strokeWidth="1.5"/>
-       {entries.map(([, val], i) => {
-         const p = getPoint(val, i);
-         return <circle key={`c${i}`} cx={p.x} cy={p.y} r="1.5" fill="var(--primary)" />
-       })}
-       
-       {entries.map(([atr], i) => {
-         const p = getPoint(5, i, 47);
-         let anchor = "middle";
-         if (p.x < 45) anchor = "end";
-         else if (p.x > 55) anchor = "start";
-         
-         let dy = p.y > 50 ? 3 : -1;
-         
-         const formatAttr = s => s.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-         const label = formatAttr(atr);
-         const shortLabel = label.length > 10 ? label.substring(0,8)+'.' : label;
-         return <text key={`t${i}`} x={p.x} y={p.y+dy} fontSize="3.5" textAnchor={anchor} fill="var(--text-secondary)" fontWeight="bold">{shortLabel}</text>;
-       })}
-    </svg>
-  );
-};
 
 const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' }) => {
   const [students, setStudents] = useState([]);
   const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [mensagem, setMensagem] = useState('');
   const [searchParams] = useSearchParams();
   const alunoIdParam = searchParams.get('alunoId');
   const novaAnaliseParam = searchParams.get('novaAnalise');
   const modalidadeParam = searchParams.get('modalidade');
-  
+  const subtipoParam = searchParams.get('subtipo');
+  const editIdParam = searchParams.get('editId');
+
   const userType = localStorage.getItem('tipo');
 
-  const modalidadesValidas = ['Basquete', 'Futsal', 'Futebol', 'Handebol', 'Vôlei de Quadra'];
+  const modalidadesValidas = ['Basquete', 'Futsal', 'Futebol', 'Handebol', 'Voleibol'];
   const subtipos = ['Geral', 'Atacante', 'Defensor', 'Goleiro', 'Levantador', 'Líbero', 'Armador', 'Pivô'];
 
   const [formData, setFormData] = useState({
+    editingId: null,
     aluno: '',
     modalidade: '',
     categoria: '',
+    contexto: 'Treino',
     data: new Date().toISOString().split('T')[0],
     subtipo: 'Geral',
     observacoes: '',
     respostas: {}
   });
+
+  const handleStartEdit = (analise) => {
+    setSelectedAnalysis(null);
+    setShowForm(true);
+    setFormData({
+      editingId: analise._id,
+      aluno: analise.aluno?._id || analise.aluno || '',
+      modalidade: analise.modalidade || '',
+      categoria: analise.categoria || 'Geral',
+      contexto: analise.contexto || (isCollectiveSport(analise.modalidade) ? 'Jogo' : 'Treino'),
+      data: analise.data ? analise.data.split('T')[0] : new Date().toISOString().split('T')[0],
+      subtipo: analise.subtipo || 'Geral',
+      observacoes: analise.observacoes || '',
+      respostas: analise.respostas ? { ...analise.respostas } : {}
+    });
+  };
 
   useEffect(() => {
     if (embebed) {
@@ -145,12 +101,25 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
     }
   }, [embebed, defaultModalidade, defaultGenero]);
 
+  // Apenas preenche respostas genéricas para modalidades SEM formulário especializado.
+  // Atletismo, Basquete, Futebol, Futsal, Handebol e Voleibol possuem seus próprios
+  // formulários que gerenciam critérios internamente — NÃO interferir.
+  const hasSpecializedForm = (mod) => {
+    if (!mod) return false;
+    return mod.includes('Atletismo') || mod.includes('Basquete') || 
+           mod.includes('Futebol') || mod.includes('Futsal') || 
+           mod.includes('Handebol') || mod.includes('Vôlei') || 
+           mod.includes('Voleibol');
+  };
+
   useEffect(() => {
-    const attrs = getAtributos(formData.modalidade, formData.subtipo);
-    const novasRespostas = {};
-    attrs.forEach(a => novasRespostas[a] = 3);
-    setFormData(prev => ({ ...prev, respostas: novasRespostas }));
-  }, [formData.modalidade, formData.subtipo]);
+    if (!formData.editingId && !hasSpecializedForm(formData.modalidade)) {
+      const attrs = getAtributos(formData.modalidade, formData.subtipo);
+      const novasRespostas = {};
+      attrs.forEach(a => novasRespostas[a] = 3);
+      setFormData(prev => ({ ...prev, respostas: novasRespostas }));
+    }
+  }, [formData.modalidade, formData.subtipo, formData.editingId]);
 
   useEffect(() => {
     fetchStudents();
@@ -158,15 +127,33 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
   }, []);
 
   useEffect(() => {
-    if (novaAnaliseParam === 'true') {
+    if (editIdParam && analyses.length > 0) {
+      const target = analyses.find(a => a._id === editIdParam);
+      if (target) {
+        handleStartEdit(target);
+      }
+    } else if (novaAnaliseParam === 'true') {
+      if (modalidadeParam && !isSportAnalysisSupported(modalidadeParam)) {
+        setMensagem(`⚠️ A modalidade "${modalidadeParam}" não possui suporte ao sistema de análise.`);
+        setShowForm(false);
+        return;
+      }
+      setSelectedAnalysis(null);
       setShowForm(true);
-      setFormData(prev => ({
-        ...prev,
-        aluno: alunoIdParam || prev.aluno,
-        modalidade: modalidadeParam || prev.modalidade
-      }));
+      setFormData({
+        editingId: null,
+        aluno: alunoIdParam || '',
+        modalidade: modalidadeParam || '',
+        categoria: 'Geral',
+        contexto: isCollectiveSport(modalidadeParam) ? 'Jogo' : 'Treino',
+        data: new Date().toISOString().split('T')[0],
+        subtipo: subtipoParam || 'Geral',
+        tipoAnalise: '',
+        observacoes: '',
+        respostas: {}
+      });
     }
-  }, [novaAnaliseParam, alunoIdParam, modalidadeParam]);
+  }, [novaAnaliseParam, alunoIdParam, modalidadeParam, subtipoParam, editIdParam, analyses]);
 
   const checkMatch = (esp, keyword) => {
     const e = (esp || '').toLowerCase();
@@ -270,7 +257,7 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
   };
 
   const handleSubmit = async (e, diagnosticoStr = null, tipoAnaliseStr = 'Individual') => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setMensagem('');
 
     if (!formData.aluno || !formData.modalidade) {
@@ -283,9 +270,13 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
       if (diagnosticoStr) {
          payload.diagnostico = diagnosticoStr;
       }
+
+      const isEditing = Boolean(formData.editingId);
+      const url = isEditing ? `/api/analysis/${formData.editingId}` : '/api/analysis';
+      const method = isEditing ? 'PUT' : 'POST';
       
-      const response = await fetch('/api/analysis', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -299,21 +290,28 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
         return;
       }
 
-      setMensagem('✅ Análise salva e diagnóstico gerado com sucesso!');
+      setMensagem(isEditing ? '✅ Análise atualizada com sucesso!' : '✅ Análise salva com sucesso!');
+      addNotification(
+        isEditing ? 'Análise Atualizada' : 'Nova Análise Gerada', 
+        `Avaliação técnica de ${formData.modalidade || 'esporte'} foi ${isEditing ? 'atualizada' : 'gerada'}.`
+      );
+
       setTimeout(() => {
-        setFormData(prev => ({ 
+        setFormData({ 
+          editingId: null,
           aluno: '', 
-          modalidade: embebed ? defaultModalidade : prev.modalidade, 
-          categoria: embebed ? defaultGenero : prev.categoria,
+          modalidade: embebed ? defaultModalidade : '', 
+          categoria: embebed ? defaultGenero : '',
+          contexto: 'Treino',
           data: new Date().toISOString().split('T')[0], 
           subtipo: 'Geral', 
           observacoes: '', 
           respostas: {} 
-        }));
+        });
         setShowForm(false);
         setMensagem('');
         fetchAnalyses();
-      }, 2000);
+      }, 1500);
     } catch (error) {
       setMensagem('Erro de conexão ao servidor.');
     }
@@ -326,6 +324,7 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
+      addNotification('Análise Excluída', 'Uma avaliação técnica foi removida do sistema.');
       fetchAnalyses();
     } catch (error) {
       console.error('Erro ao excluir:', error);
@@ -355,14 +354,14 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
           <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Avalie os atletas e deixe o sistema gerar os diagnósticos.</p>
         </div>
         {userType !== 'estudante' && (
-          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+          <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setSelectedAnalysis(null); }}>
             <i className={`bi bi-${showForm ? 'x-lg' : 'clipboard-data'} me-2`}></i>
             {showForm ? 'Cancelar Avaliação' : 'Nova Avaliação'}
           </button>
         )}
       </div>
 
-      {showForm && userType !== 'estudante' && (
+      {showForm && userType !== 'estudante' ? (
         formData.modalidade && formData.modalidade.includes('Atletismo') ? (
           <AtletismoForm 
             formData={formData} 
@@ -426,7 +425,9 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
           padding: '32px',
           marginBottom: '32px'
         }}>
-          <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '24px', fontSize: '1rem' }}>Motor Analítico</h5>
+          <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '24px', fontSize: '1rem' }}>
+            {formData.editingId ? 'Editar Avaliação Técnica' : 'Nova Avaliação Técnica'}
+          </h5>
           {mensagem && (
             <div style={{
               background: mensagem.includes('✅') ? 'var(--success-light)' : 'var(--error-light)',
@@ -465,7 +466,10 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
                   </select>
                 </div>
               )}
-              <div className={embebed ? "col-md-5" : "col-md-2"}>
+              <div className="col-md-3">
+                <ContextoSelector modalidade={formData.modalidade} value={formData.contexto} onChange={handleInputChange} style={inputStyle} />
+              </div>
+              <div className={embebed ? "col-md-3" : "col-md-2"}>
                 <label className="form-label text-muted small fw-bold">Posição/Função</label>
                 <select className="form-select" name="subtipo" value={formData.subtipo} onChange={handleInputChange} required style={inputStyle}>
                   {subtipos.map(s => <option key={s} value={s}>{s}</option>)}
@@ -508,46 +512,175 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
                 <textarea className="form-control" name="observacoes" rows="2" value={formData.observacoes} onChange={handleInputChange} placeholder="Comentários sobre a avaliação..." style={inputStyle}></textarea>
               </div>
               <div className="col-12 text-end">
-                <button type="submit" className="btn btn-primary">
-                  <i className="bi bi-magic me-2"></i> Processar e Salvar Avaliação
+                <button type="submit" className="btn btn-primary px-4 fw-bold">
+                  <i className="bi bi-check-circle-fill me-2"></i>
+                  {formData.editingId ? 'Salvar Alterações' : 'Salvar Análise'}
                 </button>
               </div>
             </div>
           </form>
         </div>
-        )
-      )}
+      )) : selectedAnalysis ? (
+        <div className="fade-in" style={{ padding: '8px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="btn btn-outline-secondary" 
+                onClick={() => setSelectedAnalysis(null)} 
+                style={{ padding: '8px 18px', fontSize: '0.875rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              >
+                <i className="bi bi-arrow-left"></i> Voltar para Análises
+              </button>
+            </div>
 
-      {loading ? (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {userType !== 'estudante' && (
+                <>
+                  <button 
+                    className="btn btn-outline-primary" 
+                    onClick={() => handleStartEdit(selectedAnalysis)}
+                    style={{ padding: '8px 16px', fontSize: '0.875rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <i className="bi bi-pencil"></i> Editar Análise
+                  </button>
+                  <button 
+                    className="btn btn-outline-danger" 
+                    onClick={() => {
+                      const idToDelete = selectedAnalysis._id;
+                      setSelectedAnalysis(null);
+                      handleDelete(idToDelete);
+                    }}
+                    style={{ padding: '8px 16px', fontSize: '0.875rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <i className="bi bi-trash"></i> Excluir Análise
+                  </button>
+                </>
+              )}
+              
+              <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.8125rem', padding: '8px 12px' }}>
+                Data: {new Date(selectedAnalysis.dataAvaliacao || selectedAnalysis.data).toLocaleDateString('pt-BR')}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border-light)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, overflow: 'hidden', fontSize: '1.25rem', flexShrink: 0
+              }}>
+                {selectedAnalysis.aluno?.foto ? (
+                  <img src={selectedAnalysis.aluno.foto} alt={selectedAnalysis.aluno.nome} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {selectedAnalysis.aluno?.nome ? selectedAnalysis.aluno.nome.charAt(0).toUpperCase() : '?'}
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 4px', fontSize: '1.25rem' }}>
+                  {selectedAnalysis.aluno?.nome || 'Atleta'}
+                </h4>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <SportIcon sport={selectedAnalysis.modalidade} size={14} />
+                    <span>{selectedAnalysis.modalidade} {selectedAnalysis.subtipo ? `(${selectedAnalysis.subtipo})` : ''}</span>
+                  </span>
+                  <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <i className="bi bi-tag-fill me-1"></i> Contexto: {selectedAnalysis.contexto || (isCollectiveSport(selectedAnalysis.modalidade) ? 'Jogo' : 'Treino')}
+                  </span>
+                  {selectedAnalysis.aluno?.sexo && (
+                    <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)', fontSize: '0.75rem' }}>
+                      {selectedAnalysis.aluno.sexo}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>Índice Geral</div>
+                <span className="badge" style={{ background: 'var(--primary)', color: '#fff', fontSize: '1.125rem', padding: '6px 16px', fontWeight: 700 }}>
+                  <i className="bi bi-star-fill me-1"></i> {selectedAnalysis.resultados?.indiceGeral || '5.0'}
+                </span>
+              </div>
+            </div>
+
+            <div className="row g-3 pt-3 border-top" style={{ fontSize: '0.875rem' }}>
+              <div className="col-md-6">
+                <span style={{ color: 'var(--text-tertiary)' }}>Atleta: </span>
+                <strong style={{ color: 'var(--text)' }}>{selectedAnalysis.aluno?.nome || 'Atleta'}</strong>
+              </div>
+              <div className="col-md-6">
+                <span style={{ color: 'var(--text-tertiary)' }}>Gênero: </span>
+                <strong style={{ color: 'var(--text)' }}>{selectedAnalysis.aluno?.sexo || 'Não informado'}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '12px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="bi bi-robot" style={{ fontSize: '1.25rem' }}></i> Diagnóstico Inteligente Gerado
+            </h6>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text)', margin: 0, lineHeight: 1.6, textAlign: 'justify' }}>
+              {selectedAnalysis.diagnostico || 'Avaliação registrada sem texto diagnóstico.'}
+            </p>
+          </div>
+
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border-light)' }}>
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', fontSize: '0.9375rem' }}>Notas dos Critérios Avaliados</h6>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
+              {selectedAnalysis.respostas && Object.entries(selectedAnalysis.respostas).map(([key, val]) => (
+                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </span>
+                  <span className="badge" style={{ background: Number(val) >= 4 ? 'var(--success)' : Number(val) >= 3 ? 'var(--primary)' : 'var(--warning)', color: '#fff', fontSize: '0.875rem', fontWeight: 700, minWidth: '40px', padding: '6px 12px' }}>
+                    {val} / 5
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {selectedAnalysis.observacoes && (
+            <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '18px 20px', border: '1px solid var(--border-light)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              <strong style={{ color: 'var(--text)', display: 'block', marginBottom: '4px' }}><i className="bi bi-chat-quote-fill me-2" style={{ color: 'var(--primary)' }}></i>Observações:</strong>
+              {selectedAnalysis.observacoes}
+            </div>
+          )}
+        </div>
+      ) : loading ? (
          <div style={{ textAlign: 'center', padding: '48px' }}><div className="spinner-border" style={{ color: 'var(--primary)' }}></div></div>
-      ) : analyses.length > 0 ? (
+      ) : analyses.filter(a => isSportAnalysisSupported(a.modalidade)).length > 0 ? (
         <div className="row g-4">
-          {analyses.map(analise => {
-            const nivel = analise.resultados?.indiceGeral >= 4.5 ? 'Excelente' :
-                          analise.resultados?.indiceGeral >= 3.5 ? 'Bom' :
-                          analise.resultados?.indiceGeral >= 2.5 ? 'Regular' : 'Atenção';
-                          
-            const color = nivel === 'Excelente' ? 'var(--success)' :
-                          nivel === 'Bom' ? 'var(--primary)' :
-                          nivel === 'Regular' ? 'var(--warning)' : 'var(--error)';
-                          
+          {analyses.filter(a => isSportAnalysisSupported(a.modalidade)).map(analise => {
+            const color = analise.resultados?.indiceGeral >= 4.0 ? 'var(--success)' :
+                          analise.resultados?.indiceGeral >= 3.0 ? 'var(--primary)' : 'var(--warning)';
+
             return (
-              <div key={analise._id} className="col-md-6">
+              <div className="col-md-6 col-lg-4" key={analise._id}>
                 <div style={{
                   background: 'var(--bg-card)',
                   borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border-light)',
-                  boxShadow: 'var(--shadow-sm)',
                   padding: '24px',
-                  position: 'relative',
-                  height: '100%'
-                }}>
+                  boxShadow: 'var(--shadow-sm)',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  position: 'relative'
+                }} className="hover-lift">
+                  
                   {userType !== 'estudante' && (
                     <button 
-                      className="btn btn-light rounded-circle shadow-sm"
                       onClick={() => handleDelete(analise._id)}
-                      title="Excluir Análise"
-                      style={{ position: 'absolute', top: '16px', right: '16px', width: '32px', height: '32px', padding: 0 }}
+                      style={{
+                        position: 'absolute', top: '16px', right: '16px',
+                        background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6
+                      }}
+                      title="Excluir"
                     >
                       <i className="bi bi-trash" style={{ color: 'var(--error)' }}></i>
                     </button>
@@ -577,36 +710,57 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
                         <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
                           <i className="bi bi-calendar-event me-1"></i> {new Date(analise.data).toLocaleDateString('pt-BR')} 
                           <span className="mx-2">•</span> 
-                          <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>{analise.modalidade} ({analise.subtipo || 'Geral'})</span>
+                          <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <SportIcon sport={analise.modalidade} size={14} />
+                            <span>{analise.modalidade} ({analise.subtipo || 'Geral'})</span>
+                          </span>
                         </div>
                       </div>
                     </div>
-                  <div className="row align-items-center mt-3">
-                    <div className="col-12 col-xl-5 text-center mb-3 mb-xl-0">
-                      <div style={{ width: '100%', maxWidth: '160px', margin: '0 auto' }}>
-                        {analise.respostas && Object.keys(analise.respostas).length > 0 ? (
-                          <RadarChart respostas={analise.respostas} />
-                        ) : (
-                          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', padding: '24px 0', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)' }}>Sem dados de Radar</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-12 col-xl-7">
-                      <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '8px', fontSize: '0.8125rem' }}>
-                        <i className="bi bi-robot me-2"></i>Diagnóstico Inteligente
-                      </h6>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, textAlign: 'justify' }}>
-                        {analise.diagnostico || 'Avaliação legada (sem diagnóstico automático).'}
-                      </p>
+                  <div className="mt-2">
+                    <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '8px', fontSize: '0.875rem' }}>
+                      <i className="bi bi-robot me-2"></i>Diagnóstico Inteligente
+                    </h6>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6, textAlign: 'justify' }}>
+                      {analise.diagnostico || 'Avaliação legada (sem diagnóstico automático).'}
+                    </p>
+                  </div>
+
+                  <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <i className="bi bi-tag-fill me-1"></i> {analise.contexto || (isCollectiveSport(analise.modalidade) ? 'Jogo' : 'Treino')}
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button 
+                        className="btn btn-outline-secondary btn-sm"
+                        style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}
+                        onClick={() => setSelectedAnalysis(analise)}
+                        title="Ver detalhes da análise"
+                      >
+                        <i className="bi bi-eye me-1"></i> Detalhes
+                      </button>
+                      {userType !== 'estudante' && (
+                        <>
+                          <button 
+                            className="btn btn-outline-primary btn-sm"
+                            style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}
+                            onClick={() => handleStartEdit(analise)}
+                            title="Editar Análise"
+                          >
+                            <i className="bi bi-pencil me-1"></i> Editar
+                          </button>
+                          <button 
+                            className="btn btn-outline-danger btn-sm"
+                            style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}
+                            onClick={() => handleDelete(analise._id)}
+                            title="Excluir Análise"
+                          >
+                            <i className="bi bi-trash me-1"></i> Excluir
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
-                  
-                  {analise.observacoes && (
-                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                      <i className="bi bi-chat-quote-fill me-2" style={{ color: 'var(--primary)', opacity: 0.7 }}></i>
-                      {analise.observacoes}
-                    </div>
-                  )}
                   
                 </div>
               </div>

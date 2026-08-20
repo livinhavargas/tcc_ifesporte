@@ -30,6 +30,9 @@ const userSchema = new mongoose.Schema({
   lesoesAnteriores: { type: String },
   restricoesMedicas: { type: String },
   numeroCamisa: { type: String },
+  numeroCalcado: { type: String },
+  tamanhoCamisa: { type: String, enum: ['P', 'M', 'G', 'GG', ''] },
+  tamanhoCalcao: { type: String, enum: ['P', 'M', 'G', 'GG', ''] },
 
   // Dados Profissionais
   instituicao: { type: String },

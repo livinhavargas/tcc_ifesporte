@@ -11,6 +11,8 @@ import {
   RadioButtonUnchecked
 } from '@mui/icons-material';
 
+import SportIcon, { detectSport } from '../../../components/SportIcon';
+
 const CalendarSidebar = ({ 
   currentDate, 
   onDateChange, 
@@ -87,8 +89,13 @@ const CalendarSidebar = ({
     .sort((a, b) => new Date(a.start) - new Date(b.start))
     .slice(0, 3);
 
-  const getEventIcon = (tipo) => {
-    switch(tipo) {
+  const getEventIcon = (ev) => {
+    const textToMatch = `${ev.title || ''} ${ev.titulo || ''} ${ev.descricao || ''} ${ev.modalidade || ''}`;
+    const detected = detectSport(textToMatch);
+    if (detected) {
+      return <SportIcon sport={detected} size={18} style={{ color: 'var(--primary)' }} />;
+    }
+    switch(ev.tipo) {
       case 'Treino': return <SportsSoccer fontSize="small" style={{ color: categoriesColors.Treino }} />;
       case 'Amistoso': return <Flag fontSize="small" style={{ color: categoriesColors.Amistoso }} />;
       case 'Campeonato': return <Flag fontSize="small" style={{ color: categoriesColors.Campeonato }} />;
@@ -152,7 +159,7 @@ const CalendarSidebar = ({
                 gap: '12px'
               }} className="hover-scale-sm">
                 <div style={{ marginTop: '2px' }}>
-                  {getEventIcon(ev.tipo)}
+                  {getEventIcon(ev)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
@@ -190,7 +197,7 @@ const CalendarSidebar = ({
           </div>
 
           {/* Metas Gerais */}
-          <div>
+          <div id="metas-gerais-section" style={{ borderRadius: 'var(--radius-md)', padding: '4px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h6 style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Metas Gerais</h6>
               <button 

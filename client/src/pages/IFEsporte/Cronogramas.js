@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  CalendarRange, Plus, Search, CalendarX, Clock, User, Flag, Calendar, 
+  Zap, Eye, Pencil, Trash2, Wand2, X, Cpu, ArrowLeft, Check, FileText, 
+  CalendarCheck, Activity, Trophy, BatteryCharging, CheckCircle2, MapPin 
+} from 'lucide-react';
 import { generateSmartCronograma } from '../../utils/cronogramaGenerator';
+import SportIcon, { detectSport } from '../../components/SportIcon';
+import { addNotification } from '../../utils/notifications';
+import { isSportScheduleSupported } from '../../utils/sportScheduleRules';
 
 const Cronogramas = ({ modalidade, categoria }) => {
   const [cronogramas, setCronogramas] = useState([]);
@@ -17,6 +25,18 @@ const Cronogramas = ({ modalidade, categoria }) => {
   useEffect(() => {
     fetchCronogramas();
   }, [modalidade]);
+
+  if (modalidade && !isSportScheduleSupported(modalidade)) {
+    return (
+      <div style={{ textAlign: 'center', padding: '48px 16px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1.5px dashed var(--border-light)' }}>
+        <CalendarX size={36} style={{ color: 'var(--text-tertiary)', marginBottom: '12px' }} />
+        <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Cronogramas não disponíveis</h5>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0 }}>
+          A modalidade "{modalidade}" não possui função de cronogramas de treinamento.
+        </p>
+      </div>
+    );
+  }
 
   const fetchCronogramas = async () => {
     try {
@@ -97,6 +117,7 @@ const Cronogramas = ({ modalidade, categoria }) => {
       
       if (res.ok) {
         alert("Cronograma salvo com sucesso!");
+        addNotification(selected ? 'Cronograma Atualizado' : 'Novo Cronograma Criado', `Cronograma "${formData.titulo}" salvo para ${modalidade}.`);
         fetchCronogramas();
         setView('list');
       } else {
@@ -132,48 +153,28 @@ const Cronogramas = ({ modalidade, categoria }) => {
       await fetch(`/api/cronogramas/${id}`, {
         method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
+      addNotification('Cronograma Excluído', 'Um cronograma de treinos foi excluído.');
       fetchCronogramas();
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleSyncAgenda = async (crono) => {
-    if (!window.confirm("Sincronizar com a Agenda? Isso verificará conflitos e injetará todos os treinos.")) return;
-    
+  const handleSyncAgenda = async (c) => {
+    if (!window.confirm("Deseja criar automaticamente os eventos de treino da periodização na Agenda principal do sistema?")) return;
     try {
-      const allNewEventIds = [];
-      for (const fase of crono.fases) {
-        for (const treino of fase.treinos) {
-          const ev = {
-            titulo: `${crono.titulo} - Treino ${crono.modalidade}`,
-            data: treino.data,
-            horaInicial: '14:00',
-            localNome: crono.modalidade,
-            descricao: `Fase: ${fase.nome} | Objetivo: ${treino.tipo} | Categoria: ${crono.categoria}`,
-            tipo: 'Treino',
-            modalidade: crono.modalidade,
-            categoria: crono.categoria
-          };
-          const res = await fetch('/api/events', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-            body: JSON.stringify(ev)
-          });
-          const evData = await res.json();
-          if (evData && evData._id) allNewEventIds.push(evData._id);
-        }
-      }
-      
-      await fetch(`/api/cronogramas/${crono._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ eventosVinculados: allNewEventIds })
+      const res = await fetch(`/api/cronogramas/${c._id}/sincronizar`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      
-      alert("Agenda sincronizada com sucesso!");
-      fetchCronogramas();
-      setView('list');
+      if (res.ok) {
+        alert("Treinos sincronizados com sucesso na Agenda!");
+        addNotification('Agenda Sincronizada', `Eventos do cronograma "${c.titulo}" foram sincronizados na Agenda.`);
+        fetchCronogramas();
+        setView('list');
+      } else {
+        alert("Erro ao sincronizar cronograma.");
+      }
     } catch (e) {
       console.error(e);
       alert("Erro ao sincronizar com agenda.");
@@ -209,10 +210,11 @@ const Cronogramas = ({ modalidade, categoria }) => {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <i className="bi bi-calendar-range" style={{ color: 'var(--accent)' }}></i>Cronogramas
+              <CalendarRange size={20} style={{ color: 'var(--accent)' }} />
+              <span>Cronogramas</span>
             </h5>
             <button className="btn btn-primary" onClick={() => { setSelected(null); setFormData({titulo: '', dataInicio: '', dataFim: '', competicaoAlvo: '', diasPorSemana: 3, incluirTransicao: true}); setView('form'); }}>
-              <i className="bi bi-plus-lg me-2"></i>Novo Cronograma
+              <Plus size={16} className="me-2" /> Novo Cronograma
             </button>
           </div>
           
@@ -227,7 +229,7 @@ const Cronogramas = ({ modalidade, categoria }) => {
             alignItems: 'center',
             gap: '8px'
           }}>
-            <i className="bi bi-search" style={{ color: 'var(--text-tertiary)' }}></i>
+            <Search size={16} style={{ color: 'var(--text-tertiary)' }} />
             <input 
               type="text" 
               placeholder="Pesquisar por nome do cronograma..." 
@@ -240,7 +242,7 @@ const Cronogramas = ({ modalidade, categoria }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
             {filtered.length === 0 ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 16px' }}>
-                <i className="bi bi-calendar-x" style={{ fontSize: '2.5rem', color: 'var(--text-tertiary)', opacity: 0.5, display: 'block', marginBottom: '12px' }}></i>
+                <CalendarX size={48} style={{ color: 'var(--text-tertiary)', opacity: 0.5, display: 'block', margin: '0 auto 12px' }} />
                 <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>Nenhum cronograma encontrado para esta modalidade.</p>
               </div>
             ) : (
@@ -264,24 +266,27 @@ const Cronogramas = ({ modalidade, categoria }) => {
                     )}
                     
                     <div>
-                      <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 8px', fontSize: '0.9375rem' }}>{c.titulo}</h5>
+                      <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 8px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <SportIcon sport={c.modalidade || modalidade} text={c.titulo} size={20} />
+                        <span>{c.titulo}</span>
+                      </h5>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                         <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.6875rem', fontWeight: 600 }}>{categoria}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}><i className="bi bi-clock-history me-1"></i> {totalSemanas} semanas</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {totalSemanas} semanas</span>
                       </div>
                       
                       <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="bi bi-person me-2" style={{ color: 'var(--primary)' }}></i><strong>Treinador:</strong> {c.treinadorResponsavel || 'Não informado'}</li>
-                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="bi bi-flag me-2" style={{ color: 'var(--accent)' }}></i><strong>Competição:</strong> {c.competicaoAlvo ? new Date(c.competicaoAlvo).toLocaleDateString('pt-BR') : 'Não informada'}</li>
-                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="bi bi-calendar-event me-2" style={{ color: 'var(--primary)' }}></i><strong>Período:</strong> {c.dataInicio ? new Date(c.dataInicio).toLocaleDateString('pt-BR') : 'N/A'} a {c.dataFim ? new Date(c.dataFim).toLocaleDateString('pt-BR') : 'N/A'}</li>
-                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="bi bi-lightning me-2" style={{ color: 'var(--warning)' }}></i><strong>Frequência:</strong> {c.diasPorSemana}x semana</li>
+                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><User size={14} style={{ color: 'var(--primary)' }} /> <strong>Treinador:</strong> {c.treinadorResponsavel || 'Não informado'}</li>
+                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><Flag size={14} style={{ color: 'var(--accent)' }} /> <strong>Competição:</strong> {c.competicaoAlvo ? new Date(c.competicaoAlvo).toLocaleDateString('pt-BR') : 'Não informada'}</li>
+                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} style={{ color: 'var(--primary)' }} /> <strong>Período:</strong> {c.dataInicio ? new Date(c.dataInicio).toLocaleDateString('pt-BR') : 'N/A'} a {c.dataFim ? new Date(c.dataFim).toLocaleDateString('pt-BR') : 'N/A'}</li>
+                        <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><Zap size={14} style={{ color: 'var(--warning)' }} /> <strong>Frequência:</strong> {c.diasPorSemana}x semana</li>
                       </ul>
                     </div>
                     
                     <div style={{ display: 'flex', gap: '8px', borderTop: '1.5px solid var(--border-light)', paddingTop: '16px' }}>
-                      <button className="btn btn-outline-primary" style={{ flex: 1, padding: '8px' }} onClick={() => handleView(c)}><i className="bi bi-eye"></i> Visualizar</button>
-                      <button className="btn btn-outline-secondary" style={{ width: '40px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => handleEdit(c)}><i className="bi bi-pencil"></i></button>
-                      <button className="btn btn-outline-danger" style={{ width: '40px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => handleDelete(c._id)}><i className="bi bi-trash"></i></button>
+                      <button className="btn btn-outline-primary" style={{ flex: 1, padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }} onClick={() => handleView(c)}><Eye size={16} /> Visualizar</button>
+                      <button className="btn btn-outline-secondary" style={{ width: '40px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => handleEdit(c)}><Pencil size={16} /></button>
+                      <button className="btn btn-outline-danger" style={{ width: '40px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => handleDelete(c._id)}><Trash2 size={16} /></button>
                     </div>
                   </div>
                 )
@@ -317,11 +322,12 @@ const Cronogramas = ({ modalidade, categoria }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '24px' }}>
             <div>
                <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.0625rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                 <i className="bi bi-magic" style={{ color: 'var(--primary)' }}></i>Gerador Inteligente de Cronograma
+                 <Wand2 size={20} style={{ color: 'var(--primary)' }} />
+                 <span>Gerador Inteligente de Cronograma</span>
                </h5>
                <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', marginTop: '4px' }}>{modalidade} · {categoria}</span>
             </div>
-            <button style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontSize: '1.25rem' }} onClick={() => setView('list')}><i className="bi bi-x-lg"></i></button>
+            <button style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer' }} onClick={() => setView('list')}><X size={20} /></button>
           </div>
           
           <form onSubmit={handleGerarPreview}>
@@ -354,7 +360,7 @@ const Cronogramas = ({ modalidade, categoria }) => {
                   <label htmlFor="incluirTransicao" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}>Incluir Fase de Transição</label>
                 </div>
                 <button type="submit" className="btn btn-primary">
-                  <i className="bi bi-cpu me-2"></i>Gerar e Revisar
+                  <Cpu size={16} className="me-2" /> Gerar e Revisar
                 </button>
               </div>
             </div>
@@ -368,11 +374,12 @@ const Cronogramas = ({ modalidade, categoria }) => {
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
              <div>
                <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.0625rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                 <i className="bi bi-pencil-square" style={{ color: 'var(--accent)' }}></i>Revisão do Cronograma
+                 <Pencil size={20} style={{ color: 'var(--accent)' }} />
+                 <span>Revisão do Cronograma</span>
                </h5>
                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>Você pode ajustar as semanas e a descrição de cada fase gerada antes de salvar.</p>
              </div>
-             <button className="btn btn-secondary" onClick={() => setView('form')}><i className="bi bi-arrow-left me-2"></i>Voltar</button>
+             <button className="btn btn-secondary" onClick={() => setView('form')}><ArrowLeft size={16} className="me-2" />Voltar</button>
            </div>
            
            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
@@ -392,9 +399,9 @@ const Cronogramas = ({ modalidade, categoria }) => {
                         <input type="number" value={f.semanas} onChange={(e) => handleFaseChange(i, 'semanas', parseInt(e.target.value))} min="1" style={inputStyle} />
                       </div>
                       <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span><i className="bi bi-calendar me-1"></i> Início: {new Date(f.dataInicio).toLocaleDateString('pt-BR')}</span>
-                        <span><i className="bi bi-calendar-check me-1"></i> Fim: {new Date(f.dataFim).toLocaleDateString('pt-BR')}</span>
-                        <span><i className="bi bi-activity me-1"></i> {f.treinos?.length} treinos nesta fase</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={12} /> Início: {new Date(f.dataInicio).toLocaleDateString('pt-BR')}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><CalendarCheck size={12} /> Fim: {new Date(f.dataFim).toLocaleDateString('pt-BR')}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Activity size={12} /> {f.treinos?.length} treinos nesta fase</span>
                       </div>
                     </div>
                     <div className="col-md-8 ps-md-4">
@@ -408,7 +415,7 @@ const Cronogramas = ({ modalidade, categoria }) => {
            
            <div style={{ display: 'flex', justifyContent: 'flex-end', background: 'var(--bg-card)', padding: '16px 24px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)' }}>
              <button className="btn btn-success" onClick={handleSave}>
-               <i className="bi bi-check-lg me-2"></i> Confirmar e Salvar
+               <Check size={16} className="me-2" /> Confirmar e Salvar
              </button>
            </div>
         </div>
@@ -418,22 +425,15 @@ const Cronogramas = ({ modalidade, categoria }) => {
       {view === 'view' && selected && (
         <div className="printable-cronograma">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }} className="d-print-none">
-            <button className="btn btn-secondary" onClick={() => setView('list')}>
-              <i className="bi bi-arrow-left me-2"></i>Voltar
-            </button>
+            <button className="btn btn-secondary" onClick={() => setView('list')}><ArrowLeft size={16} className="me-2" />Voltar</button>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn btn-outline-primary" onClick={() => window.print()}>
-                <i className="bi bi-file-earmark-pdf me-2"></i>Exportar PDF
-              </button>
+              <button className="btn btn-outline-primary" onClick={() => window.print()}><FileText size={16} className="me-2" />Exportar PDF</button>
               {(!selected.eventosVinculados || selected.eventosVinculados.length === 0) && (
-                <button className="btn btn-success" onClick={() => handleSyncAgenda(selected)}>
-                  <i className="bi bi-calendar-check me-2"></i>Sincronizar com Agenda
-                </button>
+                <button className="btn btn-success" onClick={() => handleSyncAgenda(selected)}><CalendarCheck size={16} className="me-2" />Sincronizar com Agenda</button>
               )}
             </div>
           </div>
           
-          {/* Header Card */}
           <div style={{
             background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
             color: '#fff',
@@ -446,10 +446,10 @@ const Cronogramas = ({ modalidade, categoria }) => {
               <div>
                 <span className="badge" style={{ background: 'var(--accent)', color: '#fff', marginBottom: '12px' }}>{selected.categoria}</span>
                 <h3 style={{ color: '#fff', fontWeight: 700, margin: '0 0 6px', fontSize: '1.25rem' }}>{selected.titulo}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '0.875rem' }}><i className="bi bi-geo-alt me-2"></i>{selected.modalidade}</p>
+                <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={16} />{selected.modalidade}</p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <h5 style={{ color: '#fff', fontWeight: 700, margin: '0 0 4px', fontSize: '1rem' }}><i className="bi bi-flag me-2" style={{ color: 'var(--accent)' }}></i>{new Date(selected.competicaoAlvo).toLocaleDateString('pt-BR')}</h5>
+                <h5 style={{ color: '#fff', fontWeight: 700, margin: '0 0 4px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}><Flag size={16} style={{ color: 'var(--accent)' }} />{new Date(selected.competicaoAlvo).toLocaleDateString('pt-BR')}</h5>
                 <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: 0 }}>Data Alvo</p>
               </div>
             </div>
@@ -472,48 +472,11 @@ const Cronogramas = ({ modalidade, categoria }) => {
                 <h6 style={{ color: '#fff', fontWeight: 700, margin: 0, fontSize: '0.875rem' }}>{selected.diasPorSemana}x na semana</h6>
               </div>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: '0 0 4px' }}>Treinador Responsável</p>
-                <h6 style={{ color: '#fff', fontWeight: 700, margin: 0, fontSize: '0.875rem' }}>{selected.treinadorResponsavel || 'Não informado'}</h6>
-              </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: '0 0 4px' }}>Data de Criação</p>
-                <h6 style={{ color: '#fff', fontWeight: 700, margin: 0, fontSize: '0.875rem' }}>{selected.createdAt ? new Date(selected.createdAt).toLocaleDateString('pt-BR') : 'N/A'}</h6>
-              </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: '0 0 4px' }}>Última Edição</p>
-                <h6 style={{ color: '#fff', fontWeight: 700, margin: 0, fontSize: '0.875rem' }}>{selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString('pt-BR') : 'N/A'}</h6>
-              </div>
-            </div>
           </div>
           
-          {/* Timeline Visual */}
-          <div style={{ marginBottom: '32px' }} className="d-none d-md-block">
-            <h6 style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Linha do Tempo Visual</h6>
-            <div style={{ display: 'flex', borderRadius: 'var(--radius-full)', overflow: 'hidden', height: '24px', boxShadow: 'var(--shadow-xs)' }}>
-              {selected.fases && selected.fases.map((f, idx) => {
-                const totalSemanas = selected.fases.reduce((acc, curr) => acc + (curr.semanas || 0), 0);
-                const perc = totalSemanas === 0 ? 0 : (f.semanas / totalSemanas) * 100;
-                const colors = ['#3b82f6', '#f97316', '#22c55e'];
-                return (
-                  <div key={idx} style={{
-                    width: `${perc}%`, background: colors[idx % 3],
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontWeight: 700, fontSize: '0.75rem', borderRight: '1px solid #fff'
-                  }} title={f.nome}>
-                    {perc > 15 ? f.nome : ''}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Cards das Fases */}
           <div className="row g-4">
             {selected.fases && selected.fases.map((fase, index) => {
-              const icons = ['bi-activity', 'bi-trophy', 'bi-battery-charging'];
+              const icons = [<Activity size={18} />, <Trophy size={18} />, <BatteryCharging size={18} />];
               const colors = ['var(--primary)', 'var(--accent)', 'var(--success)'];
               
               return (
@@ -529,14 +492,15 @@ const Cronogramas = ({ modalidade, categoria }) => {
                     flexDirection: 'column',
                     height: '100%'
                   }}>
-                    <h5 style={{ fontWeight: 700, color: colors[index % 3], marginBottom: '16px', fontSize: '0.9375rem' }}>
-                      <i className={`bi ${icons[index % 3]} me-2`}></i> {index + 1}. {fase.nome}
+                    <h5 style={{ fontWeight: 700, color: colors[index % 3], marginBottom: '16px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {icons[index % 3]}
+                      <span>{index + 1}. {fase.nome}</span>
                     </h5>
                     
                     <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="bi bi-calendar me-2"></i> {fase.dataInicio ? new Date(fase.dataInicio).toLocaleDateString('pt-BR') : 'N/A'} a {fase.dataFim ? new Date(fase.dataFim).toLocaleDateString('pt-BR') : 'N/A'}</li>
-                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="bi bi-clock-history me-2"></i> {fase.semanas} semanas</li>
-                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="bi bi-check2-circle me-2"></i> {fase.treinos?.length || 0} sessões</li>
+                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /> {fase.dataInicio ? new Date(fase.dataInicio).toLocaleDateString('pt-BR') : 'N/A'} a {fase.dataFim ? new Date(fase.dataFim).toLocaleDateString('pt-BR') : 'N/A'}</li>
+                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={14} /> {fase.semanas} semanas</li>
+                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={14} /> {fase.treinos?.length || 0} sessões</li>
                     </ul>
                     
                     <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: 'var(--radius-md)', marginTop: 'auto' }}>
@@ -548,16 +512,6 @@ const Cronogramas = ({ modalidade, categoria }) => {
               );
             })}
           </div>
-          
-          <style dangerouslySetInnerHTML={{__html: `
-            @media print {
-              .d-print-none { display: none !important; }
-              body { background: white !important; }
-              .card-flat { border: 1px solid #ddd !important; box-shadow: none !important; color: black !important; }
-              .bg-blue-dark { background-color: #f8f9fa !important; color: black !important; }
-              .text-white, .text-white-50 { color: black !important; }
-            }
-          `}} />
         </div>
       )}
     </div>

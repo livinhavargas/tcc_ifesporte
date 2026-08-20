@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  Pencil, X, Save, Camera, User, Phone, Mail, GraduationCap, 
+  HeartPulse, Trophy, IdCard, BadgeInfo, Shirt, ShieldAlert, 
+  Activity, BarChart3, CheckCircle2, AlertTriangle, MapPin, 
+  PhoneCall, Scale, Ruler, Calendar, UserCheck
+} from 'lucide-react';
 import Layout from '../components/Layout';
 import Analises from './IFesporte/Analises';
+import SportIcon from '../components/SportIcon';
+import { addNotification } from '../utils/notifications';
+import ModalidadesSelector from '../components/ModalidadesSelector';
+import IMCCard from '../components/IMCCard';
 
 const Perfil = () => {
   const userId = localStorage.getItem('userId');
@@ -35,17 +45,7 @@ const Perfil = () => {
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
   
-  const modalidadesCategorizadas = {
-    'Modalidades Coletivas': ['Futebol', 'Futsal', 'Basquete', 'Handebol', 'Voleibol', 'Vôlei de Praia'],
-    'Modalidades Individuais': ['Xadrez', 'Badminton'],
-    'Tênis de Mesa': ['Tênis de Mesa - Individual', 'Tênis de Mesa - Dupla'],
-    'Atletismo - Corridas': [
-      '100m rasos', '200m rasos', '400m rasos', '800m', 
-      '1500m', '3000m', '5000m', 'Revezamento 4x100', 'Revezamento 4x400'
-    ],
-    'Atletismo - Saltos': ['Salto em Distância', 'Salto em Altura', 'Salto Triplo'],
-    'Atletismo - Lançamentos': ['Lançamento de Disco', 'Lançamento de Dardo', 'Arremesso de Peso']
-  };
+
 
   useEffect(() => {
     fetchProfile();
@@ -67,8 +67,11 @@ const Perfil = () => {
         matricula: data.matricula || '',
         turma: data.turma || data.serie || '', 
         cpf: data.cpf || '',
+        rg: data.rg || '',
         endereco: data.endereco || '',
-        dataNascimento: data.dataNascimento || '',
+        cidade: data.cidade || '',
+        estado: data.estado || '',
+        dataNascimento: data.dataNascimento ? data.dataNascimento.split('T')[0] : '',
         nomeResponsavel: data.nomeResponsavel || '',
         telefoneResponsavel: data.telefoneResponsavel || '',
         foto: data.foto || '',
@@ -77,7 +80,10 @@ const Perfil = () => {
         alergias: data.alergias || '',
         lesoesAnteriores: data.lesoesAnteriores || '',
         restricoesMedicas: data.restricoesMedicas || '',
-        numeroCamisa: data.numeroCamisa || ''
+        numeroCamisa: data.numeroCamisa || '',
+        numeroCalcado: data.numeroCalcado || '',
+        tamanhoCamisa: data.tamanhoCamisa || '',
+        tamanhoCalcao: data.tamanhoCalcao || ''
       });
       setLoading(false);
     } catch (error) {
@@ -96,16 +102,33 @@ const Perfil = () => {
       value = value.replace(/(\d{3})(\d)/, '$1.$2');
       value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     }
+
+    if (name === 'rg') {
+      value = value.replace(/[^a-zA-Z0-9]/g, '');
+      if (value.length > 9) value = value.slice(0, 9);
+      if (value.length > 8) {
+        value = value.replace(/^([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{1})$/, '$1.$2.$3-$4');
+      } else if (value.length > 5) {
+        value = value.replace(/^([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{1,3})$/, '$1.$2.$3');
+      } else if (value.length > 2) {
+        value = value.replace(/^([a-zA-Z0-9]{2})([a-zA-Z0-9]{1,3})$/, '$1.$2');
+      }
+    }
     
     if (name === 'telefone' || name === 'telefoneResponsavel') {
       value = value.replace(/\D/g, '');
       if (value.length > 11) value = value.slice(0, 11);
       value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
-      value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+      value = value.replace(/(\d{5})(\d)/, '$1-$2');
     }
 
-    setProfileData(prev => ({ ...prev, [name]: value }));
+    setProfileData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
+
+
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -118,46 +141,35 @@ const Perfil = () => {
     }
   };
 
-  const handleModalidadeToggle = (mod) => {
-    if (!isEditing) return;
-    setProfileData(prev => {
-      const isSelected = prev.esportes.includes(mod);
-      if (isSelected) {
-        return { ...prev, esportes: prev.esportes.filter(m => m !== mod) };
-      }
-      return { ...prev, esportes: [...prev.esportes, mod] };
-    });
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
     setMensagem('');
     try {
-      const payload = { ...profileData, serie: profileData.turma };
-
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(profileData)
       });
+
       if (response.ok) {
         setMensagem('✅ Perfil atualizado com sucesso!');
-        localStorage.setItem('userName', profileData.nome);
+        addNotification('Perfil Atualizado', 'Seus dados de perfil foram atualizados com sucesso.');
         setIsEditing(false);
-        fetchProfile();
-        setTimeout(() => setMensagem(''), 3000);
+        if (profileData.nome) localStorage.setItem('userName', profileData.nome);
+        if (profileData.foto) localStorage.setItem('foto', profileData.foto);
+        setTimeout(() => setMensagem(''), 4000);
       } else {
-        setMensagem('Erro ao atualizar perfil.');
+        setMensagem('❌ Erro ao atualizar perfil.');
       }
     } catch (error) {
-      setMensagem('Erro de conexão ao servidor.');
+      setMensagem('❌ Erro de conexão ao salvar.');
     }
   };
 
-  const fieldStyle = isEditing ? {
+  const fieldStyle = {
     width: '100%',
     padding: '10px 14px',
     borderRadius: 'var(--radius-md)',
@@ -166,20 +178,9 @@ const Perfil = () => {
     fontFamily: 'var(--font)',
     outline: 'none',
     transition: 'all var(--transition-fast)',
-    background: 'var(--bg)',
-    minHeight: '44px'
-  } : {
-    width: '100%',
-    padding: '10px 0',
-    border: 'none',
-    borderBottom: '1px dashed var(--border)',
-    borderRadius: 0,
-    fontSize: '0.9375rem',
-    fontWeight: '600',
+    background: isEditing ? 'var(--bg-input)' : 'var(--bg-hover)',
     color: 'var(--text)',
-    background: 'transparent',
-    minHeight: 'auto',
-    pointerEvents: 'none'
+    cursor: isEditing ? 'text' : 'default'
   };
 
   return (
@@ -200,7 +201,7 @@ const Perfil = () => {
                 className="btn btn-primary"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <i className="bi bi-pencil-square"></i> Editar Perfil
+                <Pencil size={16} /> Editar Perfil
               </button>
             ) : (
               <button 
@@ -212,7 +213,7 @@ const Perfil = () => {
                 className="btn btn-secondary"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <i className="bi bi-x-circle"></i> Cancelar Edição
+                <X size={16} /> Cancelar Edição
               </button>
             )}
           </div>
@@ -229,7 +230,8 @@ const Perfil = () => {
             marginBottom: '24px',
             display: 'flex', alignItems: 'center', gap: '8px'
           }}>
-            <i className={`bi ${mensagem.includes('✅') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`}></i>{mensagem}
+            {mensagem.includes('✅') ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+            <span>{mensagem}</span>
           </div>
         )}
 
@@ -272,7 +274,7 @@ const Perfil = () => {
                          display: 'flex', alignItems: 'center', justifyContent: 'center',
                          cursor: 'pointer', boxShadow: 'var(--shadow-sm)', border: '2px solid #fff'
                        }}>
-                         <i className="bi bi-camera-fill"></i>
+                         <Camera size={18} />
                        </label>
                        <input type="file" id="fotoInput" className="d-none" accept="image/*" onChange={handlePhotoChange} />
                      </>
@@ -282,34 +284,50 @@ const Perfil = () => {
 
               {/* Informações Pessoais */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                  <i className="bi bi-person-lines-fill"></i>
+                <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <User size={16} />
                 </div>
                 <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Informações Pessoais</h6>
               </div>
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label text-muted small mb-1">Nome Completo</label>
+                    <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <User size={14} /> Nome Completo
+                    </label>
                     <input type="text" name="nome" value={profileData.nome} onChange={handleInputChange} required readOnly={!isEditing} style={fieldStyle} />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small mb-1">E-mail</label>
+                    <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Mail size={14} /> E-mail
+                    </label>
                     <input type="email" name="email" value={profileData.email} onChange={handleInputChange} required readOnly={!isEditing} style={fieldStyle} />
                   </div>
 
                   {userType === 'estudante' && (
                     <>
-                      <div className="col-md-4">
-                        <label className="form-label text-muted small mb-1">CPF</label>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <BadgeInfo size={14} /> CPF
+                        </label>
                         <input type="text" name="cpf" value={profileData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" readOnly={!isEditing} style={fieldStyle} />
                       </div>
-                      <div className="col-md-4">
-                        <label className="form-label text-muted small mb-1">Data de Nascimento</label>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <BadgeInfo size={14} /> RG
+                        </label>
+                        <input type="text" name="rg" value={profileData.rg} onChange={handleInputChange} placeholder="00.000.000-0" readOnly={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={14} /> Data de Nascimento
+                        </label>
                         <input type="date" name="dataNascimento" value={profileData.dataNascimento} onChange={handleInputChange} readOnly={!isEditing} style={fieldStyle} />
                       </div>
-                      <div className="col-md-4">
-                        <label className="form-label text-muted small mb-1">Gênero</label>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <UserCheck size={14} /> Gênero
+                        </label>
                         {isEditing ? (
                           <select name="sexo" value={profileData.sexo} onChange={handleInputChange} style={fieldStyle}>
                             <option value="">Selecione...</option>
@@ -328,29 +346,49 @@ const Perfil = () => {
 
               {/* Contato */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                  <i className="bi bi-telephone-fill"></i>
+                <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Phone size={16} />
                 </div>
                 <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Contato e Localização</h6>
               </div>
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label text-muted small mb-1">Telefone / Celular</label>
+                    <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Phone size={14} /> Telefone / Celular
+                    </label>
                     <input type="text" name="telefone" value={profileData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" readOnly={!isEditing} style={fieldStyle} />
                   </div>
                   {userType === 'estudante' && (
                     <>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small mb-1">Endereço Completo</label>
-                        <input type="text" name="endereco" value={profileData.endereco} onChange={handleInputChange} placeholder="Rua, Número, Bairro, CEP" readOnly={!isEditing} style={fieldStyle} />
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={14} /> Logradouro
+                        </label>
+                        <input type="text" name="endereco" value={profileData.endereco} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" readOnly={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={14} /> Cidade
+                        </label>
+                        <input type="text" name="cidade" value={profileData.cidade} onChange={handleInputChange} placeholder="Ex: Vitória" readOnly={!isEditing} style={fieldStyle} />
+                      </div>
+                      <div className="col-md-2">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={14} /> Estado
+                        </label>
+                        <input type="text" name="estado" value={profileData.estado} onChange={handleInputChange} placeholder="Ex: ES" maxLength="2" style={{ ...fieldStyle, textTransform: 'uppercase' }} readOnly={!isEditing} />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small mb-1">Nome do Responsável</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <User size={14} /> Nome do Responsável
+                        </label>
                         <input type="text" name="nomeResponsavel" value={profileData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do Responsável" readOnly={!isEditing} style={fieldStyle} />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small mb-1">Telefone do Responsável</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <PhoneCall size={14} /> Telefone do Responsável
+                        </label>
                         <input type="text" name="telefoneResponsavel" value={profileData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" readOnly={!isEditing} style={fieldStyle} />
                       </div>
                     </>
@@ -362,19 +400,23 @@ const Perfil = () => {
               {userType === 'estudante' && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                      <i className="bi bi-backpack-fill"></i>
+                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <GraduationCap size={16} />
                     </div>
                     <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Dados Escolares e Físicos</h6>
                   </div>
                   <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                     <div className="row g-3">
                       <div className="col-md-3">
-                        <label className="form-label text-muted small mb-1">Matrícula</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <IdCard size={14} /> Matrícula
+                        </label>
                         <input type="text" name="matricula" value={profileData.matricula} onChange={handleInputChange} readOnly={!isEditing} style={fieldStyle} />
                       </div>
                       <div className="col-md-3">
-                        <label className="form-label text-muted small mb-1">Turma</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <GraduationCap size={14} /> Turma
+                        </label>
                         {isEditing ? (
                           <select name="turma" value={profileData.turma} onChange={handleInputChange} style={fieldStyle}>
                             <option value="">Selecione...</option>
@@ -385,39 +427,103 @@ const Perfil = () => {
                         )}
                       </div>
                       <div className="col-md-2">
-                        <label className="form-label text-muted small mb-1">Idade</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={14} /> Idade
+                        </label>
                         <input type="number" name="idade" value={profileData.idade} onChange={handleInputChange} readOnly={!isEditing} style={fieldStyle} />
                       </div>
                       <div className="col-md-2">
-                        <label className="form-label text-muted small mb-1">Peso (kg)</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Scale size={14} /> Peso (kg)
+                        </label>
                         <input type="number" step="0.1" name="peso" value={profileData.peso} onChange={handleInputChange} readOnly={!isEditing} style={fieldStyle} />
                       </div>
                       <div className="col-md-2">
-                        <label className="form-label text-muted small mb-1">Altura (m)</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Ruler size={14} /> Altura (m)
+                        </label>
                         <input type="number" step="0.01" name="altura" value={profileData.altura} onChange={handleInputChange} readOnly={!isEditing} style={fieldStyle} />
                       </div>
                     </div>
+
+                    <IMCCard peso={profileData.peso} altura={profileData.altura} />
                   </div>
 
-                  {/* Informações Esportivas e Médicas */}
+                  {/* Informações Esportivas */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--error-light)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                      <i className="bi bi-heart-pulse-fill"></i>
+                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trophy size={16} />
                     </div>
-                    <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Informações Esportivas e Médicas</h6>
+                    <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Informações Esportivas</h6>
                   </div>
                   <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                     <div className="row g-3">
                       <div className="col-md-3">
-                        <label className="form-label text-muted small mb-1">Nº da Camisa</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Shirt size={14} /> Nº da Camiseta
+                        </label>
                         <input type="number" name="numeroCamisa" value={profileData.numeroCamisa} onChange={handleInputChange} readOnly={!isEditing} placeholder="Ex: 10" style={fieldStyle} />
                       </div>
-                      <div className="col-md-9">
-                        <label className="form-label text-muted small mb-1">Alergias</label>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Shirt size={14} /> Nº do Calçado
+                        </label>
+                        <input type="number" name="numeroCalcado" value={profileData.numeroCalcado} onChange={handleInputChange} readOnly={!isEditing} placeholder="Ex: 40" style={fieldStyle} />
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Shirt size={14} /> Tamanho da Camisa
+                        </label>
+                        {isEditing ? (
+                          <select name="tamanhoCamisa" value={profileData.tamanhoCamisa} onChange={handleInputChange} style={fieldStyle}>
+                            <option value="">Selecione...</option>
+                            <option value="P">P</option>
+                            <option value="M">M</option>
+                            <option value="G">G</option>
+                            <option value="GG">GG</option>
+                          </select>
+                        ) : (
+                          <input type="text" value={profileData.tamanhoCamisa || '-'} readOnly style={fieldStyle} />
+                        )}
+                      </div>
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Shirt size={14} /> Tamanho do Calção
+                        </label>
+                        {isEditing ? (
+                          <select name="tamanhoCalcao" value={profileData.tamanhoCalcao} onChange={handleInputChange} style={fieldStyle}>
+                            <option value="">Selecione...</option>
+                            <option value="P">P</option>
+                            <option value="M">M</option>
+                            <option value="G">G</option>
+                            <option value="GG">GG</option>
+                          </select>
+                        ) : (
+                          <input type="text" value={profileData.tamanhoCalcao || '-'} readOnly style={fieldStyle} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informações Médicas */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--error-light)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <HeartPulse size={16} />
+                    </div>
+                    <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Informações Médicas</h6>
+                  </div>
+                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
+                    <div className="row g-3">
+                      <div className="col-md-12">
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <ShieldAlert size={14} /> Alergias
+                        </label>
                         <input type="text" name="alergias" value={profileData.alergias} onChange={handleInputChange} readOnly={!isEditing} placeholder="Descreva alergias a medicamentos, alimentos, etc" style={fieldStyle} />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small mb-1">Lesões Anteriores</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Activity size={14} /> Lesões Anteriores
+                        </label>
                         {isEditing ? (
                           <textarea name="lesoesAnteriores" rows="2" value={profileData.lesoesAnteriores} onChange={handleInputChange} placeholder="Descreva se houver" style={fieldStyle}></textarea>
                         ) : (
@@ -425,7 +531,9 @@ const Perfil = () => {
                         )}
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small mb-1">Restrições Médicas</label>
+                        <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <HeartPulse size={14} /> Restrições Médicas
+                        </label>
                         {isEditing ? (
                           <textarea name="restricoesMedicas" rows="2" value={profileData.restricoesMedicas} onChange={handleInputChange} placeholder="Descreva se houver" style={fieldStyle}></textarea>
                         ) : (
@@ -437,48 +545,19 @@ const Perfil = () => {
 
                   {/* Modalidades */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
-                      <i className="bi bi-trophy-fill"></i>
+                    <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trophy size={16} />
                     </div>
                     <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Modalidade(s) de Interesse</h6>
                   </div>
                   <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px' }}>
-                    {!isEditing && profileData.esportes.length === 0 ? (
-                      <div style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontSize: '0.875rem' }}>Nenhuma modalidade selecionada.</div>
-                    ) : (
-                      <div className="row g-4">
-                        {Object.entries(modalidadesCategorizadas).map(([categoria, lista]) => {
-                          const listaSelecionada = lista.filter(mod => profileData.esportes.includes(mod));
-                          if (!isEditing && listaSelecionada.length === 0) return null;
-
-                          return (
-                            <div key={categoria} className="col-md-6 col-lg-4">
-                              <div style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>{categoria}</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {(isEditing ? lista : listaSelecionada).map(mod => {
-                                  const isChecked = profileData.esportes.includes(mod);
-                                  return (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} key={mod}>
-                                      <input 
-                                        type="checkbox" 
-                                        id={`mod-${mod}`} 
-                                        checked={isChecked}
-                                        onChange={() => handleModalidadeToggle(mod)}
-                                        disabled={!isEditing}
-                                        style={{ accentColor: 'var(--primary)', width: '16px', height: '16px', opacity: !isEditing ? 0.8 : 1 }}
-                                      />
-                                      <label style={{ fontSize: '0.8125rem', color: 'var(--text)', cursor: isEditing ? 'pointer' : 'default', fontWeight: 500 }} htmlFor={`mod-${mod}`}>
-                                        {mod}
-                                      </label>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <div style={isEditing ? {} : { pointerEvents: 'none', opacity: 0.85 }}>
+                      <ModalidadesSelector 
+                        selected={profileData.esportes || []}
+                        onChange={(novos) => setProfileData(prev => ({ ...prev, esportes: novos }))}
+                        gender={profileData.sexo}
+                      />
+                    </div>
                   </div>
                 </>
               )}
@@ -487,7 +566,7 @@ const Perfil = () => {
               {isEditing && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '32px', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
                   <button type="submit" className="btn btn-primary" style={{ padding: '12px 32px' }}>
-                    <i className="bi bi-save-fill"></i> Salvar Alterações
+                    <Save size={16} /> Salvar Alterações
                   </button>
                 </div>
               )}
@@ -508,7 +587,8 @@ const Perfil = () => {
           padding: '32px'
         }}>
           <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '24px', fontSize: '1.125rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <i className="bi bi-clipboard2-data-fill" style={{ color: 'var(--primary)' }}></i>Minhas Análises
+            <BarChart3 size={20} style={{ color: 'var(--primary)' }} />
+            <span>Minhas Análises</span>
           </h4>
           <Analises embebed={true} />
         </div>

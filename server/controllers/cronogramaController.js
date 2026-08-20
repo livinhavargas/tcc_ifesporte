@@ -15,8 +15,35 @@ const getAllCronogramas = async (req, res) => {
   }
 };
 
+const UNSUPPORTED_SCHEDULE_SPORTS = [
+  'badminton',
+  'xadrez',
+  'tênis de mesa',
+  'tenis de mesa',
+  'tênis de mesa individual',
+  'tenis de mesa individual',
+  'tênis de mesa dupla',
+  'tenis de mesa dupla',
+  'tênis de mesa (individual)',
+  'tênis de mesa (misto)',
+  'vôlei de praia',
+  'volei de praia',
+  'vôlei de praia (dupla)'
+];
+
+const isSportScheduleSupported = (modalidadeStr) => {
+  if (!modalidadeStr) return false;
+  const modLower = modalidadeStr.toLowerCase().trim();
+  return !UNSUPPORTED_SCHEDULE_SPORTS.some(unsupported => modLower.includes(unsupported));
+};
+
 const createCronograma = async (req, res) => {
   try {
+    const { modalidade } = req.body;
+    if (modalidade && !isSportScheduleSupported(modalidade)) {
+      return res.status(400).json({ message: 'Cronogramas não são permitidos para esta modalidade.' });
+    }
+
     const user = await User.findById(req.userId);
     const data = { 
       ...req.body, 

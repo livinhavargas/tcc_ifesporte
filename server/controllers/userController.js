@@ -4,6 +4,72 @@ const User = require('../models/User');
 const Student = require('../models/Student');
 const { JWT_SECRET } = require('../config');
 
+const mapLegacyToNewModality = (mod) => {
+  const legacyMap = {
+    // Atletismo - Corridas
+    '100m rasos': 'Atletismo - Corridas - 100m',
+    '200m rasos': 'Atletismo - Corridas - 200m',
+    '400m rasos': 'Atletismo - Corridas - 400m',
+    '800m': 'Atletismo - Corridas - 800m',
+    '1500m': 'Atletismo - Corridas - 1500m',
+    '3000m': 'Atletismo - Corridas - 3000m',
+    '3000m rasos': 'Atletismo - Corridas - 3000m',
+    '5000m': 'Atletismo - Corridas - 5000m',
+    'Revezamento 4x100': 'Atletismo - Corridas - Revezamento 4x100',
+    'Revezamento 4x400': 'Atletismo - Corridas - Revezamento 4x400',
+    'Revezamento 100m': 'Atletismo - Corridas - Revezamento 4x100',
+    'Revezamento 400m': 'Atletismo - Corridas - Revezamento 4x400',
+    'Revezamento 100': 'Atletismo - Corridas - Revezamento 4x100',
+    'Revezamento 400': 'Atletismo - Corridas - Revezamento 4x400',
+    'Atletismo - Corridas - Revezamento 100m': 'Atletismo - Corridas - Revezamento 4x100',
+    'Atletismo - Corridas - Revezamento 400m': 'Atletismo - Corridas - Revezamento 4x400',
+    'Pentatlo': 'Atletismo - Corridas - Pentatlo',
+    'Pentatlo em Corrida': 'Atletismo - Corridas - Pentatlo',
+    'Pentatlo em Corridas': 'Atletismo - Corridas - Pentatlo',
+    'Atletismo - Corridas - Pentatlo em Corrida': 'Atletismo - Corridas - Pentatlo',
+    '100m com Barreiras': 'Atletismo - Corridas - 100m com Barreiras',
+    '110m com Barreiras': 'Atletismo - Corridas - 110m com Barreiras',
+    'Corridas - 100m rasos': 'Atletismo - Corridas - 100m',
+    'Corridas - 200m rasos': 'Atletismo - Corridas - 200m',
+    'Corridas - 400m rasos': 'Atletismo - Corridas - 400m',
+    'Corridas - 800m': 'Atletismo - Corridas - 800m',
+    'Corridas - 1500m': 'Atletismo - Corridas - 1500m',
+    'Corridas - 3000m': 'Atletismo - Corridas - 3000m',
+    'Corridas - 5000m': 'Atletismo - Corridas - 5000m',
+    'Corridas - Revezamento 4x100': 'Atletismo - Corridas - Revezamento 4x100',
+    'Corridas - Revezamento 4x400': 'Atletismo - Corridas - Revezamento 4x400',
+    'Corridas - Revezamento 100m': 'Atletismo - Corridas - Revezamento 4x100',
+    'Corridas - Revezamento 400m': 'Atletismo - Corridas - Revezamento 4x400',
+    
+    // Atletismo - Saltos
+    'Salto em Distância': 'Atletismo - Saltos - Distância',
+    'Salto em Altura': 'Atletismo - Saltos - Altura',
+    'Salto Triplo': 'Atletismo - Saltos - Triplo',
+    'Saltos - Salto em Distância': 'Atletismo - Saltos - Distância',
+    'Saltos - Salto em Altura': 'Atletismo - Saltos - Altura',
+    'Saltos - Salto Triplo': 'Atletismo - Saltos - Triplo',
+    'Saltos - Distância': 'Atletismo - Saltos - Distância',
+    'Saltos - Altura': 'Atletismo - Saltos - Altura',
+    'Saltos - Triplo': 'Atletismo - Saltos - Triplo',
+    
+    // Atletismo - Lançamentos
+    'Lançamento de Disco': 'Atletismo - Lançamentos - Disco',
+    'Lançamento de Dardo': 'Atletismo - Lançamentos - Dardo',
+    'Arremesso de Peso': 'Atletismo - Lançamentos - Peso',
+    'Lançamentos - Disco': 'Atletismo - Lançamentos - Disco',
+    'Lançamentos - Dardo': 'Atletismo - Lançamentos - Dardo',
+    'Lançamentos - Peso': 'Atletismo - Lançamentos - Peso',
+    
+    // Tênis de Mesa
+    'Tênis de Mesa - Individual': 'Tênis de Mesa (Individual)',
+    'Tênis de Mesa - Misto': 'Tênis de Mesa (Misto)',
+    'Tênis de Mesa - Dupla': 'Tênis de Mesa (Misto)',
+    'Tênis de Mesa (Dupla)': 'Tênis de Mesa (Misto)',
+  };
+
+  return legacyMap[mod] || mod;
+};
+
 // Realizar login
 const loginUser = async (req, res) => {
   const { email, senha } = req.body;
@@ -45,8 +111,9 @@ const registerUser = async (req, res) => {
   const { 
     nome, email, senha, tipo, 
     telefone, sexo, idade, turma, matricula, peso, altura, modalidades,
-    codigoConvite, cpf, endereco, dataNascimento, nomeResponsavel, telefoneResponsavel,
-    alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa
+    codigoConvite, cpf, rg, endereco, cidade, estado, dataNascimento, nomeResponsavel, telefoneResponsavel,
+    alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
+    numeroCalcado, tamanhoCamisa, tamanhoCalcao
   } = req.body;
   
   console.log(`[Registro] Tentativa para: ${email}, Tipo: ${tipo}`);
@@ -85,12 +152,13 @@ const registerUser = async (req, res) => {
     const senhaHash = await bcrypt.hash(senha, salt);
 
     const novoUsuario = new User({
-      nome, email, senha: senhaHash, tipo, telefone, sexo, cpf, endereco,
+      nome, email, senha: senhaHash, tipo, telefone, sexo, cpf, rg, endereco, cidade, estado,
       dataNascimento: dataNascimento === '' ? null : dataNascimento,
       nomeResponsavel, telefoneResponsavel,
       alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
+      numeroCalcado, tamanhoCamisa, tamanhoCalcao,
       matricula: tipo === 'estudante' ? matValida : undefined,
-      esportes: tipo === 'estudante' ? (modalidades || []) : undefined,
+      esportes: tipo === 'estudante' ? (modalidades || []).map(mapLegacyToNewModality) : undefined,
       turma: tipo === 'estudante' ? turma : undefined,
       peso: (tipo === 'estudante' && peso !== '') ? peso : undefined,
       altura: (tipo === 'estudante' && altura !== '') ? altura : undefined,
@@ -99,27 +167,79 @@ const registerUser = async (req, res) => {
 
     await novoUsuario.save();
 
-    // Se for estudante, cria no Student
+    // Se for estudante, cria ou atualiza no Student
     if (tipo === 'estudante') {
-      const novoEstudante = new Student({
-        nome, email,
-        matricula: matValida,
-        esportes: modalidades || [],
-        sexo: sexo || 'Feminino',
-        idade: (idade !== undefined && idade !== '') ? idade : undefined,
-        turma,
-        peso: (peso !== undefined && peso !== '') ? peso : undefined,
-        altura: (altura !== undefined && altura !== '') ? altura : undefined,
-        telefone,
-        cpf,
-        endereco,
-        dataNascimento: dataNascimento === '' ? null : dataNascimento,
-        nomeResponsavel,
-        telefoneResponsavel,
-        alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
-        adicionadoPor: novoUsuario._id
-      });
-      await novoEstudante.save();
+      let estudanteExistente = null;
+      if (matValida) {
+        estudanteExistente = await Student.findOne({ matricula: matValida });
+      }
+      if (!estudanteExistente && cpf) {
+        estudanteExistente = await Student.findOne({ cpf });
+      }
+      if (!estudanteExistente && email) {
+        estudanteExistente = await Student.findOne({ email });
+      }
+
+      if (estudanteExistente) {
+        console.log(`[Registro] Estudante existente encontrado (${estudanteExistente._id}). Vinculando e atualizando dados...`);
+        estudanteExistente.nome = nome || estudanteExistente.nome;
+        estudanteExistente.email = email || estudanteExistente.email;
+        estudanteExistente.matricula = matValida || estudanteExistente.matricula;
+        estudanteExistente.sexo = sexo || estudanteExistente.sexo;
+        if (idade !== undefined && idade !== '') estudanteExistente.idade = idade;
+        estudanteExistente.turma = turma || estudanteExistente.turma;
+        if (peso !== undefined && peso !== '') estudanteExistente.peso = peso;
+        if (altura !== undefined && altura !== '') estudanteExistente.altura = altura;
+        estudanteExistente.telefone = telefone || estudanteExistente.telefone;
+        estudanteExistente.cpf = cpf || estudanteExistente.cpf;
+        estudanteExistente.rg = rg || estudanteExistente.rg;
+        estudanteExistente.endereco = endereco || estudanteExistente.endereco;
+        estudanteExistente.cidade = cidade || estudanteExistente.cidade;
+        estudanteExistente.estado = estado || estudanteExistente.estado;
+        if (dataNascimento !== '' && dataNascimento !== undefined) estudanteExistente.dataNascimento = dataNascimento;
+        estudanteExistente.nomeResponsavel = nomeResponsavel || estudanteExistente.nomeResponsavel;
+        estudanteExistente.telefoneResponsavel = telefoneResponsavel || estudanteExistente.telefoneResponsavel;
+        estudanteExistente.alergias = alergias || estudanteExistente.alergias;
+        estudanteExistente.lesoesAnteriores = lesoesAnteriores || estudanteExistente.lesoesAnteriores;
+        estudanteExistente.restricoesMedicas = restricoesMedicas || estudanteExistente.restricoesMedicas;
+        estudanteExistente.numeroCamisa = numeroCamisa || estudanteExistente.numeroCamisa;
+        estudanteExistente.numeroCalcado = numeroCalcado || estudanteExistente.numeroCalcado;
+        estudanteExistente.tamanhoCamisa = tamanhoCamisa || estudanteExistente.tamanhoCamisa;
+        estudanteExistente.tamanhoCalcao = tamanhoCalcao || estudanteExistente.tamanhoCalcao;
+        
+        const mods = (modalidades || []).map(mapLegacyToNewModality);
+        estudanteExistente.esportes = mods;
+        estudanteExistente.modalidades = mods;
+        estudanteExistente.adicionadoPor = novoUsuario._id;
+        
+        await estudanteExistente.save();
+      } else {
+        const mods = (modalidades || []).map(mapLegacyToNewModality);
+        const novoEstudante = new Student({
+          nome, email,
+          matricula: matValida,
+          esportes: mods,
+          modalidades: mods,
+          sexo: sexo || 'Feminino',
+          idade: (idade !== undefined && idade !== '') ? idade : undefined,
+          turma,
+          peso: (peso !== undefined && peso !== '') ? peso : undefined,
+          altura: (altura !== undefined && altura !== '') ? altura : undefined,
+          telefone,
+          cpf,
+          rg,
+          endereco,
+          cidade,
+          estado,
+          dataNascimento: dataNascimento === '' ? null : dataNascimento,
+          nomeResponsavel,
+          telefoneResponsavel,
+          alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
+          numeroCalcado, tamanhoCamisa, tamanhoCalcao,
+          adicionadoPor: novoUsuario._id
+        });
+        await novoEstudante.save();
+      }
     }
 
     console.log(`✅ Usuário ${email} cadastrado com sucesso!`);
@@ -152,9 +272,12 @@ const getUserById = async (req, res) => {
         usuario.idade = estudante.idade || '';
         usuario.serie = estudante.turma || estudante.serie || '';
         usuario.turma = estudante.turma || estudante.serie || '';
-        usuario.esportes = estudante.esportes || [];
+        usuario.esportes = (estudante.esportes || []).map(mapLegacyToNewModality);
         usuario.cpf = estudante.cpf || '';
+        usuario.rg = estudante.rg || '';
         usuario.endereco = estudante.endereco || '';
+        usuario.cidade = estudante.cidade || '';
+        usuario.estado = estudante.estado || '';
         usuario.dataNascimento = estudante.dataNascimento ? estudante.dataNascimento.toISOString().split('T')[0] : '';
         usuario.contatoEmergencia = estudante.contatoEmergencia || '';
         usuario.nomeResponsavel = estudante.nomeResponsavel || '';
@@ -163,9 +286,14 @@ const getUserById = async (req, res) => {
         usuario.lesoesAnteriores = estudante.lesoesAnteriores || '';
         usuario.restricoesMedicas = estudante.restricoesMedicas || '';
         usuario.numeroCamisa = estudante.numeroCamisa || '';
+        usuario.numeroCalcado = estudante.numeroCalcado || '';
+        usuario.tamanhoCamisa = estudante.tamanhoCamisa || '';
+        usuario.tamanhoCalcao = estudante.tamanhoCalcao || '';
         
         if (estudante.peso && estudante.altura) {
-           usuario.imc = (estudante.peso / (estudante.altura * estudante.altura)).toFixed(2);
+           let h = estudante.altura;
+           if (h > 3) h = h / 100;
+           usuario.imc = (estudante.peso / (h * h)).toFixed(1);
         }
       }
     }
@@ -182,8 +310,9 @@ const updateUser = async (req, res) => {
   const { id } = req.params;
   const { 
     nome, email, telefone, peso, altura, foto, idade, serie, turma, esportes, sexo, 
-    matricula, cpf, endereco, dataNascimento, contatoEmergencia, nomeResponsavel, telefoneResponsavel,
-    alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa
+    matricula, cpf, rg, endereco, cidade, estado, dataNascimento, contatoEmergencia, nomeResponsavel, telefoneResponsavel,
+    alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
+    numeroCalcado, tamanhoCamisa, tamanhoCalcao
   } = req.body;
   
   try {
@@ -208,11 +337,18 @@ const updateUser = async (req, res) => {
     if (nome) usuario.nome = nome;
     if (email) usuario.email = email;
     if (foto) usuario.foto = foto;
-    if (esportes) usuario.esportes = esportes;
+    let mods = req.body.modalidades || req.body.esportes;
+    if (mods) {
+      mods = mods.map(mapLegacyToNewModality);
+      usuario.esportes = mods;
+    }
     if (sexo) usuario.sexo = sexo;
     if (matricula !== undefined) usuario.matricula = matricula === '' ? undefined : matricula;
     if (cpf !== undefined) usuario.cpf = cpf;
+    if (rg !== undefined) usuario.rg = rg;
     if (endereco !== undefined) usuario.endereco = endereco;
+    if (cidade !== undefined) usuario.cidade = cidade;
+    if (estado !== undefined) usuario.estado = estado;
     if (dataNascimento !== undefined) usuario.dataNascimento = dataNascimento === '' ? null : dataNascimento;
     if (telefone !== undefined) usuario.telefone = telefone;
     if (nomeResponsavel !== undefined) usuario.nomeResponsavel = nomeResponsavel;
@@ -221,6 +357,9 @@ const updateUser = async (req, res) => {
     if (lesoesAnteriores !== undefined) usuario.lesoesAnteriores = lesoesAnteriores;
     if (restricoesMedicas !== undefined) usuario.restricoesMedicas = restricoesMedicas;
     if (numeroCamisa !== undefined) usuario.numeroCamisa = numeroCamisa;
+    if (numeroCalcado !== undefined) usuario.numeroCalcado = numeroCalcado;
+    if (tamanhoCamisa !== undefined) usuario.tamanhoCamisa = tamanhoCamisa;
+    if (tamanhoCalcao !== undefined) usuario.tamanhoCalcao = tamanhoCalcao;
     
     await usuario.save();
 
@@ -234,11 +373,17 @@ const updateUser = async (req, res) => {
       if (serie !== undefined) estudante.serie = serie;
       if (turma !== undefined) estudante.turma = turma;
       if (foto) estudante.foto = foto;
-      if (esportes) estudante.esportes = esportes;
+      if (mods) {
+        estudante.esportes = mods;
+        estudante.modalidades = mods;
+      }
       if (sexo) estudante.sexo = sexo;
       if (matricula !== undefined) estudante.matricula = matricula === '' ? undefined : matricula;
       if (cpf !== undefined) estudante.cpf = cpf;
+      if (rg !== undefined) estudante.rg = rg;
       if (endereco !== undefined) estudante.endereco = endereco;
+      if (cidade !== undefined) estudante.cidade = cidade;
+      if (estado !== undefined) estudante.estado = estado;
       if (dataNascimento !== undefined) estudante.dataNascimento = dataNascimento === '' ? null : dataNascimento;
       if (contatoEmergencia !== undefined) estudante.contatoEmergencia = contatoEmergencia;
       if (nomeResponsavel !== undefined) estudante.nomeResponsavel = nomeResponsavel;
@@ -247,6 +392,9 @@ const updateUser = async (req, res) => {
       if (lesoesAnteriores !== undefined) estudante.lesoesAnteriores = lesoesAnteriores;
       if (restricoesMedicas !== undefined) estudante.restricoesMedicas = restricoesMedicas;
       if (numeroCamisa !== undefined) estudante.numeroCamisa = numeroCamisa;
+      if (numeroCalcado !== undefined) estudante.numeroCalcado = numeroCalcado;
+      if (tamanhoCamisa !== undefined) estudante.tamanhoCamisa = tamanhoCamisa;
+      if (tamanhoCalcao !== undefined) estudante.tamanhoCalcao = tamanhoCalcao;
       
       await estudante.save();
     }

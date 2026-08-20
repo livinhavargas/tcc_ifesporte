@@ -33,6 +33,9 @@ const studentSchema = new mongoose.Schema({
   treinadorResponsavel: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   equipe: { type: String },
   numeroCamisa: { type: String },
+  numeroCalcado: { type: String },
+  tamanhoCamisa: { type: String, enum: ['P', 'M', 'G', 'GG', ''] },
+  tamanhoCalcao: { type: String, enum: ['P', 'M', 'G', 'GG', ''] },
   dominancia: { type: String, enum: ['Destro', 'Canhoto', 'Ambidestro'] },
 
   // Informações Médicas e Contato
@@ -65,18 +68,20 @@ const studentSchema = new mongoose.Schema({
 
 studentSchema.virtual('imc').get(function() {
   if (this.peso && this.altura) {
-    return (this.peso / (this.altura * this.altura)).toFixed(2);
+    let h = this.altura;
+    if (h > 3) h = h / 100; // conversão se altura for em cm
+    const val = this.peso / (h * h);
+    return isNaN(val) || !isFinite(val) ? null : Number(val.toFixed(1));
   }
   return null;
 });
 
 studentSchema.virtual('imcStatus').get(function() {
   const imc = this.imc;
-  if (!imc) return null;
-  if (imc < 18.5) return 'Baixo peso';
-  if (imc < 25) return 'Normal';
-  if (imc < 30) return 'Sobrepeso';
-  return 'Obeso';
+  if (imc === null || imc === undefined) return null;
+  if (imc < 16.0 || imc >= 30.0) return 'Necessita Atenção';
+  if ((imc >= 16.0 && imc < 18.5) || (imc >= 25.0 && imc < 30.0)) return 'Atenção';
+  return 'Saudável';
 });
 
 module.exports = mongoose.model('Student', studentSchema);

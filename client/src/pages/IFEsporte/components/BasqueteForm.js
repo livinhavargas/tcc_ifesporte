@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ContextoSelector from './ContextoSelector';
 
 const BasqueteForm = ({ formData, setFormData, handleInputChange, handleSubmit, students, setMensagem }) => {
   const [tipoAnalise, setTipoAnalise] = useState('');
@@ -217,23 +218,52 @@ const BasqueteForm = ({ formData, setFormData, handleInputChange, handleSubmit, 
 
   const structure = basqueteStructures[tipoAnalise] || [];
 
+  // Auto-detectar tipoAnalise APENAS em EDIT mode
   useEffect(() => {
-    // When tipoAnalise changes, reset form answers while keeping base structure
-    const newAnswers = {};
+    if (formData.editingId) {
+      // Em EDIT: detectar o tipoAnalise a partir dos dados salvos
+      if (formData.tipoAnalise && basqueteStructures[formData.tipoAnalise]) {
+        setTipoAnalise(formData.tipoAnalise);
+      } else if (formData.subtipo && basqueteStructures[formData.subtipo]) {
+        setTipoAnalise(formData.subtipo);
+      } else if (formData.respostas && Object.keys(formData.respostas).length > 0) {
+        const keys = Object.keys(formData.respostas);
+        for (const typeKey of Object.keys(basqueteStructures)) {
+          const match = basqueteStructures[typeKey].some(s => s.fields.some(f => keys.includes(f.key)));
+          if (match) {
+            setTipoAnalise(typeKey);
+            break;
+          }
+        }
+      }
+    }
+    // Em CREATE: tipoAnalise começa vazio, o treinador seleciona manualmente
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.editingId]);
+
+  // Quando tipoAnalise muda, inicializar os critérios
+  useEffect(() => {
     if (structure.length > 0) {
-      structure.forEach(s => {
-        s.fields.forEach(f => {
-          newAnswers[f.key] = 3; // default value
+      if (formData.editingId) {
+        // EDIT mode: usar dados reais do banco
+        setFormInfo(formData.respostas || {});
+      } else {
+        // CREATE mode: sempre inicializar com defaults
+        const newAnswers = {};
+        structure.forEach(s => {
+          s.fields.forEach(f => {
+            newAnswers[f.key] = 3;
+          });
         });
-      });
-      setFormInfo(newAnswers);
-      setFormData(prev => ({
-        ...prev,
-        respostas: newAnswers
-      }));
+        setFormInfo(newAnswers);
+        setFormData(prev => ({
+          ...prev,
+          respostas: newAnswers
+        }));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoAnalise]); // ignoring setFormData here
+  }, [tipoAnalise]);
 
   const handleSliderChange = (key, value) => {
     const val = Number(value);
@@ -513,8 +543,8 @@ const BasqueteForm = ({ formData, setFormData, handleInputChange, handleSubmit, 
       <h5 className="fw-bold mb-4 text-blue-dark">Motor Analítico: Basquete</h5>
       
       <form onSubmit={internalHandleSubmit}>
-        <div className="row g-4 mb-4">
-          <div className="col-md-4">
+        <div className="row g-3 mb-4">
+          <div className="col-md-3">
             <label className="form-label fw-bold small text-muted">Tipo de Análise</label>
             <select className="form-select bg-light" value={tipoAnalise} onChange={(e) => setTipoAnalise(e.target.value)} required>
               <option value="">Selecione...</option>
@@ -524,11 +554,14 @@ const BasqueteForm = ({ formData, setFormData, handleInputChange, handleSubmit, 
               <option value="Coletiva - Defesa">Coletiva – Defesa</option>
             </select>
           </div>
-          <div className="col-md-4">
+          <div className="col-md-3">
+            <ContextoSelector modalidade={formData.modalidade || 'Basquete'} value={formData.contexto} onChange={handleInputChange} />
+          </div>
+          <div className="col-md-3">
             <label className="form-label fw-bold small text-muted">Data da Análise</label>
             <input type="date" className="form-control bg-light" name="data" value={formData.data} onChange={handleInputChange} required />
           </div>
-          <div className="col-md-4">
+          <div className="col-md-3">
             <label className="form-label fw-bold small text-muted">Aluno(s) Avaliado(s) / Equipe</label>
             <select className="form-select bg-light" name="aluno" value={formData.aluno} onChange={handleInputChange} required>
               {students.length === 0 ? (
@@ -582,7 +615,8 @@ const BasqueteForm = ({ formData, setFormData, handleInputChange, handleSubmit, 
             <div className="row mt-4">
               <div className="col-12 text-end">
                 <button type="submit" className="btn btn-orange px-5 py-2 fw-bold rounded-pill text-white shadow-sm">
-                  <i className="bi bi-magic me-2"></i> Gerar Relatório Técnico
+                  <i className="bi bi-check-circle-fill me-2"></i>
+                  {formData?.editingId ? 'Salvar Alterações' : 'Salvar Análise'}
                 </button>
               </div>
             </div>

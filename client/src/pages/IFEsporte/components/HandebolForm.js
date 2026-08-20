@@ -1,8 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import ContextoSelector from './ContextoSelector';
 
 const HandebolForm = ({ formData, setFormData, handleInputChange, handleSubmit, students, setMensagem }) => {
   const [tipoAnalise, setTipoAnalise] = useState('');
   const [formInfo, setFormInfo] = useState({});
+
+  // Auto-detectar tipoAnalise APENAS em EDIT mode
+  useEffect(() => {
+    if (formData.editingId) {
+      if (formData.tipoAnalise && structures[formData.tipoAnalise]) {
+        setTipoAnalise(formData.tipoAnalise);
+      } else if (formData.subtipo && structures[formData.subtipo]) {
+        setTipoAnalise(formData.subtipo);
+      } else if (formData.respostas && Object.keys(formData.respostas).length > 0) {
+        const keys = Object.keys(formData.respostas);
+        for (const typeKey of Object.keys(structures)) {
+          const match = structures[typeKey].some(s => s.fields.some(f => keys.includes(f.key)));
+          if (match) {
+            setTipoAnalise(typeKey);
+            break;
+          }
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.editingId]);
 
   useEffect(() => {
     setFormInfo(formData.respostas || {});
@@ -158,7 +180,7 @@ const HandebolForm = ({ formData, setFormData, handleInputChange, handleSubmit, 
       
       <form onSubmit={internalHandleSubmit}>
         <div className="row g-3 mb-4" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '24px' }}>
-          <div className="col-md-4">
+          <div className="col-md-3">
             <label className="form-label text-muted small fw-bold">Tipo de Análise</label>
             <select className="form-select" value={tipoAnalise} onChange={handleTipoChange} required style={{ ...inputStyle, borderColor: 'var(--primary)', fontWeight: 600 }}>
               <option value="">Selecione...</option>
@@ -168,11 +190,14 @@ const HandebolForm = ({ formData, setFormData, handleInputChange, handleSubmit, 
               <option value="Coletiva - Defesa">Análise Coletiva – Defesa</option>
             </select>
           </div>
-          <div className="col-md-4">
+          <div className="col-md-3">
+            <ContextoSelector modalidade={formData.modalidade || 'Handebol'} value={formData.contexto} onChange={handleInputChange} style={inputStyle} />
+          </div>
+          <div className="col-md-3">
             <label className="form-label text-muted small fw-bold">Data da Análise</label>
             <input type="date" className="form-control" name="data" value={formData.data} onChange={handleInputChange} required style={inputStyle} />
           </div>
-          <div className="col-md-4">
+          <div className="col-md-3">
             <label className="form-label text-muted small fw-bold">Aluno Avaliado</label>
             <select className="form-select" name="aluno" value={formData.aluno} onChange={handleInputChange} required style={inputStyle}>
               {students.length === 0 ? (
@@ -234,7 +259,8 @@ const HandebolForm = ({ formData, setFormData, handleInputChange, handleSubmit, 
             
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button type="submit" className="btn btn-primary" style={{ padding: '12px 32px' }}>
-                <i className="bi bi-magic me-2"></i> Gerar Relatório Técnico
+                <i className="bi bi-check-circle-fill me-2"></i>
+                {formData?.editingId ? 'Salvar Alterações' : 'Salvar Análise'}
               </button>
             </div>
           </div>
