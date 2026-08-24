@@ -1,0 +1,54 @@
+# ==============================================================================
+# IFESPORTE - RENDER BLUEPRINT CONFIGURATION (render.yaml)
+# ==============================================================================
+# Este arquivo automatiza o deploy completo do IFesporte no Render (Backend + Frontend).
+# No Render, acesse "Blueprints" -> "New Blueprint Instance" e aponte para o repositório.
+
+services:
+  # ────────────────────────────────────────────────────────────────────────────
+  # 1. BACKEND: Web Service Node.js (API Express + MongoDB)
+  # ────────────────────────────────────────────────────────────────────────────
+  - type: web
+    name: ifesporte-api
+    runtime: node
+    rootDir: server
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # Preencher no painel do Render com a string de conexão do MongoDB Atlas
+      - key: JWT_SECRET
+        generateValue: true # Render gera automaticamente uma chave segura
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: ifesporte-web
+          property: host
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 2. FRONTEND: Static Site (React SPA)
+  # ────────────────────────────────────────────────────────────────────────────
+  - type: web
+    name: ifesporte-web
+    runtime: static
+    rootDir: client
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    routes:
+      # Regra de Rewrite para suporte a rotas do React Router (SPA)
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: ifesporte-api
+          property: host
