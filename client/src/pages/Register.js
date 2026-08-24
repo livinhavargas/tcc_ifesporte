@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, ArrowRight, ArrowLeft, Lock, User, HeartPulse, 
-  Trophy, CheckCircle2, Check 
+  Trophy, CheckCircle2, Check, Sun, Moon 
 } from 'lucide-react';
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCancel = null }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -165,7 +167,34 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
   };
 
   return (
-    <div className={isEmbedded ? "w-100" : ""} style={isEmbedded ? {} : { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '48px 24px' }}>
+    <div className={isEmbedded ? "w-100" : ""} style={isEmbedded ? {} : { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '48px 24px', position: 'relative' }}>
+      {!isEmbedded && (
+        <button
+          onClick={toggleTheme}
+          style={{
+            position: 'absolute',
+            top: '24px',
+            right: '24px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-light)',
+            borderRadius: 'var(--radius-full)',
+            padding: '8px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: isDark ? 'var(--warning)' : 'var(--text-secondary)',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: 'var(--shadow-xs)',
+            transition: 'all var(--transition-fast)'
+          }}
+          title={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{isDark ? 'Claro' : 'Escuro'}</span>
+        </button>
+      )}
       <div style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: '40px', boxShadow: isEmbedded ? 'none' : 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
@@ -180,7 +209,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
           </div>
         </div>
 
-        {error && <div style={{ background: 'var(--error-light)', color: '#991B1B', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} />{error}</div>}
+        {error && <div style={{ background: 'var(--error-light)', color: 'var(--error-text)', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} />{error}</div>}
 
         {step === 1 && (
           <div>
@@ -374,8 +403,8 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
             <div style={{ background: 'var(--success-light)', borderRadius: 'var(--radius-md)', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
               <CheckCircle2 size={24} style={{ color: 'var(--success)' }} />
               <div>
-                <h6 style={{ fontWeight: 700, color: '#065F46', marginBottom: '2px', fontSize: '0.9375rem' }}>Quase lá, {formData.nome.split(' ')[0]}!</h6>
-                <small style={{ color: '#065F46', opacity: 0.8 }}>Confirme se os dados abaixo estão corretos antes de finalizar.</small>
+                <h6 style={{ fontWeight: 700, color: 'var(--success-text)', marginBottom: '2px', fontSize: '0.9375rem' }}>Quase lá, {formData.nome.split(' ')[0]}!</h6>
+                <small style={{ color: 'var(--success-text)', opacity: 0.8 }}>Confirme se os dados abaixo estão corretos antes de finalizar.</small>
               </div>
             </div>
             <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>

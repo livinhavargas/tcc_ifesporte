@@ -31,10 +31,23 @@ const SportDetail = () => {
   
   const nome = nameMap[id] || id;
 
-  const [view, setView] = useState('categories');
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  // Read query params for deep-linking (e.g. from StudentProfile "Criar Análise" or Home Cronogramas)
+  const tabParam = searchParams.get('tab');
+  const catParam = searchParams.get('cat');
+  const subParam = searchParams.get('sub');
+  const cronogramaIdParam = searchParams.get('cronogramaId');
+
+  const [view, setView] = useState(() => {
+    // If category params or tab params are provided, skip the hierarchy picker
+    if (catParam || tabParam) return 'subcategory_detail';
+    return 'categories';
+  });
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    if (catParam) return { cat: catParam, sub: subParam || null };
+    return null;
+  });
   const [expandedCategory, setExpandedCategory] = useState(null);
-  const [activeTab, setActiveTab] = useState('alunos');
+  const [activeTab, setActiveTab] = useState(tabParam || 'alunos');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterFaixaEtaria, setFilterFaixaEtaria] = useState('Todos');
@@ -85,7 +98,7 @@ const SportDetail = () => {
 
   const getPageTitle = () => {
     if (selectedCategory) {
-      return selectedCategory.sub ? `${selectedCategory.cat} ${selectedCategory.sub}` : selectedCategory.cat;
+      return selectedCategory.sub ? selectedCategory.sub : selectedCategory.cat;
     }
     return nome;
   };
@@ -106,9 +119,32 @@ const SportDetail = () => {
 
   const hierarchy = {
     'Atletismo': {
-      'Corridas': ['100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'Revezamento 4x100', 'Revezamento 4x400', 'Pentatlo', '100m com Barreiras', '110m com Barreiras'],
-      'Saltos': ['Distância', 'Altura', 'Triplo'],
-      'Lançamentos': ['Peso', 'Disco', 'Dardo']
+      'Corridas': [
+        '100m', 
+        '200m', 
+        '400m', 
+        '800m', 
+        '1500m', 
+        '3000m', 
+        '5000m', 
+        'Revezamento 4x100', 
+        'Revezamento 4x400', 
+        'Pentatlo', 
+        '100m com Barreiras', 
+        '110m com Barreiras'
+      ],
+      'Saltos': [
+        'Salto em distância', 
+        'Salto em altura', 
+        'Salto triplo', 
+        'Salto com vara'
+      ],
+      'Arremessos e Lançamentos': [
+        'Arremesso de peso', 
+        'Lançamento de disco', 
+        'Lançamento de dardo', 
+        'Lançamento de martelo'
+      ]
     },
     'Tênis de Mesa': {
       'Individual': [],
@@ -128,46 +164,69 @@ const SportDetail = () => {
     const normalize = (str) => {
       return (str || '')
         .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[\s-()]/g, '');
     };
     const e = normalize(esp);
     const k = normalize(keyword);
-    if (e.includes(k)) return true;
+    if (!e || !k) return false;
+    if (e.includes(k) || k.includes(e)) return true;
 
     // Fallbacks para compatibilidade entre os formatos legados e novos
-    if (k.includes('tênisdemesamisto') && e.includes('tênisdemesadupla')) return true;
-    if (k.includes('tênisdemesadupla') && e.includes('tênisdemesamisto')) return true;
+    if (k.includes('tenisdemesamisto') && e.includes('tenisdemesadupla')) return true;
+    if (k.includes('tenisdemesadupla') && e.includes('tenisdemesamisto')) return true;
     
-    const parts = (keyword || '').split('-').map(p => p.trim());
-    const kLower = (keyword || '').toLowerCase();
-    const eLower = (esp || '').toLowerCase();
-    
-    if (kLower === 'atletismo') {
-      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lançamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distância', 'altura', 'triplo', 'peso', 'disco', 'dardo'];
-      return termos.some(t => eLower.includes(t));
+    // Se a busca é genérica por Atletismo
+    const termosAtletismo = ['atletismo', 'corrida', 'salto', 'arremesso', 'lancamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distancia', 'altura', 'triplo', 'vara', 'peso', 'disco', 'dardo', 'martelo', 'pentatlo', 'barreiras'];
+    if (k === 'atletismo') {
+      return termosAtletismo.some(t => e.includes(t));
     }
-    
-    if (parts.length === 2 && parts[0].toLowerCase() === 'atletismo') {
-      const cat = parts[1].toLowerCase();
-      if (cat.includes('corrida')) {
-        const termos = ['corrida', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento'];
-        return termos.some(t => eLower.includes(t));
-      }
-      if (cat.includes('salto')) {
-        const termos = ['salto', 'distância', 'altura', 'triplo'];
-        return termos.some(t => eLower.includes(t));
-      }
-      if (cat.includes('lançamento') || cat.includes('arremesso')) {
-        const termos = ['lançamento', 'arremesso', 'peso', 'disco', 'dardo'];
-        return termos.some(t => eLower.includes(t));
+
+    // Se é a categoria inteira:
+    // 1. Corridas
+    if (k === 'atletismo-corridas' || k === 'corridas' || (k.includes('atletismo') && k.includes('corrida') && !k.includes('100m') && !k.includes('200m') && !k.includes('400m') && !k.includes('800m') && !k.includes('1500m') && !k.includes('3000m') && !k.includes('5000m') && !k.includes('revezamento') && !k.includes('pentatlo') && !k.includes('barreiras'))) {
+      const termos = ['corrida', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'pentatlo', 'barreiras'];
+      return termos.some(t => e.includes(t));
+    }
+    // 2. Saltos
+    if (k === 'atletismo-saltos' || k === 'saltos' || (k.includes('atletismo') && k.includes('salto') && !k.includes('distancia') && !k.includes('altura') && !k.includes('triplo') && !k.includes('vara'))) {
+      const termos = ['salto', 'distancia', 'altura', 'triplo', 'vara'];
+      return termos.some(t => e.includes(t));
+    }
+    // 3. Arremessos e Lançamentos / Lançamentos
+    if (k.includes('lancamento') || k.includes('arremesso')) {
+      if (!k.includes('peso') && !k.includes('disco') && !k.includes('dardo') && !k.includes('martelo')) {
+        const termos = ['lancamento', 'arremesso', 'peso', 'disco', 'dardo', 'martelo'];
+        return termos.some(t => e.includes(t));
       }
     }
-    
-    if (parts.length === 3 && parts[0].toLowerCase() === 'atletismo') {
-      const leaf = parts[2].toLowerCase();
-      if (eLower.includes(leaf)) return true;
-    }
-    
+
+    // Submodalidades específicas de Corridas
+    if (k.includes('100mcombarreiras') || k.includes('100mbarreiras')) return e.includes('100mcombarreiras') || e.includes('100mbarreiras');
+    if (k.includes('110mcombarreiras') || k.includes('110mbarreiras')) return e.includes('110mcombarreiras') || e.includes('110mbarreiras');
+    if (k.includes('revezamento4x100') || k.includes('4x100')) return e.includes('4x100') || e.includes('revezamento100m');
+    if (k.includes('revezamento4x400') || k.includes('4x400')) return e.includes('4x400') || e.includes('revezamento400m');
+    if (k.includes('pentatlo')) return e.includes('pentatlo');
+    if (k.includes('100m') && !k.includes('barreiras') && !k.includes('4x100')) return e.includes('100m') && !e.includes('barreiras') && !e.includes('4x100');
+    if (k.includes('200m')) return e.includes('200m');
+    if (k.includes('400m') && !k.includes('4x400')) return e.includes('400m') && !e.includes('4x400');
+    if (k.includes('800m')) return e.includes('800m');
+    if (k.includes('1500m')) return e.includes('1500m');
+    if (k.includes('3000m')) return e.includes('3000m');
+    if (k.includes('5000m')) return e.includes('5000m');
+
+    // Submodalidades específicas de Saltos
+    if (k.includes('distancia')) return e.includes('distancia');
+    if (k.includes('altura')) return e.includes('altura');
+    if (k.includes('triplo')) return e.includes('triplo');
+    if (k.includes('vara')) return e.includes('vara');
+
+    // Submodalidades específicas de Arremessos e Lançamentos
+    if (k.includes('peso')) return e.includes('peso');
+    if (k.includes('disco')) return e.includes('disco');
+    if (k.includes('dardo')) return e.includes('dardo');
+    if (k.includes('martelo')) return e.includes('martelo');
+
     return false;
   };
 
@@ -539,7 +598,11 @@ const SportDetail = () => {
               />
             )}
             {activeTab === 'cronogramas' && (
-              <Cronogramas modalidade={getCurrentModalidade()} categoria={genero} />
+              <Cronogramas 
+                modalidade={getCurrentModalidade()} 
+                categoria={genero} 
+                cronogramaId={cronogramaIdParam}
+              />
             )}
           </div>
         </div>

@@ -9,10 +9,11 @@ import SportIcon, { detectSport } from '../../components/SportIcon';
 import { addNotification } from '../../utils/notifications';
 import { isSportScheduleSupported } from '../../utils/sportScheduleRules';
 
-const Cronogramas = ({ modalidade, categoria }) => {
+const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
   const [cronogramas, setCronogramas] = useState([]);
   const [view, setView] = useState('list'); // 'list', 'form', 'preview', 'view'
   const [selected, setSelected] = useState(null);
+  const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const [search, setSearch] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -22,9 +23,65 @@ const Cronogramas = ({ modalidade, categoria }) => {
 
   const [fasesGeradas, setFasesGeradas] = useState([]);
 
+  const renderStructuredObjective = (rawText, phaseColor = 'var(--primary)') => {
+    if (!rawText) return null;
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const blocks = [];
+    
+    lines.forEach((line) => {
+      const clean = line.replace(/\*\*/g, '').trim();
+      const colonIdx = clean.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 35) {
+        const label = clean.slice(0, colonIdx).trim();
+        const content = clean.slice(colonIdx + 1).trim();
+        blocks.push({ label, content });
+      } else {
+        blocks.push({ label: null, content: clean });
+      }
+    });
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {blocks.map((block, idx) => (
+          <div 
+            key={idx} 
+            style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px 18px',
+              border: '1px solid var(--border-light)',
+              borderLeft: block.label ? `3px solid ${phaseColor}` : '1px solid var(--border-light)'
+            }}
+          >
+            {block.label && (
+              <span style={{
+                display: 'block',
+                fontWeight: 700,
+                fontSize: '0.8125rem',
+                color: phaseColor,
+                marginBottom: '4px'
+              }}>
+                {block.label}
+              </span>
+            )}
+            <p style={{
+              margin: 0,
+              fontSize: '0.875rem',
+              color: 'var(--text)',
+              lineHeight: 1.6,
+              whiteSpace: 'pre-wrap'
+            }}>
+              {block.content}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   useEffect(() => {
     fetchCronogramas();
-  }, [modalidade]);
+  }, [modalidade, cronogramaId]);
 
   if (modalidade && !isSportScheduleSupported(modalidade)) {
     return (
@@ -46,6 +103,24 @@ const Cronogramas = ({ modalidade, categoria }) => {
       if (res.ok) {
         const data = await res.json();
         setCronogramas(data);
+
+        if (cronogramaId) {
+          let target = data.find(c => String(c._id) === String(cronogramaId));
+          if (!target) {
+            const allRes = await fetch('/api/cronogramas', {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (allRes.ok) {
+              const allData = await allRes.json();
+              target = allData.find(c => String(c._id) === String(cronogramaId));
+            }
+          }
+          if (target) {
+            setSelected(target);
+            setActivePhaseIndex(0);
+            setView('view');
+          }
+        }
       }
     } catch (e) {
       console.error(e);
@@ -183,6 +258,7 @@ const Cronogramas = ({ modalidade, categoria }) => {
 
   const handleView = (crono) => {
     setSelected(crono);
+    setActivePhaseIndex(0);
     setView('view');
   };
 
@@ -309,9 +385,9 @@ const Cronogramas = ({ modalidade, categoria }) => {
           {isGenerating && (
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(3px)',
+              background: 'var(--bg-card)', opacity: 0.94, backdropFilter: 'blur(4px)',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              zIndex: 10
+              zIndex: 10, borderRadius: 'var(--radius-xl)'
             }}>
                <div className="spinner-border" style={{ width: '3rem', height: '3rem', color: 'var(--primary)' }} role="status"></div>
                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginTop: '16px' }}>IA analisando dados...</h5>
@@ -474,44 +550,189 @@ const Cronogramas = ({ modalidade, categoria }) => {
             </div>
           </div>
           
-          <div className="row g-4">
-            {selected.fases && selected.fases.map((fase, index) => {
-              const icons = [<Activity size={18} />, <Trophy size={18} />, <BatteryCharging size={18} />];
-              const colors = ['var(--primary)', 'var(--accent)', 'var(--success)'];
-              
-              return (
-                <div key={index} className="col-md-4">
+          {/* Phase Navigation Tabs */}
+          {selected.fases && selected.fases.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{
+                display: 'inline-flex',
+                gap: '8px',
+                background: 'var(--bg-card)',
+                padding: '6px',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-xs)'
+              }} className="d-print-none">
+                {selected.fases.map((fase, index) => {
+                  const isActive = (activePhaseIndex >= selected.fases.length ? 0 : activePhaseIndex) === index;
+                  const icons = {
+                    'Preparatória': <Activity size={16} />,
+                    'Competitiva': <Trophy size={16} />,
+                    'Transição': <BatteryCharging size={16} />
+                  };
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setActivePhaseIndex(index)}
+                      style={{
+                        padding: '10px 22px',
+                        borderRadius: 'var(--radius-md)',
+                        border: 'none',
+                        background: isActive ? 'var(--primary)' : 'transparent',
+                        color: isActive ? '#fff' : 'var(--text-secondary)',
+                        fontWeight: isActive ? 700 : 600,
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all var(--transition-fast)'
+                      }}
+                    >
+                      {icons[fase.nome] || <Activity size={16} />}
+                      <span>{fase.nome}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Single Selected Phase Panel */}
+              {(() => {
+                const currentFase = selected.fases[activePhaseIndex] || selected.fases[0];
+                if (!currentFase) return null;
+                const phaseIcons = {
+                  'Preparatória': <Activity size={22} />,
+                  'Competitiva': <Trophy size={22} />,
+                  'Transição': <BatteryCharging size={22} />
+                };
+                const phaseColors = {
+                  'Preparatória': 'var(--primary)',
+                  'Competitiva': 'var(--accent)',
+                  'Transição': 'var(--success)'
+                };
+                const phaseBg = {
+                  'Preparatória': 'var(--primary-light)',
+                  'Competitiva': 'var(--accent-light)',
+                  'Transição': 'var(--success-light)'
+                };
+                const pColor = phaseColors[currentFase.nome] || 'var(--primary)';
+                const pBg = phaseBg[currentFase.nome] || 'var(--primary-light)';
+
+                return (
                   <div style={{
+                    marginTop: '16px',
                     background: 'var(--bg-card)',
-                    borderRadius: 'var(--radius-lg)',
+                    borderRadius: 'var(--radius-xl)',
                     border: '1px solid var(--border-light)',
                     boxShadow: 'var(--shadow-sm)',
-                    padding: '24px',
-                    borderTop: `4px solid ${colors[index % 3]}`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%'
+                    overflow: 'hidden',
+                    maxWidth: '920px'
                   }}>
-                    <h5 style={{ fontWeight: 700, color: colors[index % 3], marginBottom: '16px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {icons[index % 3]}
-                      <span>{index + 1}. {fase.nome}</span>
-                    </h5>
-                    
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /> {fase.dataInicio ? new Date(fase.dataInicio).toLocaleDateString('pt-BR') : 'N/A'} a {fase.dataFim ? new Date(fase.dataFim).toLocaleDateString('pt-BR') : 'N/A'}</li>
-                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={14} /> {fase.semanas} semanas</li>
-                      <li style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={14} /> {fase.treinos?.length || 0} sessões</li>
-                    </ul>
-                    
-                    <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: 'var(--radius-md)', marginTop: 'auto' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.75rem', display: 'block', marginBottom: '8px', color: 'var(--text)' }}>Conteúdo Programado:</span>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{fase.objetivo}</p>
+                    {/* Header of Active Phase */}
+                    <div style={{
+                      padding: '20px 24px',
+                      borderBottom: '1px solid var(--border-light)',
+                      borderTop: `4px solid ${pColor}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '14px',
+                      background: 'var(--bg)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: 'var(--radius-md)',
+                          background: pBg,
+                          color: pColor,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {phaseIcons[currentFase.nome] || <Activity size={22} />}
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 2px', fontWeight: 700, fontSize: '1.0625rem', color: 'var(--text)' }}>
+                            Fase {currentFase.nome}
+                          </h4>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                            Diretrizes e planejamento de treinamento
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: 'var(--radius-md)',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <Calendar size={14} style={{ color: pColor }} />
+                          {currentFase.dataInicio ? new Date(currentFase.dataInicio).toLocaleDateString('pt-BR') : 'N/A'} → {currentFase.dataFim ? new Date(currentFase.dataFim).toLocaleDateString('pt-BR') : 'N/A'}
+                        </span>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: 'var(--radius-md)',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <Clock size={14} style={{ color: 'var(--accent)' }} />
+                          {currentFase.semanas} {currentFase.semanas === 1 ? 'semana' : 'semanas'}
+                        </span>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: 'var(--radius-md)',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <CheckCircle2 size={14} style={{ color: 'var(--success)' }} />
+                          {currentFase.treinos?.length || 0} sessões
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content Section */}
+                    <div style={{ padding: '24px' }}>
+                      <h6 style={{
+                        fontWeight: 700,
+                        fontSize: '0.8125rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        color: 'var(--text-tertiary)',
+                        marginBottom: '16px'
+                      }}>
+                        Conteúdo Programado
+                      </h6>
+                      
+                      {renderStructuredObjective(currentFase.objetivo, pColor)}
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
     </div>

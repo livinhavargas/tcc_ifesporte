@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Logo = ({ className = '', style = {}, width, height = "100%", circleColor = '#1E5EFF', textColor = '#FF8A00' }) => {
+const Logo = ({ className = '', style = {}, width, height = "100%", circleColor = 'var(--primary)', textColor = 'var(--accent)' }) => {
   return (
     <svg 
       className={className} 

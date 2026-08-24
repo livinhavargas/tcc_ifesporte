@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Calendar, Trophy, Bell, LogOut, Trash2, X } from 'lucide-react';
+import { Home, Users, Calendar, Trophy, Bell, LogOut, Trash2, X, Sun, Moon } from 'lucide-react';
 import Logo from './Logo';
 import { getNotifications, markAllAsRead, clearNotifications } from '../utils/notifications';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ const Layout = ({ children }) => {
   const userInitials = userName.substring(0, 2).toUpperCase();
   const userType = localStorage.getItem('tipo') || 'Estudante';
   const displayUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
+  const { isDark, toggleTheme } = useTheme();
+
+  const isStudent = userType.toLowerCase() === 'estudante';
 
   const [notifications, setNotifications] = useState([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
@@ -115,24 +119,28 @@ const Layout = ({ children }) => {
             <span>Início</span>
           </Link>
 
-          <Link to="/alunos" className={`sidebar-link ${isActive('/alunos')}`}>
-            <Users size={18} />
-            <span>Alunos</span>
-          </Link>
+          {!isStudent && (
+            <Link to="/alunos" className={`sidebar-link ${isActive('/alunos')}`}>
+              <Users size={18} />
+              <span>Alunos</span>
+            </Link>
+          )}
 
           <Link to="/agenda" className={`sidebar-link ${isActive('/agenda')}`}>
             <Calendar size={18} />
             <span>Agenda</span>
           </Link>
 
-          <Link to="/esportes" className={`sidebar-link ${isActive('/esportes')}`}>
-            <Trophy size={18} />
-            <span>Esportes</span>
-          </Link>
+          {!isStudent && (
+            <Link to="/esportes" className={`sidebar-link ${isActive('/esportes')}`}>
+              <Trophy size={18} />
+              <span>Esportes</span>
+            </Link>
+          )}
         </nav>
 
         {/* Bottom Actions */}
-        <div style={{ padding: '16px 12px', borderTop: '1px solid var(--border-light)' }}>
+        <div style={{ padding: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button
             onClick={handleLogout}
             style={{
@@ -184,7 +192,33 @@ const Layout = ({ children }) => {
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                height: '38px',
+                padding: '0 12px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-light)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: isDark ? 'var(--warning)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                transition: 'all var(--transition-fast)',
+                fontSize: '0.8125rem',
+                fontWeight: 600
+              }}
+              title={isDark ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
+              aria-label="Alternar tema"
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+              <span className="d-none d-md-inline" style={{ color: 'var(--text-secondary)' }}>
+                {isDark ? 'Claro' : 'Escuro'}
+              </span>
+            </button>
             {/* Notification Bell */}
             <div style={{ position: 'relative' }}>
               <div 

@@ -73,7 +73,7 @@ const MainCalendar = ({
   };
 
   return (
-    <div className="main-calendar-container p-3 h-100 bg-white">
+    <div className="main-calendar-container p-3 h-100" style={{ background: 'var(--bg-card)', color: 'var(--text)', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <DnDCalendar
         localizer={localizer}
         events={events}
@@ -109,7 +109,7 @@ const MainCalendar = ({
           noEventsInRange: 'Não há eventos neste período.',
           showMore: total => `+ ${total} eventos`
         }}
-        style={{ height: 'calc(100vh - 120px)' }}
+        style={{ height: '100%', flex: 1, minHeight: 0 }}
       />
     </div>
   );

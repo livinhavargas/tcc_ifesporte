@@ -99,7 +99,32 @@ const atletismoForms = {
 
 const getFormStructure = (modalidadeStr) => {
   if (!modalidadeStr) return null;
-  const match = Object.keys(atletismoForms).find(key => modalidadeStr.includes(key));
+  const norm = modalidadeStr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  if (norm.includes('100m com barreiras') || norm.includes('100m barreiras')) return { key: '100m com Barreiras', structure: atletismoForms['100m com Barreiras'] };
+  if (norm.includes('110m com barreiras') || norm.includes('110m barreiras')) return { key: '110m com Barreiras', structure: atletismoForms['110m com Barreiras'] };
+  if (norm.includes('4x100')) return { key: 'Revezamento 4x100', structure: atletismoForms['Revezamento 4x100'] };
+  if (norm.includes('4x400')) return { key: 'Revezamento 4x400', structure: atletismoForms['Revezamento 4x400'] };
+  if (norm.includes('pentatlo')) return { key: 'Pentatlo', structure: atletismoForms['Pentatlo'] };
+  if (norm.includes('100m')) return { key: '100m', structure: atletismoForms['100m'] };
+  if (norm.includes('200m')) return { key: '200m', structure: atletismoForms['200m'] };
+  if (norm.includes('400m')) return { key: '400m', structure: atletismoForms['400m'] };
+  if (norm.includes('800m')) return { key: '800m', structure: atletismoForms['800m'] };
+  if (norm.includes('1500m')) return { key: '1500m', structure: atletismoForms['1500m'] };
+  if (norm.includes('3000m')) return { key: '3000m', structure: atletismoForms['3000m'] };
+  if (norm.includes('5000m')) return { key: '5000m', structure: atletismoForms['5000m'] };
+
+  if (norm.includes('distancia')) return { key: 'Distância', structure: atletismoForms['Distância'] };
+  if (norm.includes('altura')) return { key: 'Altura', structure: atletismoForms['Altura'] };
+  if (norm.includes('triplo')) return { key: 'Triplo', structure: atletismoForms['Triplo'] };
+  if (norm.includes('vara')) return { key: 'Altura', structure: atletismoForms['Altura'] };
+
+  if (norm.includes('peso')) return { key: 'Peso', structure: atletismoForms['Peso'] };
+  if (norm.includes('disco')) return { key: 'Disco', structure: atletismoForms['Disco'] };
+  if (norm.includes('dardo')) return { key: 'Dardo', structure: atletismoForms['Dardo'] };
+  if (norm.includes('martelo')) return { key: 'Disco', structure: atletismoForms['Disco'] };
+
+  const match = Object.keys(atletismoForms).find(key => norm.includes(key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
   return match ? { key: match, structure: atletismoForms[match] } : null;
 };
 

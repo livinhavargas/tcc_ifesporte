@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertTriangle, Sun, Moon } from 'lucide-react';
 import Logo from '../components/Logo';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const Login = ({ onLogin }) => {
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -125,8 +127,36 @@ const Login = ({ onLogin }) => {
         justifyContent: 'center',
         alignItems: 'center',
         padding: '48px 32px',
-        background: 'var(--bg)'
+        background: 'var(--bg)',
+        position: 'relative'
       }}>
+        {/* Floating Theme Switch */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            position: 'absolute',
+            top: '24px',
+            right: '24px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-light)',
+            borderRadius: 'var(--radius-full)',
+            padding: '8px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: isDark ? 'var(--warning)' : 'var(--text-secondary)',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: 'var(--shadow-xs)',
+            transition: 'all var(--transition-fast)'
+          }}
+          title={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{isDark ? 'Claro' : 'Escuro'}</span>
+        </button>
+
         <div style={{
           width: '100%',
           maxWidth: '420px',
@@ -153,7 +183,7 @@ const Login = ({ onLogin }) => {
           {error && (
             <div style={{
               background: 'var(--error-light)',
-              color: '#991B1B',
+              color: 'var(--error-text)',
               borderRadius: 'var(--radius-md)',
               padding: '12px 16px',
               fontSize: '0.8125rem',

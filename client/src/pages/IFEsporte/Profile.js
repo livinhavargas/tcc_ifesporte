@@ -113,7 +113,7 @@ const Profile = () => {
         {mensagem && (
           <div style={{
             background: mensagem.includes('✅') ? 'var(--success-light)' : 'var(--error-light)',
-            color: mensagem.includes('✅') ? '#065F46' : '#991B1B',
+            color: mensagem.includes('✅') ? 'var(--success-text)' : 'var(--error-text)',
             borderRadius: 'var(--radius-md)',
             padding: '12px 16px',
             fontSize: '0.8125rem',

@@ -46,21 +46,21 @@ const Esportes = () => {
     const normalize = (str) => {
       return (str || '')
         .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[\s-()]/g, '');
     };
     const e = normalize(esp);
     const k = normalize(keyword);
-    if (e.includes(k)) return true;
+    if (!e || !k) return false;
+    if (e.includes(k) || k.includes(e)) return true;
 
     // Fallbacks para compatibilidade entre os formatos legados e novos
-    if (k.includes('tênisdemesamisto') && e.includes('tênisdemesadupla')) return true;
-    if (k.includes('tênisdemesadupla') && e.includes('tênisdemesamisto')) return true;
+    if (k.includes('tenisdemesamisto') && e.includes('tenisdemesadupla')) return true;
+    if (k.includes('tenisdemesadupla') && e.includes('tenisdemesamisto')) return true;
     
-    const kLower = (keyword || '').toLowerCase();
-    const eLower = (esp || '').toLowerCase();
-    if (kLower === 'atletismo') {
-      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lançamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distância', 'altura', 'triplo', 'peso', 'disco', 'dardo'];
-      return termos.some(t => eLower.includes(t));
+    if (k === 'atletismo') {
+      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lancamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distancia', 'altura', 'triplo', 'vara', 'peso', 'disco', 'dardo', 'martelo', 'pentatlo', 'barreiras'];
+      return termos.some(t => e.includes(t));
     }
     return false;
   };

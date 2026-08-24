@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarRange, Plus } from 'lucide-react';
+import { CalendarRange, Plus, Calendar as CalendarIcon, ListOrdered } from 'lucide-react';
 import Layout from '../../components/Layout';
 import CalendarSidebar from './components/CalendarSidebar';
 import MainCalendar from './components/MainCalendar';
@@ -23,6 +23,7 @@ const Agenda = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [mobileTab, setMobileTab] = useState('calendar'); // 'calendar' | 'sidebar'
   
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -193,40 +194,64 @@ const Agenda = () => {
   return (
     <Layout>
       <div style={{
-        height: 'calc(100vh - 120px)',
+        height: 'calc(100vh - 132px)',
+        minHeight: '620px',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 'var(--radius-xl)',
+        borderRadius: 'var(--radius-lg)',
         border: '1px solid var(--border-light)',
         boxShadow: 'var(--shadow-md)',
         background: 'var(--bg-card)',
         overflow: 'hidden'
       }}>
         
-        {/* Agenda Inner Header */}
+        {/* Agenda Top Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '16px 32px',
+          padding: '12px 20px',
           borderBottom: '1px solid var(--border-light)',
-          background: 'var(--bg-card)'
+          background: 'var(--bg-card)',
+          flexShrink: 0
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarRange size={20} style={{ color: 'var(--primary)' }} /> 
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.0625rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarRange size={18} style={{ color: 'var(--primary)' }} /> 
               <span>Agenda</span>
             </h4>
-            <button className="btn btn-secondary btn-sm" onClick={() => setCurrentDate(new Date())} style={{ borderRadius: 'var(--radius-sm)' }}>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={() => setCurrentDate(new Date())} 
+              style={{ borderRadius: 'var(--radius-xs)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}
+            >
               Hoje
             </button>
+
+            {/* Mobile View Toggle Buttons */}
+            <div className="d-flex d-lg-none" style={{ gap: '4px', marginLeft: '8px' }}>
+              <button 
+                onClick={() => setMobileTab('calendar')}
+                className={`btn btn-sm ${mobileTab === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '4px 8px', fontSize: '0.6875rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <CalendarIcon size={14} /> Calendário
+              </button>
+              <button 
+                onClick={() => setMobileTab('sidebar')}
+                className={`btn btn-sm ${mobileTab === 'sidebar' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '4px 8px', fontSize: '0.6875rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <ListOrdered size={14} /> Painel Lateral
+              </button>
+            </div>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
              {userType !== 'estudante' && (
               <button 
                 className="btn btn-primary"
-                style={{ padding: '8px 20px', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ padding: '6px 16px', fontSize: '0.8125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', borderRadius: 'var(--radius-sm)' }}
                 onClick={() => {
                   setSelectedEvent(null);
                   setShowModal(true);
@@ -239,10 +264,13 @@ const Agenda = () => {
         </div>
 
         {/* Content Panel */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
           
           {/* Calendar Sidebar */}
-          <div className="d-none d-lg-block" style={{ width: '280px', flexShrink: 0, borderRight: '1px solid var(--border-light)' }}>
+          <div 
+            className={`calendar-sidebar ${mobileTab === 'sidebar' ? 'd-block' : 'd-none d-lg-block'}`} 
+            style={{ width: '310px', flexShrink: 0, borderRight: '1px solid var(--border-light)', height: '100%', overflow: 'hidden' }}
+          >
             <CalendarSidebar 
               currentDate={currentDate} 
               onDateChange={handleDateChange} 
@@ -252,9 +280,12 @@ const Agenda = () => {
           </div>
 
           {/* Main Calendar Panel */}
-          <div style={{ flex: 1, overflow: 'auto', background: 'var(--bg-card)' }} className="main-calendar-container">
+          <div 
+            style={{ flex: 1, overflow: 'hidden', background: 'var(--bg-card)', height: '100%', minHeight: 0 }} 
+            className={`main-calendar-container ${mobileTab === 'calendar' ? 'd-flex' : 'd-none d-lg-flex'}`}
+          >
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}>
                 <div className="spinner-border" style={{ color: 'var(--primary)' }}></div>
               </div>
             ) : (

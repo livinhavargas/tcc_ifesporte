@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -27,9 +28,11 @@ export default function App() {
   };
 
   // Funções de verificação de papel
-  const isStaff = tipo !== 'estudante'; // Professor, Treinador, Coordenador, Administrador
+  const currentTipo = (tipo || localStorage.getItem('tipo') || '').toLowerCase();
+  const isStaff = currentTipo !== '' && currentTipo !== 'estudante'; // Professor, Treinador, Coordenador, Administrador
 
   return (
+    <ThemeProvider>
     <Router>
       <Routes>
         <Route path="/" element={token ? <Home /> : <Navigate to="/login" replace />} />
@@ -63,5 +66,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    </ThemeProvider>
   );
 }

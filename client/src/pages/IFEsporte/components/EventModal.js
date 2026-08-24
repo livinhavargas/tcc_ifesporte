@@ -82,6 +82,7 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
     outline: 'none',
     transition: 'all var(--transition-fast)',
     background: 'var(--bg)',
+    color: 'var(--text)',
     minHeight: '44px'
   };
 

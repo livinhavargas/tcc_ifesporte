@@ -158,7 +158,7 @@ const Home = () => {
   };
 
   const formatModalityToId = (modName) => {
-    const baseMod = modName.split(' - ')[0];
+    const baseMod = (modName || '').split(' - ')[0].trim();
     const nameMapReverse = {
       'Atletismo': 'atletismo',
       'Badminton': 'badminton',
@@ -173,6 +173,27 @@ const Home = () => {
       'Vôlei de Praia': 'volei-praia'
     };
     return nameMapReverse[baseMod] || baseMod.toLowerCase().replace(/\s+/g, '-');
+  };
+
+  const handleCronogramaClick = (cron) => {
+    const parts = (cron.modalidade || '').split(' - ').map(p => p.trim());
+    const baseMod = parts[0] || '';
+    const sportId = formatModalityToId(baseMod);
+
+    const params = new URLSearchParams();
+    params.set('tab', 'cronogramas');
+    if (cron.categoria) {
+      params.set('genero', cron.categoria);
+    }
+    if (parts.length > 1) {
+      params.set('cat', parts[1]);
+    }
+    if (parts.length > 2) {
+      params.set('sub', parts[2]);
+    }
+    params.set('cronogramaId', cron._id);
+
+    navigate(`/esportes/${sportId}?${params.toString()}`);
   };
 
   if (tipo === 'estudante') {
@@ -397,16 +418,22 @@ const Home = () => {
           ) : cronogramas.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
               {cronogramas.map(cron => (
-                <div key={cron._id} style={{
-                  background: 'var(--bg-card)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--border-light)',
-                  boxShadow: 'var(--shadow-sm)',
-                  overflow: 'hidden',
-                  transition: 'all var(--transition-base)',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }} className="hover-lift">
+                <div 
+                  key={cron._id} 
+                  onClick={() => handleCronogramaClick(cron)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--border-light)',
+                    boxShadow: 'var(--shadow-sm)',
+                    overflow: 'hidden',
+                    transition: 'all var(--transition-base)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer'
+                  }} 
+                  className="hover-lift"
+                >
                   <div style={{ padding: '24px 24px 16px', flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                       <span style={{
@@ -440,8 +467,7 @@ const Home = () => {
                     </div>
                   </div>
                   <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'flex-end' }}>
-                    <Link to={`/esportes/${formatModalityToId(cron.modalidade)}`} style={{
-                      textDecoration: 'none',
+                    <span style={{
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       color: 'var(--primary)',
@@ -450,7 +476,7 @@ const Home = () => {
                       gap: '4px'
                     }}>
                       Abrir <ArrowRight size={16} />
-                    </Link>
+                    </span>
                   </div>
                 </div>
               ))}

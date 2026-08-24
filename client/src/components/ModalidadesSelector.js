@@ -26,14 +26,16 @@ export const estruturaModalidades = [
       { id: 'Atletismo - Corridas - 110m com Barreiras', nome: '110m com Barreiras', genero: 'Masculino' }
     ]},
     { id: 'Atletismo - Saltos', nome: 'Saltos', sub: [
-      { id: 'Atletismo - Saltos - Distância', nome: 'Distância' },
-      { id: 'Atletismo - Saltos - Altura', nome: 'Altura' },
-      { id: 'Atletismo - Saltos - Triplo', nome: 'Triplo' }
+      { id: 'Atletismo - Saltos - Salto em Distância', nome: 'Salto em distância' },
+      { id: 'Atletismo - Saltos - Salto em Altura', nome: 'Salto em altura' },
+      { id: 'Atletismo - Saltos - Salto Triplo', nome: 'Salto triplo' },
+      { id: 'Atletismo - Saltos - Salto com Vara', nome: 'Salto com vara' }
     ]},
-    { id: 'Atletismo - Lançamentos', nome: 'Lançamentos', sub: [
-      { id: 'Atletismo - Lançamentos - Peso', nome: 'Peso' },
-      { id: 'Atletismo - Lançamentos - Disco', nome: 'Disco' },
-      { id: 'Atletismo - Lançamentos - Dardo', nome: 'Dardo' }
+    { id: 'Atletismo - Arremessos e Lançamentos', nome: 'Arremessos e Lançamentos', sub: [
+      { id: 'Atletismo - Arremessos e Lançamentos - Arremesso de Peso', nome: 'Arremesso de peso' },
+      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Disco', nome: 'Lançamento de disco' },
+      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Dardo', nome: 'Lançamento de dardo' },
+      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Martelo', nome: 'Lançamento de martelo' }
     ]}
   ]},
   { id: 'Tênis de Mesa', nome: 'Tênis de Mesa', sub: [
@@ -41,6 +43,23 @@ export const estruturaModalidades = [
     { id: 'Tênis de Mesa (Misto)', nome: 'Misto' }
   ]}
 ];
+
+const matchNodeId = (idA, idB) => {
+  if (!idA || !idB) return false;
+  if (idA === idB) return true;
+  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s-()]/g, '');
+  const a = norm(idA);
+  const b = norm(idB);
+  if (a.includes('distancia') && b.includes('distancia')) return true;
+  if (a.includes('altura') && b.includes('altura')) return true;
+  if (a.includes('triplo') && b.includes('triplo')) return true;
+  if (a.includes('vara') && b.includes('vara')) return true;
+  if (a.includes('peso') && b.includes('peso')) return true;
+  if (a.includes('disco') && b.includes('disco')) return true;
+  if (a.includes('dardo') && b.includes('dardo')) return true;
+  if (a.includes('martelo') && b.includes('martelo')) return true;
+  return a === b;
+};
 
 const TreeNode = ({ node, selectedIds, onToggle, gender }) => {
   const [expanded, setExpanded] = useState(false);
@@ -53,10 +72,10 @@ const TreeNode = ({ node, selectedIds, onToggle, gender }) => {
   }) : [];
 
   const hasSub = filteredSub.length > 0;
-  const isSelected = selectedIds.includes(node.id);
+  const isSelected = selectedIds.some(id => matchNodeId(node.id, id));
 
   const isAnyChildSelected = (n) => {
-    if (selectedIds.includes(n.id)) return true;
+    if (selectedIds.some(id => matchNodeId(n.id, id))) return true;
     if (n.sub) return n.sub.some(isAnyChildSelected);
     return false;
   };
@@ -126,8 +145,10 @@ const ModalidadesSelector = ({ selected = [], onChange, gender }) => {
     if (gender === 'Masculino' && id.includes('100m com Barreiras')) return;
     if (gender === 'Feminino' && id.includes('110m com Barreiras')) return;
 
-    if (selected.includes(id)) {
-      onChange(selected.filter(x => x !== id));
+    const isCurrentlySelected = selected.some(x => matchNodeId(x, id));
+
+    if (isCurrentlySelected) {
+      onChange(selected.filter(x => !matchNodeId(x, id)));
     } else {
       onChange([...selected, id]);
     }

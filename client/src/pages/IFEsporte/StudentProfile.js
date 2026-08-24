@@ -7,6 +7,7 @@ import IMCCard from '../../components/IMCCard';
 import { isCollectiveSport } from './components/ContextoSelector';
 import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
 import { addNotification } from '../../utils/notifications';
+import { renderDiagnosticCard } from './Analises';
 
 const StudentProfile = () => {
   const { id } = useParams();
@@ -287,7 +288,7 @@ const StudentProfile = () => {
         {mensagem && (
           <div style={{
             background: mensagem.includes('✅') ? 'var(--success-light)' : 'var(--error-light)',
-            color: mensagem.includes('✅') ? '#065F46' : '#991B1B',
+            color: mensagem.includes('✅') ? 'var(--success-text)' : 'var(--error-text)',
             borderRadius: 'var(--radius-md)',
             padding: '12px 16px',
             fontSize: '0.8125rem',
@@ -752,12 +753,10 @@ const StudentProfile = () => {
 
                         {/* Diagnóstico Inteligente */}
                         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-                          <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '12px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '14px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <i className="bi bi-robot" style={{ fontSize: '1.25rem' }}></i> Diagnóstico Inteligente Gerado
                           </h6>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--text)', margin: 0, lineHeight: 1.6, textAlign: 'justify' }}>
-                            {selectedAnalysis.diagnostico || 'Avaliação registrada sem texto diagnóstico.'}
-                          </p>
+                          {renderDiagnosticCard(selectedAnalysis.diagnostico)}
                         </div>
 
                         {/* Notas Detalhadas por Critério */}
@@ -816,7 +815,33 @@ const StudentProfile = () => {
                                 {supportedModalidades.map(mod => {
                                   const parts = mod.split('-').map(p => p.trim());
                                   let baseMod = parts[0];
-                                  let subtipo = parts.length > 1 ? parts[parts.length - 1] : 'Geral';
+                                  
+                                  // Map display name to route ID
+                                  const routeMap = {
+                                    'Atletismo': 'atletismo',
+                                    'Badminton': 'badminton',
+                                    'Tênis de Mesa': 'tenis-de-mesa',
+                                    'Xadrez': 'xadrez',
+                                    'Basquete': 'basquete',
+                                    'Futsal': 'futsal',
+                                    'Futebol': 'futebol',
+                                    'Handebol': 'handebol',
+                                    'Voleibol': 'voleibol',
+                                    'Vôlei de Praia': 'volei-praia'
+                                  };
+                                  const sportRouteId = routeMap[baseMod] || baseMod.toLowerCase().replace(/\s+/g, '-');
+                                  const studentGender = student.sexo || 'Feminino';
+                                  
+                                  // Build navigation URL to SportDetail with Analyses tab
+                                  let targetUrl = `/esportes/${sportRouteId}?genero=${encodeURIComponent(studentGender)}&tab=analises`;
+                                  
+                                  // For hierarchical sports (e.g. "Atletismo - Corridas - 200m"), add cat/sub params
+                                  if (parts.length >= 2) {
+                                    targetUrl += `&cat=${encodeURIComponent(parts[1])}`;
+                                    if (parts.length >= 3) {
+                                      targetUrl += `&sub=${encodeURIComponent(parts[2])}`;
+                                    }
+                                  }
                                   
                                   return (
                                     <button 
@@ -833,7 +858,7 @@ const StudentProfile = () => {
                                         justifyContent: 'center',
                                         textAlign: 'center'
                                       }}
-                                      onClick={() => navigate(`/analises?novaAnalise=true&alunoId=${id}&modalidade=${encodeURIComponent(baseMod)}&subtipo=${encodeURIComponent(subtipo)}`)}
+                                      onClick={() => navigate(targetUrl)}
                                     >
                                       <SportIcon sport={baseMod} size={28} />
                                       <div>

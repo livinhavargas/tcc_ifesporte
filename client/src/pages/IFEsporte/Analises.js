@@ -47,6 +47,172 @@ const getAtributos = (mod, sub) => {
   return dicionarioAtributos['Geral']['Geral'];
 };
 
+export const parseDiagnostic = (rawText) => {
+  if (!rawText) return null;
+
+  // 1. Remover seções de recomendações completamente
+  let text = rawText
+    .replace(/\*{0,2}Recomendaç[õo]es[\s\S]*$/i, '')
+    .replace(/\*{0,2}Recomendaç[ãa]o[\s\S]*$/i, '')
+    .trim();
+
+  // 2. Remover marcadores de markdown (ex: **)
+  text = text.replace(/\*\*/g, '').trim();
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  
+  let desempenho = '';
+  let diagnostico = '';
+  let pontosFortes = [];
+  let deficiencias = [];
+  let outros = [];
+
+  let currentSection = 'intro';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lower = line.toLowerCase();
+
+    if (lower.startsWith('pontos fortes') || lower.includes('pontos fortes')) {
+      currentSection = 'fortes';
+      continue;
+    } else if (
+      lower.startsWith('deficiências') || 
+      lower.startsWith('deficiencias') || 
+      lower.startsWith('pontos fracos') || 
+      lower.includes('deficiências da equipe') || 
+      lower.includes('deficiências do atleta') ||
+      lower.includes('pontos a evoluir')
+    ) {
+      currentSection = 'deficiencias';
+      continue;
+    } else if (lower.startsWith('diagnóstico') || lower.startsWith('diagnostico')) {
+      currentSection = 'diagnostico';
+      const colonIdx = line.indexOf(':');
+      if (colonIdx !== -1) {
+        const val = line.slice(colonIdx + 1).trim();
+        if (val) diagnostico += (diagnostico ? ' ' : '') + val;
+      }
+      continue;
+    }
+
+    if (currentSection === 'intro') {
+      if (lower.startsWith('desempenho') || (lower.includes('nota') && lower.includes(':'))) {
+        desempenho += (desempenho ? ' ' : '') + line;
+      } else {
+        diagnostico += (diagnostico ? ' ' : '') + line;
+      }
+    } else if (currentSection === 'diagnostico') {
+      diagnostico += (diagnostico ? ' ' : '') + line;
+    } else if (currentSection === 'fortes') {
+      const cleanLine = line.replace(/^[-•*]\s*/, '').trim();
+      if (cleanLine && cleanLine.toLowerCase() !== 'nenhum.' && cleanLine.toLowerCase() !== 'nenhum') {
+        pontosFortes.push(cleanLine);
+      }
+    } else if (currentSection === 'deficiencias') {
+      const cleanLine = line.replace(/^[-•*]\s*/, '').trim();
+      if (cleanLine && cleanLine.toLowerCase() !== 'nenhum.' && cleanLine.toLowerCase() !== 'nenhum') {
+        deficiencias.push(cleanLine);
+      }
+    } else {
+      outros.push(line);
+    }
+  }
+
+  return {
+    desempenho,
+    diagnostico,
+    pontosFortes,
+    deficiencias,
+    outros
+  };
+};
+
+export const renderDiagnosticCard = (rawText) => {
+  const parsed = parseDiagnostic(rawText);
+  if (!parsed) {
+    return (
+      <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0, fontStyle: 'italic' }}>
+        Avaliação registrada sem texto diagnóstico.
+      </p>
+    );
+  }
+
+  const { desempenho, diagnostico, pontosFortes, deficiencias, outros } = parsed;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {desempenho && (
+        <div style={{
+          background: 'var(--bg)',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-light)',
+          borderLeft: '3px solid var(--primary)',
+          fontSize: '0.8125rem',
+          fontWeight: 600,
+          color: 'var(--text)'
+        }}>
+          {desempenho}
+        </div>
+      )}
+
+      {diagnostico && (
+        <p style={{
+          fontSize: '0.8125rem',
+          color: 'var(--text-secondary)',
+          margin: 0,
+          lineHeight: 1.55,
+          textAlign: 'left'
+        }}>
+          {diagnostico}
+        </p>
+      )}
+
+      {pontosFortes.length > 0 && (
+        <div style={{
+          background: 'var(--success-light)',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid rgba(16, 185, 129, 0.2)'
+        }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)', display: 'block', marginBottom: '4px' }}>
+            Pontos Fortes:
+          </span>
+          <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.8125rem', color: 'var(--text)' }}>
+            {pontosFortes.map((p, i) => (
+              <li key={i} style={{ marginBottom: i < pontosFortes.length - 1 ? '2px' : 0 }}>{p}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {deficiencias.length > 0 && (
+        <div style={{
+          background: 'var(--error-light)',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid rgba(239, 68, 68, 0.2)'
+        }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--error, #ef4444)', display: 'block', marginBottom: '4px' }}>
+            Deficiências Identificadas:
+          </span>
+          <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.8125rem', color: 'var(--text)' }}>
+            {deficiencias.map((d, i) => (
+              <li key={i} style={{ marginBottom: i < deficiencias.length - 1 ? '2px' : 0 }}>{d}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {outros.length > 0 && (
+        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          {outros.map((o, i) => <p key={i} style={{ margin: '0 0 4px' }}>{o}</p>)}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' }) => {
   const [students, setStudents] = useState([]);
@@ -431,7 +597,7 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
           {mensagem && (
             <div style={{
               background: mensagem.includes('✅') ? 'var(--success-light)' : 'var(--error-light)',
-              color: mensagem.includes('✅') ? '#065F46' : '#991B1B',
+              color: mensagem.includes('✅') ? 'var(--success-text)' : 'var(--error-text)',
               borderRadius: 'var(--radius-md)',
               padding: '12px 16px',
               fontSize: '0.8125rem',
@@ -619,12 +785,10 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
           </div>
 
           <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-            <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '12px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '14px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <i className="bi bi-robot" style={{ fontSize: '1.25rem' }}></i> Diagnóstico Inteligente Gerado
             </h6>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text)', margin: 0, lineHeight: 1.6, textAlign: 'justify' }}>
-              {selectedAnalysis.diagnostico || 'Avaliação registrada sem texto diagnóstico.'}
-            </p>
+            {renderDiagnosticCard(selectedAnalysis.diagnostico)}
           </div>
 
           <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border-light)' }}>
@@ -653,115 +817,196 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
       ) : loading ? (
          <div style={{ textAlign: 'center', padding: '48px' }}><div className="spinner-border" style={{ color: 'var(--primary)' }}></div></div>
       ) : analyses.filter(a => isSportAnalysisSupported(a.modalidade)).length > 0 ? (
-        <div className="row g-4">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))',
+          gap: '24px'
+        }}>
           {analyses.filter(a => isSportAnalysisSupported(a.modalidade)).map(analise => {
             const color = analise.resultados?.indiceGeral >= 4.0 ? 'var(--success)' :
                           analise.resultados?.indiceGeral >= 3.0 ? 'var(--primary)' : 'var(--warning)';
 
             return (
-              <div className="col-md-6 col-lg-4" key={analise._id}>
-                <div style={{
+              <div 
+                key={analise._id}
+                style={{
                   background: 'var(--bg-card)',
-                  borderRadius: 'var(--radius-lg)',
+                  borderRadius: 'var(--radius-xl)',
                   border: '1px solid var(--border-light)',
                   padding: '24px',
                   boxShadow: 'var(--shadow-sm)',
-                  height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  position: 'relative'
-                }} className="hover-lift">
-                  
-                  {userType !== 'estudante' && (
-                    <button 
-                      onClick={() => handleDelete(analise._id)}
-                      style={{
-                        position: 'absolute', top: '16px', right: '16px',
-                        background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6
-                      }}
-                      title="Excluir"
-                    >
-                      <i className="bi bi-trash" style={{ color: 'var(--error)' }}></i>
-                    </button>
-                  )}
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '16px' }}>
-                      <div style={{
-                        width: '64px', height: '64px', borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 700, shadow: 'var(--shadow-xs)', border: `2px solid ${color}`,
-                        overflow: 'hidden', fontSize: '1.25rem', flexShrink: 0
-                      }}>
-                        {analise.aluno?.foto ? (
-                          <img src={analise.aluno.foto} alt={analise.aluno.nome} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-                        ) : (
-                          analise.aluno?.nome ? analise.aluno.nome.charAt(0).toUpperCase() : '?'
-                        )}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 4px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {analise.aluno?.nome || 'Atleta Removido'} 
-                          <span className="badge" style={{ background: color, color: '#fff', fontSize: '0.6875rem' }}>
-                            <i className="bi bi-star-fill me-1"></i>
-                            {analise.resultados?.indiceGeral || '?'}
-                          </span>
-                        </h5>
-                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
-                          <i className="bi bi-calendar-event me-1"></i> {new Date(analise.data).toLocaleDateString('pt-BR')} 
-                          <span className="mx-2">•</span> 
-                          <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <SportIcon sport={analise.modalidade} size={14} />
-                            <span>{analise.modalidade} ({analise.subtipo || 'Geral'})</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  <div className="mt-2">
-                    <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '8px', fontSize: '0.875rem' }}>
-                      <i className="bi bi-robot me-2"></i>Diagnóstico Inteligente
-                    </h6>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6, textAlign: 'justify' }}>
-                      {analise.diagnostico || 'Avaliação legada (sem diagnóstico automático).'}
-                    </p>
-                  </div>
-
-                  <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                    <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 600 }}>
-                      <i className="bi bi-tag-fill me-1"></i> {analise.contexto || (isCollectiveSport(analise.modalidade) ? 'Jogo' : 'Treino')}
-                    </span>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button 
-                        className="btn btn-outline-secondary btn-sm"
-                        style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}
-                        onClick={() => setSelectedAnalysis(analise)}
-                        title="Ver detalhes da análise"
-                      >
-                        <i className="bi bi-eye me-1"></i> Detalhes
-                      </button>
-                      {userType !== 'estudante' && (
-                        <>
-                          <button 
-                            className="btn btn-outline-primary btn-sm"
-                            style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}
-                            onClick={() => handleStartEdit(analise)}
-                            title="Editar Análise"
-                          >
-                            <i className="bi bi-pencil me-1"></i> Editar
-                          </button>
-                          <button 
-                            className="btn btn-outline-danger btn-sm"
-                            style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}
-                            onClick={() => handleDelete(analise._id)}
-                            title="Excluir Análise"
-                          >
-                            <i className="bi bi-trash me-1"></i> Excluir
-                          </button>
-                        </>
+                  gap: '18px',
+                  position: 'relative',
+                  transition: 'all var(--transition-base)'
+                }} 
+                className="hover-lift"
+              >
+                {/* Header: Avatar, Name, Date, Modality, Score */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  borderBottom: '1px solid var(--border-light)',
+                  paddingBottom: '16px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
+                    <div style={{
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      border: `2.5px solid ${color}`,
+                      overflow: 'hidden',
+                      fontSize: '1.25rem',
+                      flexShrink: 0,
+                      background: 'var(--bg)'
+                    }}>
+                      {analise.aluno?.foto ? (
+                        <img 
+                          src={analise.aluno.foto} 
+                          alt={analise.aluno.nome} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      ) : (
+                        <span style={{ color: color }}>
+                          {analise.aluno?.nome ? analise.aluno.nome.charAt(0).toUpperCase() : '?'}
+                        </span>
                       )}
                     </div>
+                    
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <h5 style={{
+                        fontWeight: 700,
+                        color: 'var(--text)',
+                        margin: '0 0 4px',
+                        fontSize: '1rem',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {analise.aluno?.nome || 'Atleta Removido'}
+                      </h5>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                        <span>
+                          <i className="bi bi-calendar-event me-1"></i>
+                          {new Date(analise.dataAvaliacao || analise.data).toLocaleDateString('pt-BR')}
+                        </span>
+                        <span>•</span>
+                        <span style={{
+                          background: 'var(--primary-light)',
+                          color: 'var(--primary)',
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-full)',
+                          fontWeight: 600,
+                          fontSize: '0.6875rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          <SportIcon sport={analise.modalidade} size={12} />
+                          <span>{analise.modalidade} {analise.subtipo ? `(${analise.subtipo})` : ''}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  
+
+                  {/* Score badge */}
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    background: color === 'var(--success)' ? 'var(--success-light)' : color === 'var(--primary)' ? 'var(--primary-light)' : 'var(--warning-light)',
+                    color: color === 'var(--success)' ? '#065F46' : color === 'var(--primary)' ? 'var(--primary)' : '#92400E',
+                    border: `1px solid ${color}`,
+                    fontWeight: 700,
+                    fontSize: '0.9375rem',
+                    flexShrink: 0
+                  }}>
+                    <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', opacity: 0.85, lineHeight: 1, marginBottom: '2px' }}>Nota</div>
+                    <div>★ {analise.resultados?.indiceGeral || '5.0'}</div>
+                  </div>
+                </div>
+
+                {/* Body: Diagnóstico Inteligente */}
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: 'var(--accent)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: '12px'
+                  }}>
+                    <i className="bi bi-robot" style={{ fontSize: '0.875rem' }}></i>
+                    <span>Diagnóstico Inteligente</span>
+                  </div>
+
+                  {renderDiagnosticCard(analise.diagnostico)}
+                </div>
+
+                {/* Footer: Context and Actions */}
+                <div style={{
+                  paddingTop: '14px',
+                  borderTop: '1px solid var(--border-light)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px'
+                }}>
+                  <span style={{
+                    background: 'var(--bg)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    padding: '5px 12px',
+                    borderRadius: 'var(--radius-full)'
+                  }}>
+                    <i className="bi bi-tag-fill me-1" style={{ color: 'var(--accent)' }}></i>
+                    Contexto: {analise.contexto || (isCollectiveSport(analise.modalidade) ? 'Jogo' : 'Treino')}
+                  </span>
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button 
+                      className="btn btn-outline-secondary btn-sm"
+                      style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-sm)' }}
+                      onClick={() => setSelectedAnalysis(analise)}
+                      title="Ver detalhes da análise"
+                    >
+                      <i className="bi bi-eye me-1"></i> Detalhes
+                    </button>
+                    {userType !== 'estudante' && (
+                      <>
+                        <button 
+                          className="btn btn-outline-primary btn-sm"
+                          style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-sm)' }}
+                          onClick={() => handleStartEdit(analise)}
+                          title="Editar Análise"
+                        >
+                          <i className="bi bi-pencil me-1"></i> Editar
+                        </button>
+                        <button 
+                          className="btn btn-outline-danger btn-sm"
+                          style={{ fontSize: '0.78125rem', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-sm)' }}
+                          onClick={() => handleDelete(analise._id)}
+                          title="Excluir Análise"
+                        >
+                          <i className="bi bi-trash me-1"></i> Excluir
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );
