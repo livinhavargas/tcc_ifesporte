@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { apiUrl } from '../../services/api';
 
 const LineChart = ({ data, title }) => {
   if (!data || data.length === 0) {
@@ -111,13 +112,13 @@ const StudentHome = ({ userName }) => {
 
     try {
       // 1. Perfil do Estudante
-      const resProfile = await fetch(`/api/users/${userId}`, {
+      const resProfile = await fetch(apiUrl(`/api/users/${userId}`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataProfile = resProfile.ok ? await resProfile.json() : null;
 
       // 2. Análises realizadas pelo treinador
-      const resAnalysis = await fetch('/api/analysis', {
+      const resAnalysis = await fetch(apiUrl('/api/analysis'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataAnalysis = resAnalysis.ok ? await resAnalysis.json() : [];
@@ -145,7 +146,7 @@ const StudentHome = ({ userName }) => {
       }) : [];
 
       // 3. Próximos eventos da Agenda
-      const resEvents = await fetch('/api/events', {
+      const resEvents = await fetch(apiUrl('/api/events'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataEvents = resEvents.ok ? await resEvents.json() : [];

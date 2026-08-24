@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Venus, Mars } from 'lucide-react';
 import Layout from '../../components/Layout';
 import SportIcon from '../../components/SportIcon';
+import { apiUrl } from '../../services/api';
 
 const Esportes = () => {
   const [genero, setGenero] = useState('Feminino');
@@ -14,7 +15,7 @@ const Esportes = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/api/students', {
+      const response = await fetch(apiUrl('/api/students'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {

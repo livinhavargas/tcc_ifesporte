@@ -7,6 +7,7 @@ import {
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
 import { useTheme } from '../contexts/ThemeContext';
+import { apiUrl } from '../services/api';
 
 const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCancel = null }) => {
   const [step, setStep] = useState(1);
@@ -145,7 +146,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
     const payload = { ...formData };
     delete payload.confirmarSenha;
     try {
-      const response = await fetch('/api/users/register', {
+      const response = await fetch(apiUrl('/api/users/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

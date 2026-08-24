@@ -8,6 +8,7 @@ import Layout from '../components/Layout';
 import StudentHome from './IFesporte/StudentHome';
 import SportIcon, { detectSport } from '../components/SportIcon';
 import EventModal from './IFesporte/components/EventModal';
+import { apiUrl } from '../services/api';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ const Home = () => {
 
   const saveEventToApi = async (eventData) => {
     const isNew = !eventData._id;
-    const url = isNew ? '/api/events' : `/api/events/${eventData._id}`;
+    const url = isNew ? apiUrl('/api/events') : apiUrl(`/api/events/${eventData._id}`);
     const method = isNew ? 'POST' : 'PUT';
 
     const payload = {
@@ -70,7 +71,7 @@ const Home = () => {
   const handleDelete = async (id) => {
     if(!window.confirm("Deseja realmente excluir este evento?")) return;
     try {
-      await fetch(`/api/events/${id}`, {
+      await fetch(apiUrl(`/api/events/${id}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -115,7 +116,7 @@ const Home = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('/api/events', {
+      const response = await fetch(apiUrl('/api/events'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
@@ -136,7 +137,7 @@ const Home = () => {
 
   const fetchCronogramas = async () => {
     try {
-      const response = await fetch('/api/cronogramas', {
+      const response = await fetch(apiUrl('/api/cronogramas'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {

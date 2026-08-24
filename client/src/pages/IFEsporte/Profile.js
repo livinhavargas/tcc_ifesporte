@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../../components/Layout';
+import { apiUrl } from '../../services/api';
 
 const Profile = () => {
   const userId = localStorage.getItem('userId');
@@ -22,7 +23,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(apiUrl(`/api/users/${userId}`), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
@@ -63,7 +64,7 @@ const Profile = () => {
     e.preventDefault();
     setMensagem('');
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(apiUrl(`/api/users/${userId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

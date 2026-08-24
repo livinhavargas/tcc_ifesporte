@@ -7,6 +7,7 @@ import MainCalendar from './components/MainCalendar';
 import EventModal from './components/EventModal';
 import { addNotification } from '../../utils/notifications';
 import '../../agenda.css';
+import { apiUrl } from '../../services/api';
 
 const categoriesColors = {
   'Treino': '#3b82f6',
@@ -70,7 +71,7 @@ const Agenda = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('/api/events', {
+      const response = await fetch(apiUrl('/api/events'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -141,7 +142,7 @@ const Agenda = () => {
 
   const saveEventToApi = async (eventData) => {
     const isNew = !eventData._id;
-    const url = isNew ? '/api/events' : `/api/events/${eventData._id}`;
+    const url = isNew ? apiUrl('/api/events') : apiUrl(`/api/events/${eventData._id}`);
     const method = isNew ? 'POST' : 'PUT';
 
     const payload = {
@@ -178,7 +179,7 @@ const Agenda = () => {
   const handleDelete = async (id) => {
     if(!window.confirm("Deseja realmente excluir este evento?")) return;
     try {
-      await fetch(`/api/events/${id}`, {
+      await fetch(apiUrl(`/api/events/${id}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });

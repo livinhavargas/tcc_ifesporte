@@ -8,6 +8,7 @@ import ModalidadesSelector from '../../components/ModalidadesSelector';
 import SportIcon from '../../components/SportIcon';
 import { addNotification } from '../../utils/notifications';
 import IMCCard from '../../components/IMCCard';
+import { apiUrl } from '../../services/api';
 
 const Alunos = () => {
   const [students, setStudents] = useState([]);
@@ -42,7 +43,7 @@ const Alunos = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/api/students', {
+      const response = await fetch(apiUrl('/api/students'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
@@ -126,7 +127,7 @@ const Alunos = () => {
         esportes: formData.modalidades 
       };
 
-      const response = await fetch('/api/students', {
+      const response = await fetch(apiUrl('/api/students'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

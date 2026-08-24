@@ -11,6 +11,7 @@ import HandebolForm from './components/HandebolForm';
 import VoleiForm from './components/VoleiForm';
 import ContextoSelector, { isCollectiveSport } from './components/ContextoSelector';
 import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
+import { apiUrl } from '../../services/api';
 
 const dicionarioAtributos = {
   'Futebol/Futsal': {
@@ -359,7 +360,7 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/api/students', {
+      const response = await fetch(apiUrl('/api/students'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -380,7 +381,7 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
 
   const fetchAnalyses = async () => {
     try {
-      const response = await fetch('/api/analysis', {
+      const response = await fetch(apiUrl('/api/analysis'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -438,7 +439,7 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
       }
 
       const isEditing = Boolean(formData.editingId);
-      const url = isEditing ? `/api/analysis/${formData.editingId}` : '/api/analysis';
+      const url = isEditing ? apiUrl(`/api/analysis/${formData.editingId}`) : apiUrl('/api/analysis');
       const method = isEditing ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -486,7 +487,7 @@ const Analises = ({ embebed = false, defaultModalidade = '', defaultGenero = '' 
   const handleDelete = async (id) => {
     if(!window.confirm('Tem certeza que deseja excluir esta análise?')) return;
     try {
-      await fetch(`/api/analysis/${id}`, {
+      await fetch(apiUrl(`/api/analysis/${id}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });

@@ -7,6 +7,7 @@ import Analises from './Analises';
 import Cronogramas from './Cronogramas';
 import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
 import { isSportScheduleSupported } from '../../utils/sportScheduleRules';
+import { apiUrl } from '../../services/api';
 
 const SportDetail = () => {
   const { id } = useParams();
@@ -105,7 +106,7 @@ const SportDetail = () => {
 
   const fetchStudents = async () => {
     try {
-      const res = await fetch('/api/students', {
+      const res = await fetch(apiUrl('/api/students'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {

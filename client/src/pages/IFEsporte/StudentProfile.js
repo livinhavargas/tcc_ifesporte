@@ -8,6 +8,7 @@ import { isCollectiveSport } from './components/ContextoSelector';
 import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
 import { addNotification } from '../../utils/notifications';
 import { renderDiagnosticCard } from './Analises';
+import { apiUrl } from '../../services/api';
 
 const StudentProfile = () => {
   const { id } = useParams();
@@ -31,7 +32,7 @@ const StudentProfile = () => {
 
   const fetchStudent = async () => {
     try {
-      const response = await fetch(`/api/students/${id}`, {
+      const response = await fetch(apiUrl(`/api/students/${id}`), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -39,7 +40,7 @@ const StudentProfile = () => {
         setStudent(data);
       }
       try {
-        const analisesRes = await fetch('/api/analysis', {
+        const analisesRes = await fetch(apiUrl('/api/analysis'), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (analisesRes.ok) {
@@ -59,7 +60,7 @@ const StudentProfile = () => {
   const handleDeleteAnalysis = async (analysisId) => {
     if (!window.confirm('Tem certeza que deseja excluir esta análise?')) return;
     try {
-      const res = await fetch(`/api/analysis/${analysisId}`, {
+      const res = await fetch(apiUrl(`/api/analysis/${analysisId}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -112,7 +113,7 @@ const StudentProfile = () => {
     try {
       const payload = { ...student, esportes: student.modalidades };
 
-      const response = await fetch(`/api/students/${id}`, {
+      const response = await fetch(apiUrl(`/api/students/${id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +142,7 @@ const StudentProfile = () => {
     reader.onloadend = async () => {
       const base64Foto = reader.result;
       try {
-        const response = await fetch(`/api/students/${id}`, {
+        const response = await fetch(apiUrl(`/api/students/${id}`), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -167,7 +168,7 @@ const StudentProfile = () => {
   const handlePhotoDelete = async () => {
     if (!window.confirm('Deseja realmente remover a foto do atleta?')) return;
     try {
-      const response = await fetch(`/api/students/${id}`, {
+      const response = await fetch(apiUrl(`/api/students/${id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +224,7 @@ const StudentProfile = () => {
   const handleDelete = async () => {
     if (!window.confirm(`Tem certeza que deseja excluir o atleta ${student.nome}?`)) return;
     try {
-      const response = await fetch(`/api/students/${id}`, {
+      const response = await fetch(apiUrl(`/api/students/${id}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../../../services/api';
 
 const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) => {
   const [formData, setFormData] = useState({
@@ -19,7 +20,7 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
   useEffect(() => {
     const fetchEsportes = async () => {
       try {
-        const response = await fetch('/api/sports', {
+        const response = await fetch(apiUrl('/api/sports'), {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.ok) {

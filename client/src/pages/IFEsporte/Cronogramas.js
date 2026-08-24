@@ -8,6 +8,7 @@ import { generateSmartCronograma } from '../../utils/cronogramaGenerator';
 import SportIcon, { detectSport } from '../../components/SportIcon';
 import { addNotification } from '../../utils/notifications';
 import { isSportScheduleSupported } from '../../utils/sportScheduleRules';
+import { apiUrl } from '../../services/api';
 
 const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
   const [cronogramas, setCronogramas] = useState([]);
@@ -97,7 +98,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
 
   const fetchCronogramas = async () => {
     try {
-      const res = await fetch(`/api/cronogramas?modalidade=${encodeURIComponent(modalidade)}`, {
+      const res = await fetch(apiUrl(`/api/cronogramas?modalidade=${encodeURIComponent(modalidade)}`), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
@@ -107,7 +108,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
         if (cronogramaId) {
           let target = data.find(c => String(c._id) === String(cronogramaId));
           if (!target) {
-            const allRes = await fetch('/api/cronogramas', {
+            const allRes = await fetch(apiUrl('/api/cronogramas'), {
               headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             if (allRes.ok) {
@@ -181,7 +182,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
     };
 
     try {
-      const url = selected ? `/api/cronogramas/${selected._id}` : '/api/cronogramas';
+      const url = selected ? apiUrl(`/api/cronogramas/${selected._id}`) : apiUrl('/api/cronogramas');
       const method = selected ? 'PUT' : 'POST';
       
       const res = await fetch(url, {
@@ -225,7 +226,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
   const handleDelete = async (id) => {
     if (!window.confirm("Deseja realmente excluir este cronograma e todos os seus treinos (caso sincronizados)?")) return;
     try {
-      await fetch(`/api/cronogramas/${id}`, {
+      await fetch(apiUrl(`/api/cronogramas/${id}`), {
         method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       addNotification('Cronograma Excluído', 'Um cronograma de treinos foi excluído.');
@@ -238,7 +239,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
   const handleSyncAgenda = async (c) => {
     if (!window.confirm("Deseja criar automaticamente os eventos de treino da periodização na Agenda principal do sistema?")) return;
     try {
-      const res = await fetch(`/api/cronogramas/${c._id}/sincronizar`, {
+      const res = await fetch(apiUrl(`/api/cronogramas/${c._id}/sincronizar`), {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });

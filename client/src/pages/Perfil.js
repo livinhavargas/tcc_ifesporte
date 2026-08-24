@@ -11,6 +11,7 @@ import SportIcon from '../components/SportIcon';
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
 import IMCCard from '../components/IMCCard';
+import { apiUrl } from '../services/api';
 
 const Perfil = () => {
   const userId = localStorage.getItem('userId');
@@ -53,7 +54,7 @@ const Perfil = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(apiUrl(`/api/users/${userId}`), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
@@ -145,7 +146,7 @@ const Perfil = () => {
     e.preventDefault();
     setMensagem('');
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(apiUrl(`/api/users/${userId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

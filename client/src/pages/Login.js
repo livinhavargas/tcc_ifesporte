@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, AlertTriangle, Sun, Moon } from 'lucide-react';
 import Logo from '../components/Logo';
 import { useTheme } from '../contexts/ThemeContext';
+import { apiUrl } from '../services/api';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -55,7 +56,7 @@ const Login = ({ onLogin }) => {
     setError('');
 
     try {
-      const response = await fetch('/api/users/login', {
+      const response = await fetch(apiUrl('/api/users/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
