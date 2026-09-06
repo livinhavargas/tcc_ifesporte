@@ -107,7 +107,7 @@ const Profile = () => {
             <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Gerencie suas informações pessoais e credenciais.</p>
           </div>
           <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.8125rem', padding: '6px 16px' }}>
-            {userType ? userType.toUpperCase() : ''}
+            {userType && userType.toLowerCase() === 'estudante' ? 'ESTUDANTE' : 'TREINADOR(A)'}
           </span>
         </div>
 

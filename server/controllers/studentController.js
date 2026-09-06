@@ -1,6 +1,10 @@
 const Student = require('../models/Student');
 const Analysis = require('../models/Analysis');
 const User = require('../models/User');
+const { 
+  validatePosicoesPorModalidade, 
+  sanitizePosicoesPorModalidade 
+} = require('../utils/sportPositions');
 
 const mapLegacyToNewModality = (mod) => {
   const legacyMap = {
@@ -126,7 +130,9 @@ const syncStudentToUser = async (student) => {
       user.peso = student.peso;
       user.altura = student.altura;
       user.idade = student.idade;
-      user.esportes = (student.modalidades || student.esportes || []).map(mapLegacyToNewModality);
+      const mods = (student.modalidades || student.esportes || []).map(mapLegacyToNewModality);
+      user.esportes = mods;
+      user.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, student.posicoesPorModalidade);
       
       await user.save();
     }
@@ -141,6 +147,8 @@ const getAllStudents = async (req, res) => {
     const normalized = students.map(s => {
       if (s.esportes) s.esportes = s.esportes.map(mapLegacyToNewModality);
       if (s.modalidades) s.modalidades = s.modalidades.map(mapLegacyToNewModality);
+      const mods = s.modalidades || s.esportes || [];
+      s.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, s.posicoesPorModalidade);
       return s;
     });
     res.json(normalized);
@@ -155,6 +163,8 @@ const getStudentById = async (req, res) => {
     if (!student) return res.status(404).json({ message: 'Estudante não encontrado' });
     if (student.esportes) student.esportes = student.esportes.map(mapLegacyToNewModality);
     if (student.modalidades) student.modalidades = student.modalidades.map(mapLegacyToNewModality);
+    const mods = student.modalidades || student.esportes || [];
+    student.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, student.posicoesPorModalidade);
     res.json(student);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -163,15 +173,25 @@ const getStudentById = async (req, res) => {
 
 const createStudent = async (req, res) => {
   console.log("POST /api/students PAYLOAD RECEBIDO:", req.body);
-  const { matricula, cpf, email } = req.body;
+  const { matricula, cpf, email, posicoesPorModalidade } = req.body;
   
   try {
-    let mods = req.body.modalidades || req.body.esportes;
+    let mods = req.body.modalidades || req.body.esportes || [];
     if (mods) {
       mods = mods.map(mapLegacyToNewModality);
       req.body.modalidades = mods;
       req.body.esportes = mods;
     }
+
+    // Validação estrita das posições
+    if (posicoesPorModalidade && Array.isArray(posicoesPorModalidade)) {
+      const valResult = validatePosicoesPorModalidade(mods, posicoesPorModalidade);
+      if (!valResult.isValid) {
+        return res.status(400).json({ message: valResult.error });
+      }
+    }
+
+    req.body.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, posicoesPorModalidade);
 
     let studentExistente = null;
     if (matricula) {
@@ -225,6 +245,21 @@ const updateStudent = async (req, res) => {
       mods = mods.map(mapLegacyToNewModality);
       req.body.modalidades = mods;
       req.body.esportes = mods;
+    }
+
+    // Validação estrita das posições
+    if (req.body.posicoesPorModalidade) {
+      const valResult = validatePosicoesPorModalidade(mods || [], req.body.posicoesPorModalidade);
+      if (!valResult.isValid) {
+        return res.status(400).json({ message: valResult.error });
+      }
+      req.body.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods || [], req.body.posicoesPorModalidade);
+    } else if (mods) {
+      // Se modalidades mudaram mas posicoesPorModalidade não veio explicitamente, resanitizar
+      const existing = await Student.findById(req.params.id);
+      if (existing) {
+        req.body.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, existing.posicoesPorModalidade);
+      }
     }
 
     const updatedStudent = await Student.findByIdAndUpdate(req.params.id, req.body, { new: true });

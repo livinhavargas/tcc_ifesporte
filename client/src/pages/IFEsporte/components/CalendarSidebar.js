@@ -12,6 +12,9 @@ import {
 } from '@mui/icons-material';
 
 import SportIcon, { detectSport } from '../../../components/SportIcon';
+import { apiUrl } from '../../../services/api';
+import { addNotification } from '../../../utils/notifications';
+import { isTaskPending } from '../../../utils/taskUtils';
 
 const CalendarSidebar = ({ 
   currentDate, 
@@ -21,38 +24,118 @@ const CalendarSidebar = ({
 }) => {
   const userType = localStorage.getItem('tipo');
 
-  const [goals, setGoals] = useState(() => {
-    const saved = localStorage.getItem('agenda_goals');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, text: 'Preparar equipe para campeonato', descricao: '', prazo: '', done: false }
-    ];
-  });
-
+  const [goals, setGoals] = useState([]);
+  const [completingIds, setCompletingIds] = useState(new Set());
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [goalFormData, setGoalFormData] = useState({ text: '', descricao: '', prazo: '' });
 
   useEffect(() => {
-    localStorage.setItem('agenda_goals', JSON.stringify(goals));
-  }, [goals]);
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const toggleGoal = (id) => {
-    if (userType === 'estudante') return;
-    setGoals(goals.map(g => g.id === id ? { ...g, done: !g.done } : g));
+  useEffect(() => {
+    if (userType !== 'estudante') {
+      fetchGoals();
+    }
+  }, [userType]);
+
+  const fetchGoals = async () => {
+    try {
+      const res = await fetch(apiUrl('/api/tasks'), {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGoals(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar tarefas:', err);
+    }
   };
 
-  const handleGoalSubmit = (e) => {
+  const handleCompleteGoal = async (id) => {
+    if (userType === 'estudante') return;
+    
+    // 1. Marca imediatamente para disparar a animação fluida
+    setCompletingIds(prev => new Set(prev).add(id));
+    const previousGoals = [...goals];
+
+    try {
+      const res = await fetch(apiUrl(`/api/tasks/${id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ done: true })
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha ao concluir tarefa');
+      }
+
+      // 2. Após 220ms de transição suave, atualiza o estado
+      setTimeout(() => {
+        setGoals(prev => prev.map(g => (g._id || g.id) === id ? { ...g, done: true } : g));
+        setCompletingIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }, 220);
+    } catch (err) {
+      console.error('Erro ao concluir tarefa:', err);
+      // Reverter estado visual em caso de erro
+      setCompletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setGoals(previousGoals);
+      addNotification('Erro ao concluir', 'Não foi possível concluir a tarefa. Tente novamente.', 'error');
+    }
+  };
+
+  const handleGoalSubmit = async (e) => {
     e.preventDefault();
     if (!goalFormData.text.trim()) return;
 
-    if (editingGoal) {
-      setGoals(goals.map(g => g.id === editingGoal ? { ...g, ...goalFormData } : g));
-    } else {
-      setGoals([...goals, { 
-        id: Date.now(), 
-        ...goalFormData,
-        done: false 
-      }]);
+    try {
+      if (editingGoal) {
+        const res = await fetch(apiUrl(`/api/tasks/${editingGoal}`), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(goalFormData)
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setGoals(goals.map(g => (g._id || g.id) === editingGoal ? updated : g));
+        }
+      } else {
+        const res = await fetch(apiUrl('/api/tasks'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(goalFormData)
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setGoals([created, ...goals]);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao salvar tarefa:', err);
+      fetchGoals();
     }
     
     setGoalFormData({ text: '', descricao: '', prazo: '' });
@@ -62,15 +145,25 @@ const CalendarSidebar = ({
 
   const handleEditGoal = (e, g) => {
     e.stopPropagation();
-    setEditingGoal(g.id);
+    const gId = g._id || g.id;
+    setEditingGoal(gId);
     setGoalFormData({ text: g.text, descricao: g.descricao || '', prazo: g.prazo || '' });
     setShowGoalForm(true);
   };
 
-  const handleDeleteGoal = (e, id) => {
+  const handleDeleteGoal = async (e, id) => {
     e.stopPropagation();
-    if (window.confirm("Deseja excluir esta meta?")) {
-      setGoals(goals.filter(g => g.id !== id));
+    if (window.confirm("Deseja excluir esta tarefa?")) {
+      setGoals(goals.filter(g => (g._id || g.id) !== id));
+      try {
+        await fetch(apiUrl(`/api/tasks/${id}`), {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+      } catch (err) {
+        console.error('Erro ao excluir tarefa:', err);
+        fetchGoals();
+      }
     }
   };
 
@@ -243,7 +336,7 @@ const CalendarSidebar = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Metas
+                Tarefas
               </span>
               <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', marginLeft: '6px', fontWeight: 600 }}>
                 {completedGoalsCount}/{totalGoalsCount} ({goalProgressPct}%)
@@ -301,7 +394,7 @@ const CalendarSidebar = ({
                 <div style={{ marginBottom: '6px' }}>
                   <input 
                     type="text" 
-                    placeholder="Título da meta *" 
+                    placeholder="Título da tarefa *" 
                     value={goalFormData.text}
                     onChange={(e) => setGoalFormData({...goalFormData, text: e.target.value})}
                     required
@@ -356,74 +449,109 @@ const CalendarSidebar = ({
 
           {/* Goal List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }} className="agenda-custom-scrollbar">
-            {goals.map(g => (
-              <div key={g.id} style={{
-                display: 'flex',
-                alignItems: 'start',
-                padding: '8px 10px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-light)',
-                gap: '8px'
-              }}>
-                <div 
-                  style={{ marginTop: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
-                  onClick={() => toggleGoal(g.id)}
-                  title={g.done ? 'Marcar como pendente' : 'Marcar como concluída'}
-                >
-                  {g.done ? (
-                    <CheckCircle style={{ fontSize: '1rem', color: 'var(--success)' }} />
-                  ) : (
-                    <RadioButtonUnchecked style={{ fontSize: '1rem', color: 'var(--text-tertiary)' }} />
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => toggleGoal(g.id)}>
-                  <div style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: g.done ? 'var(--text-tertiary)' : 'var(--text)',
-                    textDecoration: g.done ? 'line-through' : 'none',
-                    lineHeight: 1.3
+            {(() => {
+              const pendingGoals = goals.filter(g => isTaskPending(g, currentTime) || completingIds.has(g._id || g.id));
+              if (pendingGoals.length === 0 && !showGoalForm) {
+                return (
+                  <div style={{ padding: '16px 8px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                    <CheckCircle style={{ fontSize: '1.25rem', color: 'var(--success)', marginBottom: '4px', opacity: 0.9 }} />
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>Tudo em dia!</div>
+                    <div style={{ fontSize: '0.6875rem' }}>Não há tarefas pendentes no momento.</div>
+                  </div>
+                );
+              }
+
+              return pendingGoals.map(g => {
+                const goalId = g._id || g.id;
+                const isCompleting = completingIds.has(goalId);
+
+                return (
+                  <div key={goalId} style={{
+                    display: 'flex',
+                    alignItems: 'start',
+                    padding: isCompleting ? '0 10px' : '8px 10px',
+                    maxHeight: isCompleting ? '0px' : '100px',
+                    opacity: isCompleting ? 0 : 1,
+                    transform: isCompleting ? 'scale(0.96) translateX(6px)' : 'scale(1) translateX(0)',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-light)',
+                    gap: '8px',
+                    overflow: 'hidden',
+                    transition: 'all 220ms cubic-bezier(0.4, 0, 0.2, 1)'
                   }}>
-                    {g.text}
-                  </div>
-                  {g.prazo && (
-                    <div style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                      <i className="bi bi-calendar-event"></i>
-                      <span>Prazo: {new Date(g.prazo + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                    <button
+                      type="button"
+                      style={{
+                        marginTop: '1px',
+                        background: 'none',
+                        border: 'none',
+                        padding: '2px',
+                        cursor: isCompleting ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: isCompleting ? 'var(--success)' : 'var(--text-tertiary)',
+                        borderRadius: '50%',
+                        transition: 'all var(--transition-fast)'
+                      }}
+                      className="task-complete-btn"
+                      onClick={() => handleCompleteGoal(goalId)}
+                      disabled={isCompleting}
+                      title="Marcar como concluída"
+                      aria-label="Concluir tarefa"
+                    >
+                      {isCompleting ? (
+                        <CheckCircle style={{ fontSize: '1rem', color: 'var(--success)' }} />
+                      ) : (
+                        <RadioButtonUnchecked style={{ fontSize: '1rem' }} />
+                      )}
+                    </button>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: isCompleting ? 'var(--text-tertiary)' : 'var(--text)',
+                        textDecoration: isCompleting ? 'line-through' : 'none',
+                        lineHeight: 1.3,
+                        transition: 'color 180ms ease'
+                      }}>
+                        {g.text}
+                      </div>
+                      {g.prazo && (
+                        <div style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <i className="bi bi-calendar-event"></i>
+                          <span>Prazo: {new Date(g.prazo + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      )}
+                      {g.descricao && (
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.6875rem', margin: '2px 0 0', lineHeight: 1.2 }}>
+                          {g.descricao}
+                        </p>
+                      )}
                     </div>
-                  )}
-                  {g.descricao && (
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.6875rem', margin: '2px 0 0', lineHeight: 1.2 }}>
-                      {g.descricao}
-                    </p>
-                  )}
-                </div>
-                {userType !== 'estudante' && (
-                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                    <button 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '2px' }} 
-                      onClick={(e) => handleEditGoal(e, g)}
-                      title="Editar meta"
-                    >
-                      <i className="bi bi-pencil" style={{ fontSize: '0.6875rem' }}></i>
-                    </button>
-                    <button 
-                      style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '2px' }} 
-                      onClick={(e) => handleDeleteGoal(e, g.id)}
-                      title="Excluir meta"
-                    >
-                      <i className="bi bi-trash" style={{ fontSize: '0.6875rem' }}></i>
-                    </button>
+                    {userType !== 'estudante' && (
+                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                        <button 
+                          style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '2px' }} 
+                          onClick={(e) => handleEditGoal(e, g)}
+                          title="Editar tarefa"
+                        >
+                          <i className="bi bi-pencil" style={{ fontSize: '0.6875rem' }}></i>
+                        </button>
+                        <button 
+                          style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '2px' }} 
+                          onClick={(e) => handleDeleteGoal(e, goalId)}
+                          title="Excluir tarefa"
+                        >
+                          <i className="bi bi-trash" style={{ fontSize: '0.6875rem' }}></i>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
-            {goals.length === 0 && !showGoalForm && (
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', margin: 0, textAlign: 'center', padding: '4px' }}>
-                Nenhuma meta cadastrada.
-              </p>
-            )}
+                );
+              });
+            })()}
           </div>
         </div>
       )}

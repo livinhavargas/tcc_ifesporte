@@ -9,6 +9,8 @@ import StudentHome from './IFesporte/StudentHome';
 import SportIcon, { detectSport } from '../components/SportIcon';
 import EventModal from './IFesporte/components/EventModal';
 import { apiUrl } from '../services/api';
+import { addNotification } from '../utils/notifications';
+import { isTaskPending } from '../utils/taskUtils';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -18,6 +20,16 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [completingIds, setCompletingIds] = useState(new Set());
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
   
   const userName = localStorage.getItem('userName') || 'Usuário';
   const tipo = localStorage.getItem('tipo');
@@ -99,20 +111,68 @@ const Home = () => {
     });
     setShowModal(true);
   };
-  const goals = [
-    { id: 1, text: 'Preparar equipe para campeonato', done: false },
-    { id: 2, text: 'Finalizar avaliações físicas', done: false },
-    { id: 3, text: 'Organizar amistoso', done: false }
-  ];
 
   useEffect(() => {
     if (tipo !== 'estudante') {
       fetchEvents();
       fetchCronogramas();
+      fetchTasks();
     } else {
       setLoading(false);
     }
   }, [tipo]);
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/tasks'), {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar tarefas no dashboard:', error);
+    }
+  };
+
+  const handleCompleteTask = async (taskId) => {
+    setCompletingIds(prev => new Set(prev).add(taskId));
+    const previousTasks = [...tasks];
+
+    try {
+      const response = await fetch(apiUrl(`/api/tasks/${taskId}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ done: true })
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao concluir tarefa');
+      }
+
+      setTimeout(() => {
+        setTasks(prev => prev.map(t => t._id === taskId ? { ...t, done: true } : t));
+        setCompletingIds(prev => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
+      }, 220);
+    } catch (error) {
+      console.error('Erro ao concluir tarefa:', error);
+      setCompletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+      setTasks(previousTasks);
+      addNotification('Erro ao concluir', 'Não foi possível concluir a tarefa. Tente novamente.', 'error');
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -315,9 +375,9 @@ const Home = () => {
           </div>
         </div>
 
-        {/* ── Section: Planejamento (Metas + Prioridades) ── */}
+        {/* ── Section: Planejamento (Tarefas + Prioridades) ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
-          {/* Metas */}
+          {/* Tarefas */}
           <div style={{
             background: 'var(--bg-card)',
             borderRadius: 'var(--radius-lg)',
@@ -330,40 +390,101 @@ const Home = () => {
                 <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Target size={18} />
                 </div>
-                <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Metas Gerais</h5>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Tarefas</h5>
               </div>
               <button 
                 className="btn btn-outline-primary btn-sm"
                 style={{ padding: '5px 12px', fontSize: '0.8125rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                onClick={() => navigate('/agenda?tab=metas')}
+                onClick={() => navigate('/agenda?tab=tarefas')}
               >
-                <i className="bi bi-calendar-check"></i> Ver metas na Agenda
+                <i className="bi bi-calendar-check"></i> Ver tarefas na Agenda
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {goals.map(g => (
-                <div key={g.id} style={{
-                  padding: '12px 16px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderLeft: `3px solid ${g.done ? 'var(--success)' : 'var(--accent)'}`,
-                  transition: 'all var(--transition-fast)'
-                }}>
-                  <span style={{
-                    fontWeight: 500, fontSize: '0.8125rem',
-                    color: g.done ? 'var(--text-tertiary)' : 'var(--text)',
-                    textDecoration: g.done ? 'line-through' : 'none'
-                  }}>{g.text}</span>
-                  {g.done ? (
-                    <CheckCircle2 size={18} style={{ color: 'var(--success)' }} />
-                  ) : (
-                    <Circle size={18} style={{ color: 'var(--text-tertiary)' }} />
-                  )}
-                </div>
-              ))}
+              {(() => {
+                const pendingTasks = tasks.filter(t => isTaskPending(t, currentTime) || completingIds.has(t._id));
+                if (pendingTasks.length === 0) {
+                  return (
+                    <div style={{ padding: '32px 16px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--success-light)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                        <CheckCircle2 size={22} />
+                      </div>
+                      <h6 style={{ fontWeight: 600, color: 'var(--text)', margin: '0 0 4px', fontSize: '0.875rem' }}>Tudo em dia!</h6>
+                      <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Não há tarefas pendentes no momento.</p>
+                    </div>
+                  );
+                }
+
+                return pendingTasks.map(t => {
+                  const isCompleting = completingIds.has(t._id);
+                  return (
+                    <div 
+                      key={t._id} 
+                      style={{
+                        padding: isCompleting ? '0 16px' : '12px 16px',
+                        maxHeight: isCompleting ? '0px' : '120px',
+                        opacity: isCompleting ? 0 : 1,
+                        transform: isCompleting ? 'scale(0.96) translateX(8px)' : 'scale(1) translateX(0)',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--bg)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderLeft: `3px solid ${isCompleting ? 'var(--success)' : 'var(--accent)'}`,
+                        transition: 'all 220ms cubic-bezier(0.4, 0, 0.2, 1)',
+                        overflow: 'hidden',
+                        cursor: 'default'
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
+                        <span style={{
+                          fontWeight: 500, fontSize: '0.8125rem',
+                          color: isCompleting ? 'var(--text-tertiary)' : 'var(--text)',
+                          textDecoration: isCompleting ? 'line-through' : 'none',
+                          display: 'block',
+                          wordBreak: 'break-word',
+                          transition: 'color 180ms ease'
+                        }}>{t.text}</span>
+                        {t.prazo && (
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', marginTop: '2px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={12} /> Prazo: {new Date(t.prazo + 'T12:00:00').toLocaleDateString('pt-BR')}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCompleteTask(t._id);
+                        }}
+                        disabled={isCompleting}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: '6px',
+                          cursor: isCompleting ? 'default' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '50%',
+                          color: isCompleting ? 'var(--success)' : 'var(--text-tertiary)',
+                          transition: 'all var(--transition-fast)',
+                          flexShrink: 0
+                        }}
+                        className="task-complete-btn"
+                        title="Marcar como concluída"
+                        aria-label="Concluir tarefa"
+                      >
+                        {isCompleting ? (
+                          <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
+                        ) : (
+                          <Circle size={20} />
+                        )}
+                      </button>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
 
@@ -375,11 +496,20 @@ const Home = () => {
             boxShadow: 'var(--shadow-sm)',
             padding: '24px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: 'var(--error-light)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <TriangleAlert size={18} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: 'var(--error-light)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <TriangleAlert size={18} />
+                </div>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Prioridades urgentes</h5>
               </div>
-              <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Prioridades</h5>
+              <button 
+                className="btn btn-outline-primary btn-sm"
+                style={{ padding: '5px 12px', fontSize: '0.8125rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => navigate('/agenda')}
+              >
+                <i className="bi bi-calendar-event"></i> Ir para Agenda
+              </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {priorities.length > 0 ? priorities.map(ev => (

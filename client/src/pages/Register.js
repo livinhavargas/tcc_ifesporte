@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
+import ModalidadePosicaoSelector from '../components/ModalidadePosicaoSelector';
+import { getStudentPositionForSport, isSportWithPositions } from '../utils/sportPositions';
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../services/api';
 
@@ -44,6 +46,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
     tamanhoCamisa: '',
     tamanhoCalcao: '',
     modalidades: [],
+    posicoesPorModalidade: [],
     codigoConvite: ''
   });
 
@@ -392,6 +395,11 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
               onChange={(novos) => setFormData(prev => ({ ...prev, modalidades: novos }))}
               gender={formData.sexo}
             />
+            <ModalidadePosicaoSelector
+              selectedModalidades={formData.modalidades}
+              posicoesPorModalidade={formData.posicoesPorModalidade}
+              onChange={(novasPos) => setFormData(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
+            />
             <div className="d-flex justify-content-between mt-5">
               <button onClick={prevStep} className="btn btn-outline-secondary fw-bold px-4 rounded-3"><ArrowLeft size={16} className="me-2" />Voltar</button>
               <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <ArrowRight size={16} className="ms-2" /></button>
@@ -434,7 +442,14 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                     <div className="col-12"><strong>Alergias:</strong> {formData.alergias || '-'}</div>
                     <div className="col-6"><strong>Lesões Anteriores:</strong> {formData.lesoesAnteriores || '-'}</div>
                     <div className="col-6"><strong>Restrições Médicas:</strong> {formData.restricoesMedicas || '-'}</div>
-                    <div className="col-12"><strong>Modalidades:</strong> {formData.modalidades.length > 0 ? formData.modalidades.join(', ') : 'Nenhuma'}</div>
+                    <div className="col-12">
+                      <strong>Modalidades e Posições:</strong> {formData.modalidades.length > 0 ? (
+                        formData.modalidades.map(m => {
+                          const pos = getStudentPositionForSport(formData, m);
+                          return isSportWithPositions(m) ? `${m} (${pos || 'Não sei'})` : m;
+                        }).join(', ')
+                      ) : 'Nenhuma'}
+                    </div>
                   </>
                 )}
                 {formData.tipo === 'Treinador' && (

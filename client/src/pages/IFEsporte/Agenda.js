@@ -37,7 +37,8 @@ const Agenda = () => {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('tab') === 'metas') {
+    const tab = searchParams.get('tab');
+    if (tab === 'tarefas' || tab === 'metas') {
       setTimeout(() => {
         const el = document.getElementById('metas-gerais-section');
         if (el) {

@@ -12,10 +12,9 @@ const Layout = ({ children }) => {
   const userPhoto = localStorage.getItem('foto');
   const userInitials = userName.substring(0, 2).toUpperCase();
   const userType = localStorage.getItem('tipo') || 'Estudante';
-  const displayUserType = userType.charAt(0).toUpperCase() + userType.slice(1);
-  const { isDark, toggleTheme } = useTheme();
-
   const isStudent = userType.toLowerCase() === 'estudante';
+  const displayUserType = isStudent ? 'Estudante' : 'Treinador(a)';
+  const { isDark, toggleTheme } = useTheme();
 
   const [notifications, setNotifications] = useState([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);

@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import ModalidadesSelector from '../../components/ModalidadesSelector';
+import ModalidadePosicaoSelector from '../../components/ModalidadePosicaoSelector';
 import SportIcon from '../../components/SportIcon';
+import { getStudentPositionForSport, isSportWithPositions } from '../../utils/sportPositions';
 import IMCCard from '../../components/IMCCard';
 import { isCollectiveSport } from './components/ContextoSelector';
 import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
@@ -365,27 +367,42 @@ const StudentProfile = () => {
               </div>
               
               <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px', fontSize: '1.25rem' }}>{student.nome}</h4>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginBottom: '24px' }}>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginBottom: '20px' }}>
                 {student.turma || student.serie || 'S/ Turma'} {student.matricula ? `• ${student.matricula}` : ''}
               </p>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px', marginBottom: '28px' }}>
-                 {student.modalidades && student.modalidades.map((m, i) => (
-                   <span key={i} style={{
-                     background: 'var(--primary-light)',
-                     color: 'var(--primary)',
-                     padding: '4px 12px',
-                     borderRadius: 'var(--radius-full)',
-                     fontSize: '0.75rem',
-                     fontWeight: 600,
-                     display: 'inline-flex',
-                     alignItems: 'center',
-                     gap: '4px'
-                   }}>
-                     <SportIcon sport={m} size={14} />
-                     <span>{m}</span>
-                   </span>
-                 ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px', textAlign: 'left' }}>
+                 {(student.modalidades || student.esportes || []).map((m, i) => {
+                   const pos = getStudentPositionForSport(student, m);
+                   const hasPos = isSportWithPositions(m);
+                   return (
+                     <div key={i} style={{
+                       background: 'var(--bg)',
+                       border: '1px solid var(--border-light)',
+                       borderRadius: 'var(--radius-md)',
+                       padding: '8px 12px',
+                       display: 'flex',
+                       alignItems: 'center',
+                       justifyContent: 'space-between',
+                       gap: '8px'
+                     }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
+                         <SportIcon sport={m} size={16} />
+                         <span>{m}</span>
+                       </div>
+                       {hasPos && (
+                         <span className="badge" style={{
+                           background: pos === 'Não sei' ? 'var(--border-light)' : 'var(--primary-light)',
+                           color: pos === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
+                           fontSize: '0.6875rem',
+                           fontWeight: 600
+                         }}>
+                           {pos}
+                         </span>
+                       )}
+                     </div>
+                   );
+                 })}
               </div>
 
               {(student.email || student.cpf) && (
@@ -621,14 +638,61 @@ const StudentProfile = () => {
                       </div>
                       
                       <div className="col-12">
-                        <label className="form-label text-muted small fw-bold mb-2">Modalidades Inscritas</label>
-                        <div style={isEditing ? {} : { pointerEvents: 'none', opacity: 0.85 }}>
-                          <ModalidadesSelector 
-                            selected={student.modalidades || student.esportes || []}
-                            onChange={(novos) => setStudent({...student, modalidades: novos})}
-                            gender={student.sexo}
-                          />
-                        </div>
+                        <label className="form-label text-muted small fw-bold mb-2">Modalidades e Posições do Atleta</label>
+                        {isEditing ? (
+                          <div>
+                            <ModalidadesSelector 
+                              selected={student.modalidades || student.esportes || []}
+                              onChange={(novos) => setStudent(prev => ({ ...prev, modalidades: novos }))}
+                              gender={student.sexo}
+                            />
+                            <ModalidadePosicaoSelector
+                              selectedModalidades={student.modalidades || student.esportes || []}
+                              posicoesPorModalidade={student.posicoesPorModalidade || []}
+                              onChange={(novasPos) => setStudent(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
+                            />
+                          </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                            {(student.modalidades || student.esportes || []).length > 0 ? (
+                              (student.modalidades || student.esportes || []).map((m, idx) => {
+                                const pos = getStudentPositionForSport(student, m);
+                                const hasPos = isSportWithPositions(m);
+                                return (
+                                  <div key={idx} style={{
+                                    background: 'var(--bg)',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1.5px solid var(--border-light)',
+                                    padding: '14px 16px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '6px'
+                                  }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)' }}>
+                                      <SportIcon sport={m} size={18} />
+                                      <span>{m}</span>
+                                    </div>
+                                    {hasPos && (
+                                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span>Posição:</span>
+                                        <strong style={{ 
+                                          color: pos === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
+                                          background: pos === 'Não sei' ? 'transparent' : 'var(--primary-light)',
+                                          padding: pos === 'Não sei' ? '0' : '2px 8px',
+                                          borderRadius: 'var(--radius-sm)'
+                                        }}>
+                                          {pos}
+                                        </strong>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontStyle: 'italic' }}>Nenhuma modalidade vinculada.</div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Section: Medical */}

@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema({
   // Outros (Retrocompatibilidade)
   matricula: { type: String, sparse: true }, 
   esportes: [{ type: String }], 
+  posicoesPorModalidade: [{
+    modalidade: { type: String, required: true },
+    posicao: { type: String, default: 'Não sei' }
+  }],
   foto: { type: String }, 
 
 }, { timestamps: true });

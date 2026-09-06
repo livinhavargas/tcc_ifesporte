@@ -7,6 +7,7 @@ import Analises from './Analises';
 import Cronogramas from './Cronogramas';
 import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
 import { isSportScheduleSupported } from '../../utils/sportScheduleRules';
+import { getStudentPositionForSport, isSportWithPositions } from '../../utils/sportPositions';
 import { apiUrl } from '../../services/api';
 
 const SportDetail = () => {
@@ -562,6 +563,19 @@ const SportDetail = () => {
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{aluno.nome}</h6>
                             <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>{aluno.turma || aluno.serie || 'S/ Turma'} {aluno.matricula ? `· ${aluno.matricula}` : ''}</span>
+                            {isSportWithPositions(nome) && (
+                              <div style={{ marginTop: '4px' }}>
+                                <span className="badge" style={{
+                                  background: getStudentPositionForSport(aluno, nome) === 'Não sei' ? 'var(--border-light)' : 'var(--primary-light)',
+                                  color: getStudentPositionForSport(aluno, nome) === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
+                                  fontSize: '0.6875rem',
+                                  fontWeight: 600,
+                                  padding: '2px 8px'
+                                }}>
+                                  {getStudentPositionForSport(aluno, nome) || 'Não sei'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1.5px solid var(--border-light)', paddingTop: '10px', marginTop: '12px' }}>

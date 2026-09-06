@@ -1020,3 +1020,16 @@ textarea.form-control {
   h3 { font-size: 1.2rem; }
   .btn { padding: 9px 18px; font-size: 0.875rem; }
 }
+
+/* ── Task Complete Button Interaction ── */
+.task-complete-btn {
+  transition: transform 0.18s ease, color 0.18s ease, background-color 0.18s ease !important;
+}
+.task-complete-btn:hover:not(:disabled) {
+  color: var(--success) !important;
+  transform: scale(1.18);
+  background-color: var(--success-light) !important;
+}
+.task-complete-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}

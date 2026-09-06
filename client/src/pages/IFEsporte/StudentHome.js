@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl } from '../../services/api';
+import SportIcon from '../../components/SportIcon';
+import { renderDiagnosticCard } from './Analises';
 
 const LineChart = ({ data, title }) => {
   if (!data || data.length === 0) {
@@ -100,6 +102,7 @@ const StudentHome = ({ userName }) => {
   const [validAnalyses, setValidAnalyses] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedModalityModal, setSelectedModalityModal] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -137,7 +140,7 @@ const StudentHome = ({ userName }) => {
         if (!belongsToStudent) return false;
 
         // Validar se contém data e nota/resultado processado
-        const hasDate = Boolean(a.data);
+        const hasDate = Boolean(a.data || a.dataAvaliacao);
         const hasScore = (a.resultados && typeof a.resultados.indiceGeral === 'number') ||
                          (a.respostas && Object.keys(a.respostas).length > 0) ||
                          Boolean(a.resultado);
@@ -173,6 +176,16 @@ const StudentHome = ({ userName }) => {
     return `${parts[2]}/${parts[1]}`;
   };
 
+  const handleOpenDetails = (modalidade) => {
+    const modAnalyses = validAnalyses.filter(a => a.modalidade === modalidade);
+    modAnalyses.sort((a, b) => new Date(b.dataAvaliacao || b.data) - new Date(a.dataAvaliacao || a.data));
+    setSelectedModalityModal({
+      modalidade,
+      analyses: modAnalyses,
+      activeIndex: 0
+    });
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -194,7 +207,7 @@ const StudentHome = ({ userName }) => {
       groupedAnalyses[mod][sub] = [];
     }
     groupedAnalyses[mod][sub].push({
-      data: a.data,
+      data: a.data || a.dataAvaliacao,
       score: a.resultados?.indiceGeral !== undefined ? Number(a.resultados.indiceGeral) : 0
     });
   });
@@ -211,6 +224,10 @@ const StudentHome = ({ userName }) => {
     const subs = groupedAnalyses[mod];
     return Object.values(subs).some(list => list.length > 0);
   });
+
+  const activeAnalysisInModal = selectedModalityModal
+    ? selectedModalityModal.analyses[selectedModalityModal.activeIndex]
+    : null;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -261,6 +278,7 @@ const StudentHome = ({ userName }) => {
               {modalidadesAtivas.map(mod => {
                 const subs = groupedAnalyses[mod] || {};
                 const subKeys = Object.keys(subs);
+                const totalAnalises = Object.values(subs).reduce((acc, list) => acc + list.length, 0);
 
                 return (
                   <div key={mod} style={{
@@ -270,31 +288,57 @@ const StudentHome = ({ userName }) => {
                     boxShadow: 'var(--shadow-sm)',
                     overflow: 'hidden'
                   }}>
-                    {/* Header do Card da Modalidade */}
+                    {/* Header do Card da Modalidade com Botão "Mais detalhes" */}
                     <div style={{
                       background: 'var(--primary)',
                       color: '#fff',
                       padding: '14px 20px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between'
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '12px'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <i className="bi bi-trophy-fill" style={{ color: 'var(--accent)', fontSize: '1.125rem' }}></i>
                         <h4 style={{ color: '#fff', margin: 0, fontSize: '0.9375rem', fontWeight: 700 }}>
-                          {mod}
+                          Análise de {mod}
                         </h4>
                       </div>
-                      <span style={{
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                        background: 'rgba(255, 255, 255, 0.2)',
-                        padding: '3px 10px',
-                        borderRadius: 'var(--radius-full)',
-                        color: '#fff'
-                      }}>
-                        {Object.values(subs).reduce((acc, list) => acc + list.length, 0)} {Object.values(subs).reduce((acc, list) => acc + list.length, 0) === 1 ? 'avaliação' : 'avaliações'}
-                      </span>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                          fontSize: '0.6875rem',
+                          fontWeight: 700,
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          padding: '4px 10px',
+                          borderRadius: 'var(--radius-full)',
+                          color: '#fff'
+                        }}>
+                          {totalAnalises} {totalAnalises === 1 ? 'avaliação' : 'avaliações'}
+                        </span>
+                        
+                        <button
+                          className="btn btn-light btn-sm"
+                          style={{
+                            padding: '5px 14px',
+                            fontSize: '0.8125rem',
+                            fontWeight: 700,
+                            borderRadius: 'var(--radius-md)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            color: 'var(--primary)',
+                            background: '#ffffff',
+                            border: 'none',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+                            transition: 'all var(--transition-fast)'
+                          }}
+                          onClick={() => handleOpenDetails(mod)}
+                        >
+                          <i className="bi bi-file-text"></i> Mais detalhes
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Gráficos de Evolução por Especialidade/Geral */}
@@ -382,6 +426,252 @@ const StudentHome = ({ userName }) => {
           </div>
         </div>
       </div>
+
+      {/* ── Modal de Detalhes da Análise ── */}
+      {selectedModalityModal && activeAnalysisInModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050,
+          padding: '16px',
+          backdropFilter: 'blur(3px)'
+        }} onClick={() => setSelectedModalityModal(null)}>
+          <div 
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-xl)',
+              maxWidth: '800px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header da Modal */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '20px 24px',
+              borderBottom: '1px solid var(--border-light)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
+                  background: 'var(--primary-light)', color: 'var(--primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <SportIcon sport={selectedModalityModal.modalidade} size={22} />
+                </div>
+                <div>
+                  <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.125rem' }}>
+                    Detalhes da Análise de {selectedModalityModal.modalidade}
+                  </h5>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                    Avaliação realizada pelo treinador
+                  </span>
+                </div>
+              </div>
+              <button 
+                className="btn btn-outline-secondary btn-sm"
+                onClick={() => setSelectedModalityModal(null)}
+                style={{ borderRadius: '50%', width: '32px', height: '32px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Fechar"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            {/* Abas / Seletor de Histórico se houver mais de uma análise */}
+            {selectedModalityModal.analyses.length > 1 && (
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                overflowX: 'auto',
+                padding: '12px 24px',
+                background: 'var(--bg)',
+                borderBottom: '1px solid var(--border-light)'
+              }}>
+                {selectedModalityModal.analyses.map((a, idx) => {
+                  const isSelected = selectedModalityModal.activeIndex === idx;
+                  const dateLabel = new Date(a.dataAvaliacao || a.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                  return (
+                    <button
+                      key={a._id || idx}
+                      onClick={() => setSelectedModalityModal(prev => ({ ...prev, activeIndex: idx }))}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        borderRadius: 'var(--radius-full)',
+                        border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
+                        background: isSelected ? 'var(--primary)' : 'var(--bg-card)',
+                        color: isSelected ? '#fff' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all var(--transition-fast)'
+                      }}
+                    >
+                      {dateLabel} {a.subtipo ? `• ${a.subtipo}` : ''} ({a.resultados?.indiceGeral !== undefined ? Number(a.resultados.indiceGeral).toFixed(1) : '-'})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Conteúdo Detalhado da Análise */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Banner de Informações Principais */}
+              <div style={{
+                background: 'var(--bg)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '18px 20px',
+                border: '1px solid var(--border-light)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '16px'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '6px' }}>
+                    <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600 }}>
+                      {activeAnalysisInModal.subtipo || 'Geral'}
+                    </span>
+                    <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 600 }}>
+                      Contexto: {activeAnalysisInModal.contexto || 'Treino'}
+                    </span>
+                    {activeAnalysisInModal.categoria && (
+                      <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)', fontSize: '0.75rem' }}>
+                        {activeAnalysisInModal.categoria}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                    <i className="bi bi-calendar3 me-1"></i> Data da avaliação: <strong>{new Date(activeAnalysisInModal.dataAvaliacao || activeAnalysisInModal.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</strong>
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Índice Geral
+                  </div>
+                  <span className="badge" style={{
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    fontSize: '1.125rem',
+                    padding: '6px 16px',
+                    fontWeight: 700,
+                    boxShadow: 'var(--shadow-xs)'
+                  }}>
+                    ★ {activeAnalysisInModal.resultados?.indiceGeral !== undefined ? Number(activeAnalysisInModal.resultados.indiceGeral).toFixed(1) : '5.0'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Diagnóstico Inteligente */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-xs)'
+              }}>
+                <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '12px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="bi bi-robot" style={{ fontSize: '1.125rem' }}></i> Diagnóstico de Desempenho
+                </h6>
+                {renderDiagnosticCard(activeAnalysisInModal.diagnostico)}
+              </div>
+
+              {/* Notas dos Critérios Avaliados */}
+              {activeAnalysisInModal.respostas && Object.keys(activeAnalysisInModal.respostas).length > 0 && (
+                <div style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '20px',
+                  border: '1px solid var(--border-light)'
+                }}>
+                  <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '14px', fontSize: '0.875rem' }}>
+                    Notas dos Critérios Avaliados
+                  </h6>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
+                    {Object.entries(activeAnalysisInModal.respostas).map(([key, val]) => (
+                      <div key={key} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'var(--bg)',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-light)'
+                      }}>
+                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </span>
+                        <span className="badge" style={{
+                          background: Number(val) >= 4 ? 'var(--success)' : Number(val) >= 3 ? 'var(--primary)' : 'var(--warning)',
+                          color: '#fff',
+                          fontSize: '0.8125rem',
+                          fontWeight: 700,
+                          minWidth: '36px',
+                          padding: '4px 8px'
+                        }}>
+                          {val} / 5
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Observações do Treinador */}
+              {activeAnalysisInModal.observacoes && (
+                <div style={{
+                  background: 'var(--bg)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '16px 18px',
+                  border: '1px solid var(--border-light)',
+                  fontSize: '0.8125rem',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <strong style={{ color: 'var(--text)', display: 'block', marginBottom: '4px' }}>
+                    <i className="bi bi-chat-quote-fill me-2" style={{ color: 'var(--primary)' }}></i>Observações do Treinador:
+                  </strong>
+                  {activeAnalysisInModal.observacoes}
+                </div>
+              )}
+            </div>
+
+            {/* Rodapé da Modal */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '16px 24px',
+              borderTop: '1px solid var(--border-light)',
+              background: 'var(--bg)'
+            }}>
+              <button 
+                className="btn btn-secondary btn-sm"
+                onClick={() => setSelectedModalityModal(null)}
+                style={{ padding: '6px 20px', fontWeight: 600, borderRadius: 'var(--radius-md)' }}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

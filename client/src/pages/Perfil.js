@@ -10,6 +10,8 @@ import Analises from './IFesporte/Analises';
 import SportIcon from '../components/SportIcon';
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
+import ModalidadePosicaoSelector from '../components/ModalidadePosicaoSelector';
+import { getStudentPositionForSport, isSportWithPositions } from '../utils/sportPositions';
 import IMCCard from '../components/IMCCard';
 import { apiUrl } from '../services/api';
 
@@ -37,17 +39,19 @@ const Perfil = () => {
     telefoneResponsavel: '',
     foto: '',
     esportes: [],
+    posicoesPorModalidade: [],
     sexo: '',
     alergias: '',
     lesoesAnteriores: '',
     restricoesMedicas: '',
-    numeroCamisa: ''
+    numeroCamisa: '',
+    numeroCalcado: '',
+    tamanhoCamisa: '',
+    tamanhoCalcao: ''
   });
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
   
-
-
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -77,6 +81,7 @@ const Perfil = () => {
         telefoneResponsavel: data.telefoneResponsavel || '',
         foto: data.foto || '',
         esportes: data.esportes || [],
+        posicoesPorModalidade: data.posicoesPorModalidade || [],
         sexo: data.sexo || '',
         alergias: data.alergias || '',
         lesoesAnteriores: data.lesoesAnteriores || '',
@@ -549,16 +554,63 @@ const Perfil = () => {
                     <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Trophy size={16} />
                     </div>
-                    <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Modalidade(s) de Interesse</h6>
+                    <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Minhas Modalidades e Posições</h6>
                   </div>
                   <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px' }}>
-                    <div style={isEditing ? {} : { pointerEvents: 'none', opacity: 0.85 }}>
-                      <ModalidadesSelector 
-                        selected={profileData.esportes || []}
-                        onChange={(novos) => setProfileData(prev => ({ ...prev, esportes: novos }))}
-                        gender={profileData.sexo}
-                      />
-                    </div>
+                    {isEditing ? (
+                      <div>
+                        <ModalidadesSelector 
+                          selected={profileData.esportes || []}
+                          onChange={(novos) => setProfileData(prev => ({ ...prev, esportes: novos }))}
+                          gender={profileData.sexo}
+                        />
+                        <ModalidadePosicaoSelector
+                          selectedModalidades={profileData.esportes || []}
+                          posicoesPorModalidade={profileData.posicoesPorModalidade || []}
+                          onChange={(novasPos) => setProfileData(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                        {(profileData.esportes || []).length > 0 ? (
+                          profileData.esportes.map((m, idx) => {
+                            const pos = getStudentPositionForSport(profileData, m);
+                            const hasPos = isSportWithPositions(m);
+                            return (
+                              <div key={idx} style={{
+                                background: 'var(--bg-card)',
+                                borderRadius: 'var(--radius-md)',
+                                border: '1.5px solid var(--border-light)',
+                                padding: '14px 16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)' }}>
+                                  <SportIcon sport={m} size={18} />
+                                  <span>{m}</span>
+                                </div>
+                                {hasPos && (
+                                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>Posição:</span>
+                                    <strong style={{ 
+                                      color: pos === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
+                                      background: pos === 'Não sei' ? 'transparent' : 'var(--primary-light)',
+                                      padding: pos === 'Não sei' ? '0' : '2px 8px',
+                                      borderRadius: 'var(--radius-sm)'
+                                    }}>
+                                      {pos}
+                                    </strong>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontStyle: 'italic' }}>Nenhuma modalidade vinculada.</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

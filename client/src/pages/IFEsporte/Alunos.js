@@ -5,7 +5,9 @@ import {
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import ModalidadesSelector from '../../components/ModalidadesSelector';
+import ModalidadePosicaoSelector from '../../components/ModalidadePosicaoSelector';
 import SportIcon from '../../components/SportIcon';
+import { getStudentPositionForSport } from '../../utils/sportPositions';
 import { addNotification } from '../../utils/notifications';
 import IMCCard from '../../components/IMCCard';
 import { apiUrl } from '../../services/api';
@@ -29,7 +31,8 @@ const Alunos = () => {
     cidade: '', estado: '',
     matricula: '', turma: '', telefone: '', nomeResponsavel: '', telefoneResponsavel: '',
     peso: '', altura: '', alergias: '', lesoesAnteriores: '', restricoesMedicas: '',
-    numeroCamisa: '', numeroCalcado: '', tamanhoCamisa: '', tamanhoCalcao: '', modalidades: []
+    numeroCamisa: '', numeroCalcado: '', tamanhoCamisa: '', tamanhoCalcao: '', modalidades: [],
+    posicoesPorModalidade: []
   });
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
@@ -124,7 +127,8 @@ const Alunos = () => {
     try {
       const payload = {
         ...formData,
-        esportes: formData.modalidades 
+        esportes: formData.modalidades,
+        posicoesPorModalidade: formData.posicoesPorModalidade
       };
 
       const response = await fetch(apiUrl('/api/students'), {
@@ -146,7 +150,8 @@ const Alunos = () => {
           cidade: '', estado: '',
           matricula: '', turma: '', telefone: '', nomeResponsavel: '', telefoneResponsavel: '',
           peso: '', altura: '', alergias: '', lesoesAnteriores: '', restricoesMedicas: '',
-          numeroCamisa: '', numeroCalcado: '', tamanhoCamisa: '', tamanhoCalcao: '', modalidades: []
+          numeroCamisa: '', numeroCalcado: '', tamanhoCamisa: '', tamanhoCalcao: '', modalidades: [],
+          posicoesPorModalidade: []
         });
         fetchStudents();
         setTimeout(() => { setShowForm(false); setMensagem(''); }, 1500);
@@ -474,8 +479,13 @@ const Alunos = () => {
                   <label className="form-label" style={{ marginBottom: '12px' }}>Vincular Modalidades</label>
                   <ModalidadesSelector 
                     selected={formData.modalidades}
-                    onChange={(novos) => setFormData({...formData, modalidades: novos})}
+                    onChange={(novos) => setFormData(prev => ({ ...prev, modalidades: novos }))}
                     gender={formData.sexo}
+                  />
+                  <ModalidadePosicaoSelector
+                    selectedModalidades={formData.modalidades}
+                    posicoesPorModalidade={formData.posicoesPorModalidade}
+                    onChange={(novasPos) => setFormData(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
                   />
                   <small style={{ color: 'var(--text-tertiary)', display: 'block', marginTop: '8px', fontSize: '0.75rem' }}>Isso adicionará o aluno imediatamente aos elencos selecionados.</small>
                 </div>
@@ -543,22 +553,25 @@ const Alunos = () => {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {arrEsportes && arrEsportes.length > 0 ? (
                       <>
-                        {arrEsportes.slice(0, 3).map((esp, idx) => (
-                          <span key={idx} style={{
-                            background: 'var(--primary-light)',
-                            color: 'var(--primary)',
-                            padding: '3px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            fontSize: '0.6875rem',
-                            fontWeight: 600,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            <SportIcon sport={esp} size={14} />
-                            <span>{esp}</span>
-                          </span>
-                        ))}
+                        {arrEsportes.slice(0, 3).map((esp, idx) => {
+                          const pos = getStudentPositionForSport(student, esp);
+                          return (
+                            <span key={idx} style={{
+                              background: 'var(--primary-light)',
+                              color: 'var(--primary)',
+                              padding: '3px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              fontSize: '0.6875rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <SportIcon sport={esp} size={14} />
+                              <span>{esp}{pos && pos !== 'Não sei' ? ` • ${pos}` : ''}</span>
+                            </span>
+                          );
+                        })}
                         {arrEsportes.length > 3 && (
                           <span style={{
                             background: 'var(--border-light)',

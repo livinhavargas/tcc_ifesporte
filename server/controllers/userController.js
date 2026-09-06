@@ -3,6 +3,10 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const { JWT_SECRET } = require('../config');
+const { 
+  validatePosicoesPorModalidade, 
+  sanitizePosicoesPorModalidade 
+} = require('../utils/sportPositions');
 
 const mapLegacyToNewModality = (mod) => {
   const legacyMap = {
@@ -127,7 +131,7 @@ const loginUser = async (req, res) => {
 const registerUser = async (req, res) => {
   const { 
     nome, email, senha, tipo, 
-    telefone, sexo, idade, turma, matricula, peso, altura, modalidades,
+    telefone, sexo, idade, turma, matricula, peso, altura, modalidades, posicoesPorModalidade,
     codigoConvite, cpf, rg, endereco, cidade, estado, dataNascimento, nomeResponsavel, telefoneResponsavel,
     alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
     numeroCalcado, tamanhoCamisa, tamanhoCalcao
@@ -164,6 +168,17 @@ const registerUser = async (req, res) => {
       }
     }
 
+    const mods = tipo === 'estudante' ? (modalidades || []).map(mapLegacyToNewModality) : undefined;
+    
+    if (tipo === 'estudante' && posicoesPorModalidade && Array.isArray(posicoesPorModalidade)) {
+      const valResult = validatePosicoesPorModalidade(mods || [], posicoesPorModalidade);
+      if (!valResult.isValid) {
+        return res.status(400).json({ mensagem: valResult.error });
+      }
+    }
+
+    const sanitizedPos = tipo === 'estudante' ? sanitizePosicoesPorModalidade(mods || [], posicoesPorModalidade) : undefined;
+
     console.log("Gerando hash da senha...");
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash(senha, salt);
@@ -175,7 +190,8 @@ const registerUser = async (req, res) => {
       alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
       numeroCalcado, tamanhoCamisa, tamanhoCalcao,
       matricula: tipo === 'estudante' ? matValida : undefined,
-      esportes: tipo === 'estudante' ? (modalidades || []).map(mapLegacyToNewModality) : undefined,
+      esportes: mods,
+      posicoesPorModalidade: sanitizedPos,
       turma: tipo === 'estudante' ? turma : undefined,
       peso: (tipo === 'estudante' && peso !== '') ? peso : undefined,
       altura: (tipo === 'estudante' && altura !== '') ? altura : undefined,
@@ -224,19 +240,19 @@ const registerUser = async (req, res) => {
         estudanteExistente.tamanhoCamisa = tamanhoCamisa || estudanteExistente.tamanhoCamisa;
         estudanteExistente.tamanhoCalcao = tamanhoCalcao || estudanteExistente.tamanhoCalcao;
         
-        const mods = (modalidades || []).map(mapLegacyToNewModality);
         estudanteExistente.esportes = mods;
         estudanteExistente.modalidades = mods;
+        estudanteExistente.posicoesPorModalidade = sanitizedPos;
         estudanteExistente.adicionadoPor = novoUsuario._id;
         
         await estudanteExistente.save();
       } else {
-        const mods = (modalidades || []).map(mapLegacyToNewModality);
         const novoEstudante = new Student({
           nome, email,
           matricula: matValida,
           esportes: mods,
           modalidades: mods,
+          posicoesPorModalidade: sanitizedPos,
           sexo: sexo || 'Feminino',
           idade: (idade !== undefined && idade !== '') ? idade : undefined,
           turma,
@@ -289,7 +305,10 @@ const getUserById = async (req, res) => {
         usuario.idade = estudante.idade || '';
         usuario.serie = estudante.turma || estudante.serie || '';
         usuario.turma = estudante.turma || estudante.serie || '';
-        usuario.esportes = (estudante.esportes || []).map(mapLegacyToNewModality);
+        const mods = (estudante.modalidades || estudante.esportes || []).map(mapLegacyToNewModality);
+        usuario.esportes = mods;
+        usuario.modalidades = mods;
+        usuario.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, estudante.posicoesPorModalidade || usuario.posicoesPorModalidade);
         usuario.cpf = estudante.cpf || '';
         usuario.rg = estudante.rg || '';
         usuario.endereco = estudante.endereco || '';
@@ -312,6 +331,9 @@ const getUserById = async (req, res) => {
            if (h > 3) h = h / 100;
            usuario.imc = (estudante.peso / (h * h)).toFixed(1);
         }
+      } else {
+        const mods = (usuario.esportes || []).map(mapLegacyToNewModality);
+        usuario.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, usuario.posicoesPorModalidade);
       }
     }
 
@@ -329,7 +351,7 @@ const updateUser = async (req, res) => {
     nome, email, telefone, peso, altura, foto, idade, serie, turma, esportes, sexo, 
     matricula, cpf, rg, endereco, cidade, estado, dataNascimento, contatoEmergencia, nomeResponsavel, telefoneResponsavel,
     alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
-    numeroCalcado, tamanhoCamisa, tamanhoCalcao
+    numeroCalcado, tamanhoCamisa, tamanhoCalcao, posicoesPorModalidade
   } = req.body;
   
   try {
@@ -359,6 +381,17 @@ const updateUser = async (req, res) => {
       mods = mods.map(mapLegacyToNewModality);
       usuario.esportes = mods;
     }
+
+    if (posicoesPorModalidade) {
+      const valResult = validatePosicoesPorModalidade(mods || usuario.esportes || [], posicoesPorModalidade);
+      if (!valResult.isValid) {
+        return res.status(400).json({ mensagem: valResult.error });
+      }
+      usuario.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods || usuario.esportes || [], posicoesPorModalidade);
+    } else if (mods) {
+      usuario.posicoesPorModalidade = sanitizePosicoesPorModalidade(mods, usuario.posicoesPorModalidade);
+    }
+
     if (sexo) usuario.sexo = sexo;
     if (matricula !== undefined) usuario.matricula = matricula === '' ? undefined : matricula;
     if (cpf !== undefined) usuario.cpf = cpf;
@@ -393,6 +426,9 @@ const updateUser = async (req, res) => {
       if (mods) {
         estudante.esportes = mods;
         estudante.modalidades = mods;
+      }
+      if (usuario.posicoesPorModalidade) {
+        estudante.posicoesPorModalidade = usuario.posicoesPorModalidade;
       }
       if (sexo) estudante.sexo = sexo;
       if (matricula !== undefined) estudante.matricula = matricula === '' ? undefined : matricula;
