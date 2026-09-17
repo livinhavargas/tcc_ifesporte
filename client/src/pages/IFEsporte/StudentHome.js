@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { GraduationCap, Calendar as CalendarIcon } from 'lucide-react';
 import { apiUrl } from '../../services/api';
 import SportIcon from '../../components/SportIcon';
 import { renderDiagnosticCard } from './Analises';
@@ -101,6 +102,7 @@ const LineChart = ({ data, title }) => {
 const StudentHome = ({ userName }) => {
   const [validAnalyses, setValidAnalyses] = useState([]);
   const [events, setEvents] = useState([]);
+  const [peData, setPeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedModalityModal, setSelectedModalityModal] = useState(null);
 
@@ -159,6 +161,19 @@ const StudentHome = ({ userName }) => {
         ? dataEvents.filter(ev => ev.data && ev.data.split('T')[0] >= todayStr)
         : [];
       futuros.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+
+      // 4. Próxima aula de Educação Física (integrada com a turma do estudante)
+      try {
+        const resPe = await fetch(apiUrl('/api/educacao-fisica/proxima-aula'), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resPe.ok) {
+          const dataPe = await resPe.json();
+          setPeData(dataPe);
+        }
+      } catch (peErr) {
+        console.error('Erro ao buscar dados da aula de Educação Física:', peErr);
+      }
 
       setValidAnalyses(myValidAnalyses);
       setEvents(futuros.slice(0, 4));
@@ -364,8 +379,116 @@ const StudentHome = ({ userName }) => {
           )}
         </div>
 
-        {/* Coluna Lateral: Próximas Atividades */}
+        {/* Coluna Lateral: Educação Física e Próximas Atividades */}
         <div className="col-lg-4">
+          
+          {/* Card Dinâmico de Educação Física (Exibido exclusivamente para estudantes do 1º e 2º ano) */}
+          {peData && !peData.isThirdYear && peData.hasTurma && (
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)',
+              padding: '20px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '32px', height: '32px', borderRadius: 'var(--radius-md)',
+                    background: 'var(--primary-light)', color: 'var(--primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <GraduationCap size={18} />
+                  </div>
+                  <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>
+                    Educação Física
+                  </h6>
+                </div>
+
+                {peData?.proximaAula?.status === 'em_andamento' && (
+                  <span className="badge" style={{
+                    background: 'var(--success-light)',
+                    color: 'var(--success-text)',
+                    border: '1px solid var(--success)',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    padding: '4px 8px'
+                  }}>
+                    Em andamento
+                  </span>
+                )}
+                {peData?.proximaAula?.status === 'hoje' && (
+                  <span className="badge" style={{
+                    background: 'var(--primary-light)',
+                    color: 'var(--primary)',
+                    border: '1px solid var(--primary)',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    padding: '4px 8px'
+                  }}>
+                    Hoje
+                  </span>
+                )}
+              </div>
+
+              {!peData.hasHorarios ? (
+                <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '14px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '4px' }}>
+                    {peData.turma} • {peData.curso}
+                  </div>
+                  <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>
+                    Os horários de Educação Física ainda não foram configurados para sua turma.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div style={{
+                    background: peData.proximaAula?.status === 'em_andamento'
+                      ? 'var(--success-light)'
+                      : 'var(--bg)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '14px',
+                    marginBottom: '12px',
+                    border: peData.proximaAula?.status === 'em_andamento'
+                      ? '1px solid rgba(16, 185, 129, 0.3)'
+                      : '1px solid var(--border-light)'
+                  }}>
+                    <span style={{
+                      display: 'block',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: peData.proximaAula?.status === 'em_andamento' ? 'var(--success-text)' : 'var(--text-tertiary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      marginBottom: '4px'
+                    }}>
+                      {peData.proximaAula?.label}
+                    </span>
+                    <strong style={{
+                      fontSize: '1.0625rem',
+                      color: peData.proximaAula?.status === 'em_andamento' ? 'var(--success-text)' : 'var(--text)',
+                      display: 'block'
+                    }}>
+                      {peData.proximaAula?.textoFormatado}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginTop: '4px' }}>
+                      Turma {peData.turma} • {peData.curso} (45 min)
+                    </span>
+                  </div>
+
+                  <Link
+                    to="/agenda"
+                    className="btn btn-outline-primary btn-sm"
+                    style={{ width: '100%', borderRadius: 'var(--radius-md)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    <CalendarIcon size={14} /> Ver na Agenda
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{
             background: 'var(--bg-card)',
             borderRadius: 'var(--radius-lg)',

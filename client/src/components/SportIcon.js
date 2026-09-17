@@ -178,8 +178,8 @@ export const detectSport = (text) => {
   // Atletismo & submodalidades check
   const atletismoKeywords = [
     'atletismo', 'corrida', 'corridas', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m',
-    'revezamento', '4x100', '4x400', 'salto', 'saltos', 'distancia', 'triplo', 'altura', 'vara',
-    'arremesso', 'lancamento', 'lancamentos', 'peso', 'disco', 'dardo', 'martelo',
+    'revezamento', '4x100', '4x400', 'salto', 'saltos', 'distancia', 'triplo', 'altura',
+    'arremesso', 'lancamento', 'lancamentos', 'peso', 'disco', 'dardo',
     'marcha atletica', 'cross country', 'pista', 'maratona'
   ];
 

@@ -568,7 +568,7 @@ const Alunos = () => {
                               gap: '4px'
                             }}>
                               <SportIcon sport={esp} size={14} />
-                              <span>{esp}{pos && pos !== 'Não sei' ? ` • ${pos}` : ''}</span>
+                              <span>{esp}{pos && pos !== 'Indefinido' && pos !== 'Não sei' ? ` • ${pos}` : ''}</span>
                             </span>
                           );
                         })}

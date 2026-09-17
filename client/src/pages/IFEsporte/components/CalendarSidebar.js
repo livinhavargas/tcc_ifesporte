@@ -8,7 +8,8 @@ import {
   People, 
   Warning, 
   CheckCircle,
-  RadioButtonUnchecked
+  RadioButtonUnchecked,
+  School
 } from '@mui/icons-material';
 
 import SportIcon, { detectSport } from '../../../components/SportIcon';
@@ -189,6 +190,7 @@ const CalendarSidebar = ({
       return <SportIcon sport={detected} size={16} style={{ color: 'var(--primary)' }} />;
     }
     switch(ev.tipo) {
+      case 'Educação Física': return <School fontSize="small" style={{ color: categoriesColors['Educação Física'] || '#10b981' }} />;
       case 'Treino': return <SportsSoccer fontSize="small" style={{ color: categoriesColors.Treino }} />;
       case 'Amistoso': return <Flag fontSize="small" style={{ color: categoriesColors.Amistoso }} />;
       case 'Campeonato': return <Flag fontSize="small" style={{ color: categoriesColors.Campeonato }} />;

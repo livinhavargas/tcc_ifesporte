@@ -117,12 +117,10 @@ const getFormStructure = (modalidadeStr) => {
   if (norm.includes('distancia')) return { key: 'Distância', structure: atletismoForms['Distância'] };
   if (norm.includes('altura')) return { key: 'Altura', structure: atletismoForms['Altura'] };
   if (norm.includes('triplo')) return { key: 'Triplo', structure: atletismoForms['Triplo'] };
-  if (norm.includes('vara')) return { key: 'Altura', structure: atletismoForms['Altura'] };
 
   if (norm.includes('peso')) return { key: 'Peso', structure: atletismoForms['Peso'] };
   if (norm.includes('disco')) return { key: 'Disco', structure: atletismoForms['Disco'] };
   if (norm.includes('dardo')) return { key: 'Dardo', structure: atletismoForms['Dardo'] };
-  if (norm.includes('martelo')) return { key: 'Disco', structure: atletismoForms['Disco'] };
 
   const match = Object.keys(atletismoForms).find(key => norm.includes(key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
   return match ? { key: match, structure: atletismoForms[match] } : null;

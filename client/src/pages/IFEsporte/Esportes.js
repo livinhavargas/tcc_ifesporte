@@ -60,7 +60,7 @@ const Esportes = () => {
     if (k.includes('tenisdemesadupla') && e.includes('tenisdemesamisto')) return true;
     
     if (k === 'atletismo') {
-      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lancamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distancia', 'altura', 'triplo', 'vara', 'peso', 'disco', 'dardo', 'martelo', 'pentatlo', 'barreiras'];
+      const termos = ['atletismo', 'corrida', 'salto', 'arremesso', 'lancamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distancia', 'altura', 'triplo', 'peso', 'disco', 'dardo', 'pentatlo', 'barreiras'];
       return termos.some(t => e.includes(t));
     }
     return false;

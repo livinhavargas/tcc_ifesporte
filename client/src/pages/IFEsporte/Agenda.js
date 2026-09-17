@@ -16,6 +16,7 @@ const categoriesColors = {
   'Reunião': '#8b5cf6',
   'Avaliação': '#06b6d4',
   'Amistoso': '#14b8a6',
+  'Educação Física': '#10b981',
   'Urgente': '#ef4444',
   'Outro': '#64748b'
 };
@@ -52,7 +53,7 @@ const Agenda = () => {
   }, [searchParams]);
 
   const parseEventForCalendar = (ev) => {
-    const dateStr = ev.data ? ev.data.split('T')[0] : new Date().toISOString().split('T')[0];
+    const dateStr = ev.data ? (typeof ev.data === 'string' ? ev.data.split('T')[0] : new Date(ev.data).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
     
     const startStr = ev.horaInicial || ev.hora || '12:00';
     const endStr = ev.horaFinal || (
@@ -110,7 +111,7 @@ const Agenda = () => {
   };
 
   const handleEventDrop = async ({ event, start, end }) => {
-    if (userType === 'estudante') return;
+    if (userType === 'estudante' || event.isPhysicalEducation) return;
     
     const updatedEvent = {
       ...event,
@@ -126,7 +127,7 @@ const Agenda = () => {
   };
 
   const handleEventResize = async ({ event, start, end }) => {
-    if (userType === 'estudante') return;
+    if (userType === 'estudante' || event.isPhysicalEducation) return;
 
     const updatedEvent = {
       ...event,

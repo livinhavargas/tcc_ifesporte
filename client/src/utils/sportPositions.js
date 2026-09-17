@@ -7,7 +7,7 @@ export const SPORT_POSITIONS_MAP = {
     'Ala (3)',
     'Ala-Pivô (4)',
     'Pivô (5)',
-    'Não sei'
+    'Indefinido'
   ],
   'Futsal': [
     'Goleiro',
@@ -15,7 +15,7 @@ export const SPORT_POSITIONS_MAP = {
     'Ala Direito',
     'Ala Esquerdo',
     'Pivô',
-    'Não sei'
+    'Indefinido'
   ],
   'Futebol': [
     'Goleiro',
@@ -29,7 +29,7 @@ export const SPORT_POSITIONS_MAP = {
     'Ponta Lado Direito',
     'Ponta Lado Esquerdo',
     'Centroavante',
-    'Não sei'
+    'Indefinido'
   ],
   'Handebol': [
     'Goleiro',
@@ -39,7 +39,7 @@ export const SPORT_POSITIONS_MAP = {
     'Armador Lado Direito',
     'Armador Lado Esquerdo',
     'Pivô',
-    'Não sei'
+    'Indefinido'
   ],
   'Voleibol': [
     'Levantador',
@@ -47,7 +47,7 @@ export const SPORT_POSITIONS_MAP = {
     'Central',
     'Oposto',
     'Ponteiro',
-    'Não sei'
+    'Indefinido'
   ]
 };
 
@@ -108,7 +108,7 @@ export const getStudentPositionForSport = (student, sportName) => {
   const item = list.find(p => normalizeSportKey(p.modalidade) === sportKey);
   
   if (item && item.posicao) {
-    return item.posicao;
+    return item.posicao === 'Não sei' ? 'Indefinido' : item.posicao;
   }
   
   // Se o aluno está cadastrado no esporte mas ainda não tem posição definida
@@ -116,7 +116,7 @@ export const getStudentPositionForSport = (student, sportName) => {
   const isInSport = studentSports.some(s => normalizeSportKey(s) === sportKey);
   
   if (isInSport) {
-    return 'Não sei';
+    return 'Indefinido';
   }
   
   return null;

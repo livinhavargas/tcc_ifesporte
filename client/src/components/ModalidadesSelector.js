@@ -28,14 +28,12 @@ export const estruturaModalidades = [
     { id: 'Atletismo - Saltos', nome: 'Saltos', sub: [
       { id: 'Atletismo - Saltos - Salto em Distância', nome: 'Salto em distância' },
       { id: 'Atletismo - Saltos - Salto em Altura', nome: 'Salto em altura' },
-      { id: 'Atletismo - Saltos - Salto Triplo', nome: 'Salto triplo' },
-      { id: 'Atletismo - Saltos - Salto com Vara', nome: 'Salto com vara' }
+      { id: 'Atletismo - Saltos - Salto Triplo', nome: 'Salto triplo' }
     ]},
     { id: 'Atletismo - Arremessos e Lançamentos', nome: 'Arremessos e Lançamentos', sub: [
       { id: 'Atletismo - Arremessos e Lançamentos - Arremesso de Peso', nome: 'Arremesso de peso' },
       { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Disco', nome: 'Lançamento de disco' },
-      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Dardo', nome: 'Lançamento de dardo' },
-      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Martelo', nome: 'Lançamento de martelo' }
+      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Dardo', nome: 'Lançamento de dardo' }
     ]}
   ]},
   { id: 'Tênis de Mesa', nome: 'Tênis de Mesa', sub: [
@@ -53,11 +51,9 @@ const matchNodeId = (idA, idB) => {
   if (a.includes('distancia') && b.includes('distancia')) return true;
   if (a.includes('altura') && b.includes('altura')) return true;
   if (a.includes('triplo') && b.includes('triplo')) return true;
-  if (a.includes('vara') && b.includes('vara')) return true;
   if (a.includes('peso') && b.includes('peso')) return true;
   if (a.includes('disco') && b.includes('disco')) return true;
   if (a.includes('dardo') && b.includes('dardo')) return true;
-  if (a.includes('martelo') && b.includes('martelo')) return true;
   return a === b;
 };
 

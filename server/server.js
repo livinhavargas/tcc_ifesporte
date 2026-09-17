@@ -11,6 +11,8 @@ const eventRoutes = require('./routes/eventRoutes');
 const analysisRoutes = require('./routes/analysisRoutes');
 const cronogramaRoutes = require('./routes/cronogramaRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const physicalAssessmentRoutes = require('./routes/physicalAssessmentRoutes');
+const physicalEducationRoutes = require('./routes/physicalEducationRoutes');
 const { PORT, CLIENT_URL, NODE_ENV } = require('./config');
 
 const app = express();
@@ -83,6 +85,8 @@ app.use('/api/analysis', analysisRoutes);
 app.use('/api/cronogramas', cronogramaRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tarefas', taskRoutes);
+app.use('/api/physical-assessments', physicalAssessmentRoutes);
+app.use('/api/educacao-fisica', physicalEducationRoutes);
 
 // ── 3. Arquivos Estáticos do React (quando executado unificado) ──
 const buildPath = path.join(__dirname, '..', 'client', 'build');

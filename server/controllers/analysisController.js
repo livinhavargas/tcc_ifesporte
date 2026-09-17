@@ -22,7 +22,11 @@ const UNSUPPORTED_ANALYSIS_SPORTS = [
   'vôlei de praia',
   'volei de praia',
   'vôlei de praia (dupla)',
-  'badminton'
+  'badminton',
+  'salto com vara',
+  'vara',
+  'lançamento de martelo',
+  'martelo'
 ];
 
 const isSportAnalysisSupported = (modalidadeStr) => {

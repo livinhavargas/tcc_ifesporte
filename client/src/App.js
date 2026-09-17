@@ -12,6 +12,7 @@ import Esportes from './pages/IFesporte/Esportes';
 import Analises from './pages/IFesporte/Analises';
 import SportDetail from './pages/IFesporte/SportDetail';
 import StudentProfile from './pages/IFesporte/StudentProfile';
+import EducacaoFisica from './pages/IFesporte/EducacaoFisica';
 import AdminDashboard from './pages/IFesporte/AdminDashboard'; // We can use this as Relatórios mock for now
 import AdminRoute from './components/AdminRoute';
 
@@ -46,6 +47,7 @@ export default function App() {
         
         {/* Rotas Comuns */}
         <Route path="/agenda" element={token ? <Agenda /> : <Navigate to="/login" replace />} />
+        <Route path="/educacao-fisica" element={token && isStaff ? <EducacaoFisica /> : <Navigate to="/" replace />} />
         <Route path="/esportes" element={token && isStaff ? <Esportes /> : <Navigate to="/" replace />} />
         <Route path="/esportes/:id" element={token && isStaff ? <SportDetail /> : <Navigate to="/" replace />} />
         <Route path="/analises" element={token && isStaff ? <Analises /> : <Navigate to="/" replace />} />

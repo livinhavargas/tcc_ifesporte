@@ -10,6 +10,7 @@ import { isCollectiveSport } from './components/ContextoSelector';
 import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
 import { addNotification } from '../../utils/notifications';
 import { renderDiagnosticCard } from './Analises';
+import PhysicalAssessmentTab from '../../components/PhysicalAssessmentTab';
 import { apiUrl } from '../../services/api';
 
 const StudentProfile = () => {
@@ -392,8 +393,8 @@ const StudentProfile = () => {
                        </div>
                        {hasPos && (
                          <span className="badge" style={{
-                           background: pos === 'Não sei' ? 'var(--border-light)' : 'var(--primary-light)',
-                           color: pos === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
+                           background: (pos === 'Indefinido' || pos === 'Não sei') ? 'var(--border-light)' : 'var(--primary-light)',
+                           color: (pos === 'Indefinido' || pos === 'Não sei') ? 'var(--text-tertiary)' : 'var(--primary)',
                            fontSize: '0.6875rem',
                            fontWeight: 600
                          }}>
@@ -463,6 +464,25 @@ const StudentProfile = () => {
                   }}
                 >
                   <i className="bi bi-person-lines-fill"></i> Perfil
+                </button>
+                <button 
+                  onClick={() => setActiveTab('aptidao')}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+                    border: 'none',
+                    borderBottom: activeTab === 'aptidao' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    background: activeTab === 'aptidao' ? 'var(--bg-card)' : 'transparent',
+                    color: activeTab === 'aptidao' ? 'var(--primary)' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <i className="bi bi-activity"></i> Aptidão Física
                 </button>
                 <button 
                   onClick={() => setActiveTab('estatisticas')}
@@ -676,9 +696,9 @@ const StudentProfile = () => {
                                       <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <span>Posição:</span>
                                         <strong style={{ 
-                                          color: pos === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
-                                          background: pos === 'Não sei' ? 'transparent' : 'var(--primary-light)',
-                                          padding: pos === 'Não sei' ? '0' : '2px 8px',
+                                          color: (pos === 'Indefinido' || pos === 'Não sei') ? 'var(--text-tertiary)' : 'var(--primary)',
+                                          background: (pos === 'Indefinido' || pos === 'Não sei') ? 'transparent' : 'var(--primary-light)',
+                                          padding: (pos === 'Indefinido' || pos === 'Não sei') ? '0' : '2px 8px',
                                           borderRadius: 'var(--radius-sm)'
                                         }}>
                                           {pos}
@@ -733,7 +753,12 @@ const StudentProfile = () => {
                   </form>
                 )}
 
-                {/* TAB 2: ANÁLISES */}
+                {/* TAB: APTIDÃO FÍSICA (PROESP-BR 2021) */}
+                {activeTab === 'aptidao' && (
+                  <PhysicalAssessmentTab student={student} userType={userType} />
+                )}
+
+                {/* TAB: ANÁLISES */}
                 {activeTab === 'estatisticas' && (
                   <div>
                     {/* VISUALIZAÇÃO COMPLETA DA ANÁLISE SELECIONADA */}

@@ -13,6 +13,7 @@ import ModalidadesSelector from '../components/ModalidadesSelector';
 import ModalidadePosicaoSelector from '../components/ModalidadePosicaoSelector';
 import { getStudentPositionForSport, isSportWithPositions } from '../utils/sportPositions';
 import IMCCard from '../components/IMCCard';
+import PhysicalAssessmentTab from '../components/PhysicalAssessmentTab';
 import { apiUrl } from '../services/api';
 
 const Perfil = () => {
@@ -594,9 +595,9 @@ const Perfil = () => {
                                   <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <span>Posição:</span>
                                     <strong style={{ 
-                                      color: pos === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
-                                      background: pos === 'Não sei' ? 'transparent' : 'var(--primary-light)',
-                                      padding: pos === 'Não sei' ? '0' : '2px 8px',
+                                      color: (pos === 'Indefinido' || pos === 'Não sei') ? 'var(--text-tertiary)' : 'var(--primary)',
+                                      background: (pos === 'Indefinido' || pos === 'Não sei') ? 'transparent' : 'var(--primary-light)',
+                                      padding: (pos === 'Indefinido' || pos === 'Não sei') ? '0' : '2px 8px',
                                       borderRadius: 'var(--radius-sm)'
                                     }}>
                                       {pos}
@@ -627,6 +628,24 @@ const Perfil = () => {
           </form>
         )}
       </div>
+
+      {/* Sessão Minha Aptidão Física (PROESP-Br 2021) */}
+      {userType === 'estudante' && !loading && (
+        <div style={{
+          maxWidth: '900px',
+          margin: '32px auto 0',
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--border-light)',
+          boxShadow: 'var(--shadow-sm)',
+          padding: '32px'
+        }}>
+          <PhysicalAssessmentTab 
+            student={{ _id: userId, ...profileData }} 
+            userType="estudante" 
+          />
+        </div>
+      )}
 
       {/* Sessão Minhas Análises */}
       {userType === 'estudante' && !loading && (

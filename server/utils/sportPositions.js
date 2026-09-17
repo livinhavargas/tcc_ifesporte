@@ -7,7 +7,7 @@ const SPORT_POSITIONS_MAP = {
     'Ala (3)',
     'Ala-Pivô (4)',
     'Pivô (5)',
-    'Não sei'
+    'Indefinido'
   ],
   'Futsal': [
     'Goleiro',
@@ -15,7 +15,7 @@ const SPORT_POSITIONS_MAP = {
     'Ala Direito',
     'Ala Esquerdo',
     'Pivô',
-    'Não sei'
+    'Indefinido'
   ],
   'Futebol': [
     'Goleiro',
@@ -29,7 +29,7 @@ const SPORT_POSITIONS_MAP = {
     'Ponta Lado Direito',
     'Ponta Lado Esquerdo',
     'Centroavante',
-    'Não sei'
+    'Indefinido'
   ],
   'Handebol': [
     'Goleiro',
@@ -39,7 +39,7 @@ const SPORT_POSITIONS_MAP = {
     'Armador Lado Direito',
     'Armador Lado Esquerdo',
     'Pivô',
-    'Não sei'
+    'Indefinido'
   ],
   'Voleibol': [
     'Levantador',
@@ -47,7 +47,7 @@ const SPORT_POSITIONS_MAP = {
     'Central',
     'Oposto',
     'Ponteiro',
-    'Não sei'
+    'Indefinido'
   ]
 };
 
@@ -112,7 +112,7 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
 
     const sportKey = normalizeSportKey(item.modalidade);
     
-    // Se a modalidade não suporta posições, não deve ter posição vinculada diferente de 'Não sei' ou vazia
+    // Se a modalidade não suporta posições, não deve ter posição vinculada diferente de 'Indefinido' / 'Não sei' ou vazia
     if (!sportKey) {
       return { 
         isValid: false, 
@@ -121,7 +121,8 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
     }
 
     const validPositions = SPORT_POSITIONS_MAP[sportKey];
-    const pos = (item.posicao || '').trim();
+    let pos = (item.posicao || '').trim();
+    if (pos === 'Não sei') pos = 'Indefinido';
 
     if (pos && !validPositions.includes(pos)) {
       return {
@@ -137,7 +138,7 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
 /**
  * Normaliza e sincroniza posicoesPorModalidade com as modalidades atuais.
  * - Remove modalidades excluídas
- * - Adiciona "Não sei" para modalidades novas com posições
+ * - Adiciona "Indefinido" para modalidades novas com posições
  */
 const sanitizePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade = []) => {
   const sanitized = [];
@@ -148,7 +149,9 @@ const sanitizePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
       if (item && item.modalidade) {
         const sportKey = normalizeSportKey(item.modalidade);
         if (sportKey) {
-          currentPositionsMap.set(sportKey, item.posicao || 'Não sei');
+          let pos = item.posicao || 'Indefinido';
+          if (pos === 'Não sei') pos = 'Indefinido';
+          currentPositionsMap.set(sportKey, pos);
         }
       }
     }
@@ -157,9 +160,10 @@ const sanitizePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
   for (const mod of modalidades) {
     const sportKey = normalizeSportKey(mod);
     if (sportKey) {
-      const existingPos = currentPositionsMap.get(sportKey);
+      let existingPos = currentPositionsMap.get(sportKey);
+      if (existingPos === 'Não sei') existingPos = 'Indefinido';
       const validPositions = SPORT_POSITIONS_MAP[sportKey];
-      const finalPos = existingPos && validPositions.includes(existingPos) ? existingPos : 'Não sei';
+      const finalPos = existingPos && validPositions.includes(existingPos) ? existingPos : 'Indefinido';
 
       // Evita duplicação no array
       if (!sanitized.some(s => normalizeSportKey(s.modalidade) === sportKey)) {

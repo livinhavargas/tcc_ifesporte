@@ -138,14 +138,12 @@ const SportDetail = () => {
       'Saltos': [
         'Salto em distância', 
         'Salto em altura', 
-        'Salto triplo', 
-        'Salto com vara'
+        'Salto triplo'
       ],
       'Arremessos e Lançamentos': [
         'Arremesso de peso', 
         'Lançamento de disco', 
-        'Lançamento de dardo', 
-        'Lançamento de martelo'
+        'Lançamento de dardo'
       ]
     },
     'Tênis de Mesa': {
@@ -566,13 +564,13 @@ const SportDetail = () => {
                             {isSportWithPositions(nome) && (
                               <div style={{ marginTop: '4px' }}>
                                 <span className="badge" style={{
-                                  background: getStudentPositionForSport(aluno, nome) === 'Não sei' ? 'var(--border-light)' : 'var(--primary-light)',
-                                  color: getStudentPositionForSport(aluno, nome) === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
+                                  background: (getStudentPositionForSport(aluno, nome) === 'Indefinido' || getStudentPositionForSport(aluno, nome) === 'Não sei') ? 'var(--border-light)' : 'var(--primary-light)',
+                                  color: (getStudentPositionForSport(aluno, nome) === 'Indefinido' || getStudentPositionForSport(aluno, nome) === 'Não sei') ? 'var(--text-tertiary)' : 'var(--primary)',
                                   fontSize: '0.6875rem',
                                   fontWeight: 600,
                                   padding: '2px 8px'
                                 }}>
-                                  {getStudentPositionForSport(aluno, nome) || 'Não sei'}
+                                  {getStudentPositionForSport(aluno, nome) || 'Indefinido'}
                                 </span>
                               </div>
                             )}

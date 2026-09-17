@@ -33,7 +33,9 @@ const ModalidadePosicaoSelector = ({
 
   const getPositionValue = (sportKey) => {
     const found = posicoesPorModalidade.find(p => normalizeSportKey(p.modalidade) === sportKey);
-    return found?.posicao || 'Não sei';
+    const pos = found?.posicao;
+    if (!pos || pos === 'Não sei') return 'Indefinido';
+    return pos;
   };
 
   const handlePositionChange = (sportItem, newPos) => {
@@ -43,17 +45,19 @@ const ModalidadePosicaoSelector = ({
     for (const item of posicoesPorModalidade) {
       if (item && item.modalidade) {
         const k = normalizeSportKey(item.modalidade);
-        if (k) existingMap.set(k, item.posicao || 'Não sei');
+        let pos = item.posicao;
+        if (!pos || pos === 'Não sei') pos = 'Indefinido';
+        if (k) existingMap.set(k, pos);
       }
     }
 
-    existingMap.set(sportItem.sportKey, newPos || 'Não sei');
+    existingMap.set(sportItem.sportKey, newPos || 'Indefinido');
 
     const updatedList = [];
     for (const sport of activePositionSports) {
       updatedList.push({
         modalidade: sport.rawName,
-        posicao: existingMap.get(sport.sportKey) || 'Não sei'
+        posicao: existingMap.get(sport.sportKey) || 'Indefinido'
       });
     }
 
@@ -104,8 +108,8 @@ const ModalidadePosicaoSelector = ({
                 </div>
                 {readOnly && (
                   <span className="badge" style={{
-                    background: currentPos === 'Não sei' ? 'var(--border-light)' : 'var(--primary-light)',
-                    color: currentPos === 'Não sei' ? 'var(--text-tertiary)' : 'var(--primary)',
+                    background: currentPos === 'Indefinido' ? 'var(--border-light)' : 'var(--primary-light)',
+                    color: currentPos === 'Indefinido' ? 'var(--text-tertiary)' : 'var(--primary)',
                     fontWeight: 600,
                     fontSize: '0.75rem'
                   }}>
@@ -134,7 +138,7 @@ const ModalidadePosicaoSelector = ({
                         fontWeight: 500
                       }}
                     >
-                      <option value="Não sei">Não sei</option>
+                      <option value="Indefinido">Indefinido</option>
                       {FUTEBOL_CATEGORIES.map(cat => (
                         <optgroup key={cat.categoria} label={cat.categoria}>
                           {cat.posicoes.map(pos => (

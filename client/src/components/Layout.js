@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Calendar, Trophy, Bell, LogOut, Trash2, X, Sun, Moon } from 'lucide-react';
+import { Home, Users, Calendar, Trophy, Bell, LogOut, Trash2, X, Sun, Moon, GraduationCap } from 'lucide-react';
 import Logo from './Logo';
 import { getNotifications, markAllAsRead, clearNotifications } from '../utils/notifications';
 import { useTheme } from '../contexts/ThemeContext';
@@ -129,6 +129,13 @@ const Layout = ({ children }) => {
             <Calendar size={18} />
             <span>Agenda</span>
           </Link>
+
+          {!isStudent && (
+            <Link to="/educacao-fisica" className={`sidebar-link ${isActive('/educacao-fisica')}`}>
+              <GraduationCap size={18} />
+              <span>Educação Física</span>
+            </Link>
+          )}
 
           {!isStudent && (
             <Link to="/esportes" className={`sidebar-link ${isActive('/esportes')}`}>

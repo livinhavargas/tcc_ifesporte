@@ -446,7 +446,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                       <strong>Modalidades e Posições:</strong> {formData.modalidades.length > 0 ? (
                         formData.modalidades.map(m => {
                           const pos = getStudentPositionForSport(formData, m);
-                          return isSportWithPositions(m) ? `${m} (${pos || 'Não sei'})` : m;
+                          return isSportWithPositions(m) ? `${m} (${pos || 'Indefinido'})` : m;
                         }).join(', ')
                       ) : 'Nenhuma'}
                     </div>

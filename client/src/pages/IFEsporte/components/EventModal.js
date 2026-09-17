@@ -15,7 +15,20 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
     eventoObrigatorio: false
   });
 
-  const [esportes, setEsportes] = useState([]);
+  const DEFAULT_EVENT_SPORTS = [
+    'Atletismo',
+    'Badminton',
+    'Basquete',
+    'Futebol',
+    'Futsal',
+    'Handebol',
+    'Tênis de Mesa',
+    'Voleibol',
+    'Vôlei de Praia',
+    'Xadrez'
+  ];
+
+  const [esportes, setEsportes] = useState(DEFAULT_EVENT_SPORTS.map(nome => ({ _id: nome, nome })));
 
   useEffect(() => {
     const fetchEsportes = async () => {
@@ -25,7 +38,9 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
         });
         if (response.ok) {
           const data = await response.json();
-          setEsportes(data);
+          if (Array.isArray(data) && data.length > 0) {
+            setEsportes(data);
+          }
         }
       } catch (err) {
         console.error("Erro ao buscar modalidades:", err);
@@ -71,7 +86,7 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
     onSave({ ...eventData, ...formData });
   };
 
-  const isReadOnly = userType === 'estudante';
+  const isReadOnly = userType === 'estudante' || Boolean(eventData?.isPhysicalEducation);
 
   const fieldStyle = {
     width: '100%',
@@ -116,7 +131,9 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
           alignItems: 'center'
         }}>
           <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.0625rem' }}>
-            {eventData?._id ? 'Editar Evento' : 'Novo Evento'}
+            {eventData?.isPhysicalEducation 
+              ? 'Aula de Educação Física' 
+              : (eventData?._id ? 'Editar Evento' : 'Novo Evento')}
           </h5>
           <button onClick={onClose} style={{
             background: 'none', border: 'none', fontSize: '1.25rem',
@@ -128,6 +145,26 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
         
         {/* Body */}
         <div style={{ padding: '24px' }}>
+          {eventData?.isPhysicalEducation && (
+            <div style={{
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px 16px',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              marginBottom: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <i className="bi bi-info-circle-fill"></i>
+              <span>
+                Aula semanal de Educação Física vinculada à turma {eventData.turma || ''} ({eventData.curso || ''}). Os horários são gerenciados diretamente na configuração da turma.
+              </span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             {/* Title */}
             <div style={{ marginBottom: '20px' }}>
@@ -225,7 +262,7 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
             </div>
 
             {/* Actions */}
-            {!isReadOnly && (
+            {!isReadOnly ? (
               <div style={{
                 display: 'flex', justifyContent: 'flex-end', gap: '10px',
                 borderTop: '1px solid var(--border-light)', paddingTop: '16px'
@@ -246,6 +283,15 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
                 </button>
                 <button type="submit" className="btn btn-primary" style={{ borderRadius: 'var(--radius-md)', padding: '10px 24px' }}>
                   Salvar
+                </button>
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex', justifyContent: 'flex-end', gap: '10px',
+                borderTop: '1px solid var(--border-light)', paddingTop: '16px'
+              }}>
+                <button type="button" onClick={onClose} className="btn btn-secondary" style={{ borderRadius: 'var(--radius-md)', padding: '8px 22px' }}>
+                  Fechar
                 </button>
               </div>
             )}
