@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Pencil, X, Save, Camera, User, Phone, Mail, GraduationCap, 
   HeartPulse, Trophy, IdCard, BadgeInfo, Shirt, ShieldAlert, 
-  Activity, BarChart3, CheckCircle2, AlertTriangle, MapPin, 
+  Activity, CheckCircle2, AlertTriangle, MapPin, 
   PhoneCall, Scale, Ruler, Calendar, UserCheck
 } from 'lucide-react';
 import Layout from '../components/Layout';
-import Analises from './IFesporte/Analises';
 import SportIcon from '../components/SportIcon';
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
@@ -192,7 +191,7 @@ const Perfil = () => {
 
   return (
     <Layout>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      <div style={{ width: '100%', maxWidth: 'min(100%, 1050px)', margin: '0 auto' }}>
         
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
@@ -644,25 +643,6 @@ const Perfil = () => {
             student={{ _id: userId, ...profileData }} 
             userType="estudante" 
           />
-        </div>
-      )}
-
-      {/* Sessão Minhas Análises */}
-      {userType === 'estudante' && !loading && (
-        <div style={{
-          maxWidth: '900px',
-          margin: '32px auto 0',
-          background: 'var(--bg-card)',
-          borderRadius: 'var(--radius-xl)',
-          border: '1px solid var(--border-light)',
-          boxShadow: 'var(--shadow-sm)',
-          padding: '32px'
-        }}>
-          <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '24px', fontSize: '1.125rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BarChart3 size={20} style={{ color: 'var(--primary)' }} />
-            <span>Minhas Análises</span>
-          </h4>
-          <Analises embebed={true} />
         </div>
       )}
     </Layout>

@@ -1,40 +1,64 @@
 const mongoose = require('mongoose');
 
 const analysisSchema = new mongoose.Schema({
-  // Identificação
-  tipoAnalise: { type: String, enum: ['Individual', 'Coletiva'], required: true },
-  aluno: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' }, // Quando for individual
-  equipe: { type: String }, // Quando for coletiva
-  
-  modalidade: { type: String, required: true },
-  categoria: { type: String },
-  contexto: { type: String, enum: ['Treino', 'Jogo', 'Competição'] },
-  data: { type: Date, required: true },
-  avaliador: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  
-  // Estrutura Dinâmica do Formulário
-  subtipo: { type: String }, // Ex: 'Ataque', 'Defesa', 'Goleiro', 'Levantador'
-  
-  // Respostas Brutas do Formulário (pares chave-valor, ex: { passe: 5, finalizacao: 4 })
-  respostas: { type: Map, of: mongoose.Schema.Types.Mixed },
-  
-  // Resultados Processados pelo Sistema
-  resultados: {
-    mediaOfensiva: { type: Number },
-    mediaDefensiva: { type: Number },
-    mediaFisica: { type: Number },
-    mediaTatica: { type: Number },
-    mediaTecnica: { type: Number },
-    indiceGeral: { type: Number }
+  modalidade: { 
+    type: String, 
+    required: true,
+    trim: true
   },
-
-  diagnostico: { type: String }, // Texto gerado automaticamente
-
-  observacoes: { type: String },
+  categoria: { 
+    type: String, 
+    default: 'Geral',
+    trim: true
+  },
+  subtipoProva: { 
+    type: String,
+    trim: true
+  },
+  data: { 
+    type: Date, 
+    default: Date.now, 
+    required: true 
+  },
+  avaliador: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
   
-  // Retrocompatibilidade (para não quebrar a listagem atual temporariamente)
-  resultado: { type: String }
-
+  // Campos de Confronto / Partida
+  equipeAdversaria: { 
+    type: String,
+    trim: true
+  },
+  resultado: { 
+    type: String, 
+    enum: ['Vitória', 'Derrota', 'Empate', null]
+  },
+  placar: { 
+    type: mongoose.Schema.Types.Mixed 
+  },
+  
+  // Vinculação de Atleta(s)
+  aluno: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Student' 
+  },
+  atletas: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Student' 
+  }],
+  
+  // Dados específicos estritos de cada modalidade esportiva
+  dadosEspecificos: { 
+    type: mongoose.Schema.Types.Mixed, 
+    default: {} 
+  },
+  
+  // Observações livres do treinador
+  observacoes: { 
+    type: String,
+    trim: true
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Analysis', analysisSchema);

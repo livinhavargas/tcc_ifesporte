@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, ChevronRight, Users, BarChart3, CalendarClock, Calendar, Search } from 'lucide-react';
 import Layout from '../../components/Layout';
@@ -14,7 +14,8 @@ const SportDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const genero = searchParams.get('genero') || 'Feminino';
+  
+  const [generoFilter, setGeneroFilter] = useState('Geral');
   const [students, setStudents] = useState([]);
   
   const nameMap = {
@@ -59,7 +60,7 @@ const SportDetail = () => {
   const showAnalysesTab = isSportAnalysisSupported(nome);
   const showScheduleTab = isSportScheduleSupported(nome);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!showAnalysesTab && activeTab === 'analises') {
       setActiveTab('alunos');
     }
@@ -86,11 +87,12 @@ const SportDetail = () => {
     if (age <= 15) return 'Sub15';
     if (age === 16) return 'Sub16';
     if (age === 17) return 'Sub17';
+    if (age === 18) return 'Sub18';
     if (age <= 19) return 'Sub19';
     return `Sub${age}`;
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchStudents();
   }, [nome, selectedCategory]);
 
@@ -145,10 +147,6 @@ const SportDetail = () => {
         'Lançamento de disco', 
         'Lançamento de dardo'
       ]
-    },
-    'Tênis de Mesa': {
-      'Individual': [],
-      'Misto': []
     }
   };
 
@@ -157,7 +155,15 @@ const SportDetail = () => {
   const handleCategorySelect = (cat, sub) => {
     setSelectedCategory({ cat, sub });
     setView('subcategory_detail');
+    setGeneroFilter('Geral');
     setActiveTab('alunos');
+  };
+
+  const handleBackToCategories = () => {
+    setView('categories');
+    setSelectedCategory(null);
+    setGeneroFilter('Geral');
+    setExpandedCategory(null);
   };
 
   const checkMatch = (esp, keyword) => {
@@ -232,7 +238,6 @@ const SportDetail = () => {
 
   const countForNode = (keyword) => {
     return students.filter(s => {
-      if (s.sexo !== genero) return false;
       const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
       return arr.some(esp => checkMatch(esp, keyword));
     }).length;
@@ -245,7 +250,7 @@ const SportDetail = () => {
       if (selectedCategory.sub) keyword += ` - ${selectedCategory.sub}`;
     }
     let filtered = students.filter(s => {
-      if (s.sexo !== genero) return false;
+      if (generoFilter !== 'Geral' && s.sexo !== generoFilter) return false;
       const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
       return arr.some(esp => checkMatch(esp, keyword));
     });
@@ -264,12 +269,30 @@ const SportDetail = () => {
         if (filterFaixaEtaria === 'Sub15') return age <= 15;
         if (filterFaixaEtaria === 'Sub16') return age === 16;
         if (filterFaixaEtaria === 'Sub17') return age === 17;
-        if (filterFaixaEtaria === 'Sub19') return age === 18 || age === 19;
+        if (filterFaixaEtaria === 'Sub18') return age === 18;
+        if (filterFaixaEtaria === 'Sub19') return age >= 19;
         return false;
       });
     }
     if (filterCidade !== 'Todas') {
-      const mainCities = ['praia grande', 'são joão do sul', 'sombrio', 'balneário gaivota', 'araranguá', 'torres'];
+      const mainCities = [
+        'araranguá',
+        'balneário arroio do silva',
+        'balneário gaivota',
+        'ermo',
+        'jacinto machado',
+        'maracajá',
+        'meleiro',
+        'morro grande',
+        'passo de torres',
+        'praia grande',
+        'santa rosa do sul',
+        'são joão do sul',
+        'sombrio',
+        'timbé do sul',
+        'torres',
+        'turvo'
+      ];
       filtered = filtered.filter(s => {
         const studentCidade = (s.cidade || '').trim().toLowerCase();
         if (filterCidade === 'Outra') {
@@ -301,101 +324,174 @@ const SportDetail = () => {
   if (hasHierarchy && view === 'categories') {
     return (
       <Layout>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ width: '100%', maxWidth: 'var(--content-max-width)', margin: '0 auto' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{
-                width: '56px', height: '56px', borderRadius: 'var(--radius-md)',
+                width: '46px', height: '46px', borderRadius: 'var(--radius-md)',
                 background: 'var(--primary-light)', color: 'var(--primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0
               }}>
-                <SportIcon sport={nome} size={28} />
+                <SportIcon sport={nome} size={24} />
               </div>
               <div>
-                <h1 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>{nome}</h1>
-                <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', marginTop: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                  {genero}
-                </span>
+                <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>{nome}</h2>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Escolha uma submodalidade.</p>
               </div>
             </div>
-            <button className="btn btn-secondary rounded-circle" style={{ width: '42px', height: '42px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => navigate('/esportes')}>
+            <button 
+              className="btn btn-secondary rounded-circle" 
+              style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+              onClick={() => navigate('/esportes')}
+              title="Voltar para Esportes"
+            >
               <ArrowLeft size={18} />
             </button>
           </div>
           
+          {/* Alunos Cadastrados Indicator */}
           <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '7px 16px',
+            borderRadius: '9999px',
             background: 'var(--primary-light)',
             color: 'var(--primary)',
-            padding: '12px 20px',
-            borderRadius: 'var(--radius-md)',
             fontWeight: 600,
-            fontSize: '0.875rem',
-            marginBottom: '32px',
-            display: 'inline-block'
+            fontSize: '0.8125rem',
+            marginBottom: '24px',
+            border: '1px solid rgba(30, 94, 255, 0.12)',
+            boxShadow: 'var(--shadow-xs)'
           }}>
-            {countForNode(nome)} {countForNode(nome) === 1 ? 'aluno cadastrado' : 'alunos cadastrados'}
+            <Users size={15} style={{ flexShrink: 0 }} />
+            <span>{countForNode(nome)} {countForNode(nome) === 1 ? 'aluno cadastrado' : 'alunos cadastrados'}</span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {Object.keys(hierarchy[nome]).map(cat => (
-              <div key={cat} style={{
-                background: 'var(--bg-card)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border-light)',
-                boxShadow: 'var(--shadow-sm)',
-                overflow: 'hidden'
-              }}>
+          {/* Categorias do Atletismo */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {Object.keys(hierarchy[nome]).map(cat => {
+              const subList = hierarchy[nome][cat];
+              const hasSub = subList.length > 0;
+              const isExpanded = expandedCategory === cat;
+              const catCount = countForNode(`${nome} - ${cat}`);
+              
+              return (
                 <div 
+                  key={cat} 
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '20px 24px',
-                    cursor: 'pointer',
-                    background: expandedCategory === cat ? 'var(--bg)' : 'transparent',
-                    transition: 'all var(--transition-fast)'
+                    background: 'var(--bg-card)',
+                    borderRadius: 'var(--radius-lg)',
+                    border: isExpanded ? '1.5px solid var(--primary)' : '1.5px solid var(--border-light)',
+                    boxShadow: isExpanded ? 'var(--shadow-md)' : 'var(--shadow-xs)',
+                    overflow: 'hidden',
+                    transition: 'all var(--transition-base)'
                   }}
-                  onClick={() => setExpandedCategory(expandedCategory === cat ? null : cat)}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>
-                      {cat} <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>( {countForNode(`${nome} - ${cat}`)} )</span>
-                    </h5>
-                  </div>
-                  {expandedCategory === cat ? <ChevronDown size={18} style={{ color: 'var(--text-secondary)' }} /> : <ChevronRight size={18} style={{ color: 'var(--text-secondary)' }} />}
-                </div>
-                
-                {expandedCategory === cat && hierarchy[nome][cat].length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--border-light)' }}>
-                    {hierarchy[nome][cat].filter(sub => {
-                      if (sub === '100m com Barreiras' && genero !== 'Feminino') return false;
-                      if (sub === '110m com Barreiras' && genero !== 'Masculino') return false;
-                      return true;
-                    }).map(sub => (
-                      <div 
-                        key={sub} 
+                  <div 
+                    className="atletismo-category-card"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '18px 24px',
+                      cursor: 'pointer',
+                      background: isExpanded ? 'var(--primary-lighter)' : 'transparent',
+                      transition: 'all var(--transition-fast)'
+                    }}
+                    onClick={() => {
+                      if (hasSub) {
+                        setExpandedCategory(isExpanded ? null : cat);
+                      } else {
+                        handleCategorySelect(cat, null);
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <h3 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem', letterSpacing: '-0.2px' }}>
+                        {cat}
+                      </h3>
+                      <span 
                         style={{
-                          padding: '14px 24px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid var(--border-light)'
+                          justifyContent: 'center',
+                          padding: '2px 9px',
+                          borderRadius: '9999px',
+                          background: isExpanded ? 'var(--primary-light)' : 'var(--bg)',
+                          border: '1px solid var(--border-light)',
+                          color: isExpanded ? 'var(--primary)' : 'var(--text-secondary)',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          minWidth: '24px'
                         }}
-                        className="hover-bg-light"
-                        onClick={() => handleCategorySelect(cat, sub)}
                       >
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{sub}</span>
-                        <span className="badge bg-secondary" style={{ fontSize: '0.6875rem' }}>{countForNode(`${nome} - ${cat} - ${sub}`)}</span>
-                      </div>
-                    ))}
+                        {catCount}
+                      </span>
+                    </div>
+                    
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: 'var(--radius-sm)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: isExpanded ? 'var(--primary-light)' : 'transparent',
+                      color: isExpanded ? 'var(--primary)' : 'var(--text-secondary)',
+                      transition: 'all var(--transition-fast)'
+                    }}>
+                      {hasSub ? (
+                        isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} className="chevron-indicator" />
+                      ) : (
+                        <ChevronRight size={18} className="chevron-indicator" />
+                      )}
+                    </div>
                   </div>
-                )}
-                {expandedCategory === cat && hierarchy[nome][cat].length === 0 && (
-                   handleCategorySelect(cat, null)
-                )}
-              </div>
-            ))}
+                  
+                  {hasSub && isExpanded && (
+                    <div style={{ borderTop: '1px solid var(--border-light)', background: 'var(--bg-card)' }}>
+                      {subList.map((sub, idx) => {
+                        const subCount = countForNode(`${nome} - ${cat} - ${sub}`);
+                        return (
+                          <div 
+                            key={sub} 
+                            style={{
+                              padding: '14px 24px 14px 36px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                              borderBottom: idx === subList.length - 1 ? 'none' : '1px solid var(--border-light)',
+                              transition: 'all var(--transition-fast)'
+                            }}
+                            className="atletismo-subitem-row"
+                            onClick={() => handleCategorySelect(cat, sub)}
+                          >
+                            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>{sub}</span>
+                            <span 
+                              style={{
+                                padding: '3px 10px',
+                                borderRadius: '9999px',
+                                background: 'var(--bg)',
+                                border: '1px solid var(--border-light)',
+                                fontSize: '0.6875rem',
+                                fontWeight: 600,
+                                color: 'var(--text-secondary)'
+                              }}
+                            >
+                              {subCount} {subCount === 1 ? 'aluno' : 'alunos'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </Layout>
@@ -404,33 +500,47 @@ const SportDetail = () => {
 
   return (
     <Layout>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ width: '100%', maxWidth: 'var(--content-max-width)', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
-              width: '56px', height: '56px', borderRadius: 'var(--radius-md)',
+              width: '46px', height: '46px', borderRadius: 'var(--radius-md)',
               background: 'var(--primary-light)', color: 'var(--primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
             }}>
-              <SportIcon sport={nome} size={28} />
+              <SportIcon sport={nome} size={24} />
             </div>
             <div>
-              <h1 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>{getPageTitle()}</h1>
-              <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', marginTop: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                {genero}
-              </span>
+              <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>{getPageTitle()}</h2>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>
+                {selectedCategory ? `${nome} · ${selectedCategory.cat}` : 'Participantes desta modalidade.'}
+              </p>
             </div>
           </div>
-          <button className="btn btn-secondary rounded-circle" style={{ width: '42px', height: '42px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => hasHierarchy ? setView('categories') : navigate('/esportes')}>
+          <button 
+            className="btn btn-secondary rounded-circle" 
+            style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+            onClick={() => hasHierarchy ? handleBackToCategories() : navigate('/esportes')}
+            title={hasHierarchy ? `Voltar para ${nome}` : "Voltar para Esportes"}
+          >
             <ArrowLeft size={18} />
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-          {/* Sidebar Menu Lateral */}
-          <div style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }} className="d-none-print">
+        {/* Top Horizontal Section Tabs */}
+        {(showAnalysesTab || showScheduleTab) && (
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            marginBottom: '20px',
+            borderBottom: '1px solid var(--border-light)',
+            paddingBottom: '16px',
+            flexWrap: 'wrap'
+          }} className="d-none-print">
             {[
-              { id: 'alunos', label: 'Alunos', icon: <Users size={18} /> },
+              { id: 'alunos', label: 'Participantes', icon: <Users size={18} /> },
               showAnalysesTab && { id: 'analises', label: 'Análises', icon: <BarChart3 size={18} /> },
               showScheduleTab && { id: 'cronogramas', label: 'Cronogramas', icon: <CalendarClock size={18} /> }
             ].filter(Boolean).map(tab => (
@@ -440,26 +550,60 @@ const SportDetail = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  border: 'none',
-                  background: activeTab === tab.id ? 'var(--primary-light)' : 'transparent',
+                  gap: '8px',
+                  padding: '10px 20px',
+                  borderRadius: 'var(--radius-full)',
+                  border: activeTab === tab.id ? '1px solid var(--primary)' : '1px solid var(--border-light)',
+                  background: activeTab === tab.id ? 'var(--primary-light)' : 'var(--bg-card)',
                   color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-secondary)',
                   fontWeight: activeTab === tab.id ? 700 : 500,
                   fontSize: '0.875rem',
                   cursor: 'pointer',
-                  textAlign: 'left',
+                  boxShadow: 'var(--shadow-xs)',
                   transition: 'all var(--transition-fast)'
                 }}
               >
-                {tab.icon} {tab.label}
+                {tab.icon} <span>{tab.label}</span>
               </button>
             ))}
           </div>
+        )}
 
-          {/* Dinamic Tab Content */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Gender Segmented Control */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{
+            display: 'inline-flex',
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-full)',
+            padding: '4px',
+            border: '1px solid var(--border-light)',
+            boxShadow: 'var(--shadow-xs)'
+          }}>
+            {['Geral', 'Feminino', 'Masculino'].map(g => (
+              <button
+                key={g}
+                onClick={() => setGeneroFilter(g)}
+                style={{
+                  padding: '8px 24px',
+                  borderRadius: 'var(--radius-full)',
+                  border: 'none',
+                  fontFamily: 'var(--font)',
+                  fontWeight: generoFilter === g ? 700 : 500,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  transition: 'all var(--transition-base)',
+                  background: generoFilter === g ? 'var(--primary-light)' : 'transparent',
+                  color: generoFilter === g ? 'var(--primary)' : 'var(--text-secondary)'
+                }}
+              >
+                <span>{g}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Dynamic Tab Content */}
+        <div style={{ width: '100%' }}>
             {activeTab === 'alunos' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Filtros */}
@@ -488,6 +632,7 @@ const SportDetail = () => {
                         <option value="Sub15">Sub15</option>
                         <option value="Sub16">Sub16</option>
                         <option value="Sub17">Sub17</option>
+                        <option value="Sub18">Sub18</option>
                         <option value="Sub19">Sub19</option>
                       </select>
                     </div>
@@ -504,7 +649,25 @@ const SportDetail = () => {
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: '6px' }}>Cidade</label>
                       <select value={filterCidade} onChange={(e) => setFilterCidade(e.target.value)} style={inputStyle}>
                         <option value="Todas">Todas</option>
-                        {['Praia Grande', 'São João do Sul', 'Sombrio', 'Balneário Gaivota', 'Araranguá', 'Torres', 'Outra'].map(c => (
+                        {[
+                          'Araranguá',
+                          'Balneário Arroio do Silva',
+                          'Balneário Gaivota',
+                          'Ermo',
+                          'Jacinto Machado',
+                          'Maracajá',
+                          'Meleiro',
+                          'Morro Grande',
+                          'Passo de Torres',
+                          'Praia Grande',
+                          'Santa Rosa do Sul',
+                          'São João do Sul',
+                          'Sombrio',
+                          'Timbé do Sul',
+                          'Torres',
+                          'Turvo',
+                          'Outra'
+                        ].map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
@@ -521,9 +684,9 @@ const SportDetail = () => {
                   padding: '24px'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Alunos Cadastrados</h5>
+                    <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>Participantes</h5>
                     <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.75rem' }}>
-                      {getFilteredStudents().length} atletas
+                      {getFilteredStudents().length} {getFilteredStudents().length === 1 ? 'atleta' : 'atletas'}
                     </span>
                   </div>
                   
@@ -607,19 +770,18 @@ const SportDetail = () => {
               <Analises 
                 embebed={true} 
                 defaultModalidade={getCurrentModalidade()}
-                defaultGenero={genero}
+                defaultGenero={generoFilter}
               />
             )}
             {activeTab === 'cronogramas' && (
               <Cronogramas 
                 modalidade={getCurrentModalidade()} 
-                categoria={genero} 
+                categoria={generoFilter} 
                 cronogramaId={cronogramaIdParam}
               />
             )}
           </div>
         </div>
-      </div>
     </Layout>
   );
 };

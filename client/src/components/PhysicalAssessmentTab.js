@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  Activity, Plus, Calendar, Trophy, 
+  Activity, Plus, 
   Heart, AlertCircle, CheckCircle2, ChevronRight, ArrowLeft, 
-  Pencil, Trash2, Printer, Scale, Ruler,
+  Pencil, Trash2, Printer, Ruler,
   Dumbbell, Timer, Flame, GitCompare,
   TrendingUp, TrendingDown, Minus, CheckSquare, Square,
   BarChart2
@@ -13,7 +13,7 @@ import {
   classifyPROESP 
 } from '../utils/proespCalculator';
 import SportIcon from './SportIcon';
-import PhysicalAssessmentPDFExport, { 
+import { 
   evaluateMetricEvolution, 
   TEST_DIRECTION_RULES 
 } from './PhysicalAssessmentPDFExport';
@@ -114,6 +114,449 @@ export const getHealthBadge = (healthStatus) => {
   };
 };
 
+/**
+ * Função de exportação formal de PDF discreto, completo e profissional
+ */
+export const exportAssessmentToPDF = (assessment, student) => {
+  if (!student) return;
+  const assessmentData = assessment || {};
+  const emissionDate = new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+  
+  const evalDate = assessmentData.dataAvaliacao
+    ? new Date(assessmentData.dataAvaliacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+    : new Date().toLocaleDateString('pt-BR');
+    
+  const ageAtEval = student.dataNascimento 
+    ? `${calculateAge(student.dataNascimento, assessmentData.dataAvaliacao)} anos` 
+    : (student.idade ? `${student.idade} anos` : '-');
+
+  const birthDateFormatted = student.dataNascimento 
+    ? new Date(student.dataNascimento).toLocaleDateString('pt-BR') 
+    : '-';
+
+  const formatClassification = (classif) => {
+    if (!classif || classif === 'Dados insuficientes' || classif === 'Sem dados') return '-';
+    return classif;
+  };
+
+  const imcVal = assessmentData.calculos?.imc != null ? `${assessmentData.calculos.imc} kg/m²` : (assessmentData.medidas?.massaCorporal && assessmentData.medidas?.estatura ? `${(Number(assessmentData.medidas.massaCorporal) / Math.pow(Number(assessmentData.medidas.estatura) > 3 ? Number(assessmentData.medidas.estatura) / 100 : Number(assessmentData.medidas.estatura), 2)).toFixed(1)} kg/m²` : '-');
+  const imcClass = formatClassification(assessmentData.classificacoes?.saude?.imc);
+  const rceVal = assessmentData.calculos?.rce != null ? String(assessmentData.calculos.rce) : '-';
+  const rceClass = formatClassification(assessmentData.classificacoes?.saude?.rce);
+
+  const corrida6Tot = assessmentData.testes?.corrida6Min?.totalMetros ?? assessmentData.calculos?.corrida6MinTotal;
+  const corrida6Class = formatClassification(assessmentData.classificacoes?.desempenho?.corrida6Min);
+  
+  const sentarMelhor = assessmentData.testes?.sentarAlcançar?.melhorResultado ?? assessmentData.calculos?.sentarAlcançarMelhor;
+  const sentarClass = formatClassification(assessmentData.classificacoes?.desempenho?.sentarAlcançar);
+
+  const abdominaisReps = assessmentData.testes?.abdominais1Min?.repeticoes;
+  const abdominaisClass = formatClassification(assessmentData.classificacoes?.desempenho?.abdominais1Min);
+
+  const medBallMelhor = assessmentData.testes?.arremessoMedicineBall?.melhorResultado ?? assessmentData.calculos?.arremessoMedicineBallMelhor;
+  const medBallClass = formatClassification(assessmentData.classificacoes?.desempenho?.arremessoMedicineBall);
+
+  const saltoMelhor = assessmentData.testes?.saltoHorizontal?.melhorResultado ?? assessmentData.calculos?.saltoHorizontalMelhor;
+  const saltoClass = formatClassification(assessmentData.classificacoes?.desempenho?.saltoHorizontal);
+
+  const quadMelhor = assessmentData.testes?.quadrado4x4?.melhorResultado ?? assessmentData.calculos?.quadrado4x4Melhor;
+  const quadClass = formatClassification(assessmentData.classificacoes?.desempenho?.quadrado4x4);
+
+  const velMelhor = assessmentData.testes?.corrida20m?.melhorResultado ?? assessmentData.calculos?.corrida20mMelhor;
+  const velClass = formatClassification(assessmentData.classificacoes?.desempenho?.corrida20m);
+
+  const studentSportsFormatted = (Array.isArray(student.modalidades) && student.modalidades.length > 0)
+    ? student.modalidades.join(', ')
+    : (Array.isArray(student.esportes) && student.esportes.length > 0 ? student.esportes.join(', ') : 'Geral');
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    window.print();
+    return;
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <title>Ficha de Aptidão Física - ${student.nome || 'Atleta'}</title>
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 14mm 16mm;
+        }
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          color: #0f172a;
+        }
+        body {
+          background: #ffffff;
+          font-size: 10pt;
+          line-height: 1.45;
+        }
+        .header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          border-bottom: 2px solid #0284c7;
+          padding-bottom: 10px;
+          margin-bottom: 14px;
+        }
+        .brand-title {
+          font-size: 20pt;
+          font-weight: 900;
+          color: #0284c7;
+          letter-spacing: -0.5px;
+        }
+        .brand-subtitle {
+          font-size: 11pt;
+          font-weight: 700;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-top: 2px;
+        }
+        .header-meta {
+          text-align: right;
+          font-size: 8.5pt;
+          color: #64748b;
+          line-height: 1.4;
+        }
+        .section {
+          margin-bottom: 14px;
+          page-break-inside: avoid;
+        }
+        .section-title {
+          font-size: 9.5pt;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #0369a1;
+          border-bottom: 1px solid #cbd5e1;
+          padding-bottom: 3px;
+          margin-bottom: 8px;
+        }
+        .grid-3 {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px 12px;
+        }
+        .grid-4 {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px 12px;
+        }
+        .field {
+          display: flex;
+          flex-direction: column;
+        }
+        .field-label {
+          font-size: 8pt;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #64748b;
+          margin-bottom: 2px;
+        }
+        .field-value {
+          font-size: 10pt;
+          font-weight: 600;
+          color: #0f172a;
+          padding: 4px 8px;
+          background: #f8fafc;
+          border-radius: 4px;
+          border: 1px solid #e2e8f0;
+          min-height: 24px;
+          display: flex;
+          align-items: center;
+        }
+        table.table-report {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 9pt;
+          margin-top: 4px;
+        }
+        table.table-report th {
+          background: #f8fafc;
+          color: #475569;
+          font-weight: 700;
+          text-align: left;
+          padding: 6px 8px;
+          border: 1px solid #cbd5e1;
+          font-size: 8pt;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+        table.table-report td {
+          padding: 6px 8px;
+          border: 1px solid #e2e8f0;
+          color: #1e293b;
+        }
+        table.table-report tr:nth-child(even) td {
+          background: #fafafa;
+        }
+        .badge-pill {
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 9999px;
+          font-size: 8pt;
+          font-weight: 700;
+        }
+        .badge-saudavel { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .badge-risco { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+        .badge-excelencia { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+        .badge-muitobom { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .badge-bom { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+        .badge-razoavel { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+        .badge-fraco { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-neutral { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .obs-container {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 4px;
+          padding: 8px 12px;
+          font-size: 9.5pt;
+          color: #334155;
+          min-height: 40px;
+        }
+        .footer {
+          margin-top: 20px;
+          border-top: 1px solid #cbd5e1;
+          padding-top: 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          font-size: 8pt;
+          color: #64748b;
+          page-break-inside: avoid;
+        }
+        .signature-box {
+          width: 220px;
+          border-top: 1px solid #94a3b8;
+          text-align: center;
+          padding-top: 4px;
+          font-size: 8pt;
+          color: #475569;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="brand-title">IFEsporte</div>
+          <div class="brand-subtitle">Ficha de Aptidão Física — PROESP-Br 2021</div>
+        </div>
+        <div class="header-meta">
+          <strong>Relatório de Avaliação Física</strong><br>
+          Emissão: ${emissionDate}
+        </div>
+      </div>
+
+      <!-- DADOS DO ATLETA -->
+      <div class="section">
+        <div class="section-title">Dados do Atleta</div>
+        <div class="grid-3">
+          <div class="field">
+            <span class="field-label">Nome Completo</span>
+            <div class="field-value">${student.nome || '-'}</div>
+          </div>
+          <div class="field">
+            <span class="field-label">Turma</span>
+            <div class="field-value">${student.turma || student.serie || '-'}</div>
+          </div>
+          <div class="field">
+            <span class="field-label">Matrícula</span>
+            <div class="field-value">${student.matricula || '-'}</div>
+          </div>
+        </div>
+        <div class="grid-4" style="margin-top: 6px;">
+          <div class="field">
+            <span class="field-label">Data de Nascimento</span>
+            <div class="field-value">${birthDateFormatted}</div>
+          </div>
+          <div class="field">
+            <span class="field-label">Idade na Avaliação</span>
+            <div class="field-value">${ageAtEval}</div>
+          </div>
+          <div class="field">
+            <span class="field-label">Gênero / Sexo</span>
+            <div class="field-value">${student.sexo || '-'}</div>
+          </div>
+          <div class="field">
+            <span class="field-label">Data da Avaliação</span>
+            <div class="field-value">${evalDate} ${assessmentData.horario ? ` às ${assessmentData.horario}` : ''}</div>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top: 6px;">
+          <div class="field">
+            <span class="field-label">Modalidade Esportiva</span>
+            <div class="field-value">${assessmentData.modalidade || studentSportsFormatted}</div>
+          </div>
+          <div class="field">
+            <span class="field-label">Rotina de Treinos</span>
+            <div class="field-value">${assessmentData.modalidade === 'Não pratica modalidade' ? 'Não aplicável' : `${assessmentData.frequenciaSemanal ? `${assessmentData.frequenciaSemanal}x/sem ` : ''}${assessmentData.duracaoSessao ? `(${assessmentData.duracaoSessao} min) ` : ''}${assessmentData.tempoPratica ? `• ${assessmentData.tempoPratica}` : ''}`.trim() || '-'}</div>
+          </div>
+          <div class="field">
+            <span class="field-label">Temperatura / Observações Clínicas</span>
+            <div class="field-value">${assessmentData.temperatura != null ? `${assessmentData.temperatura} °C` : '-'} ${assessmentData.possuiDeficiencia ? `• PCD: ${assessmentData.deficienciaDescricao || 'Sim'}` : ''}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DADOS ANTROPOMÉTRICOS E SAÚDE -->
+      <div class="section">
+        <div class="section-title">Avaliação Antropométrica e Indicadores de Saúde</div>
+        <table class="table-report">
+          <thead>
+            <tr>
+              <th width="30%">Indicador Antropométrico</th>
+              <th width="20%">Resultado Obtido</th>
+              <th width="25%">Critério de Referência</th>
+              <th width="25%">Classificação de Saúde</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Massa Corporal (Peso)</strong></td>
+              <td><strong>${assessmentData.medidas?.massaCorporal != null ? `${assessmentData.medidas.massaCorporal} kg` : '-'}</strong></td>
+              <td>Balança biométrica (0,1 kg)</td>
+              <td><span class="badge-pill badge-neutral">Antropometria</span></td>
+            </tr>
+            <tr>
+              <td><strong>Estatura (Altura)</strong></td>
+              <td><strong>${assessmentData.medidas?.estatura != null ? `${assessmentData.medidas.estatura} cm` : '-'}</strong></td>
+              <td>Estadiômetro (0,1 cm)</td>
+              <td><span class="badge-pill badge-neutral">Antropometria</span></td>
+            </tr>
+            <tr>
+              <td><strong>Envergadura</strong></td>
+              <td><strong>${assessmentData.medidas?.envergadura != null ? `${assessmentData.medidas.envergadura} cm` : '-'}</strong></td>
+              <td>Fita métrica (0,1 cm)</td>
+              <td><span class="badge-pill badge-neutral">Antropometria</span></td>
+            </tr>
+            <tr>
+              <td><strong>Perímetro da Cintura</strong></td>
+              <td><strong>${assessmentData.medidas?.perimetroCintura != null ? `${assessmentData.medidas.perimetroCintura} cm` : '-'}</strong></td>
+              <td>Ponto médio ilíaca/costela</td>
+              <td><span class="badge-pill badge-neutral">Antropometria</span></td>
+            </tr>
+            <tr>
+              <td><strong>Índice de Massa Corporal (IMC)</strong></td>
+              <td><strong>${imcVal}</strong></td>
+              <td>Massa / (Estatura em m)²</td>
+              <td><span class="badge-pill ${imcClass === 'Zona saudável' ? 'badge-saudavel' : imcClass === 'Zona de risco à saúde' ? 'badge-risco' : 'badge-neutral'}">${imcClass}</span></td>
+            </tr>
+            <tr>
+              <td><strong>Razão Cintura-Estatura (RCE)</strong></td>
+              <td><strong>${rceVal}</strong></td>
+              <td>Cintura / Estatura (Corte: 0,50)</td>
+              <td><span class="badge-pill ${rceClass === 'Zona saudável' ? 'badge-saudavel' : rceClass === 'Zona de risco à saúde' ? 'badge-risco' : 'badge-neutral'}">${rceClass}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TESTES DE APTIDÃO FÍSICA -->
+      <div class="section">
+        <div class="section-title">Resultados dos Testes de Aptidão Física (PROESP-Br)</div>
+        <table class="table-report">
+          <thead>
+            <tr>
+              <th width="32%">Teste Motor</th>
+              <th width="30%">Tentativas / Dados Brutos</th>
+              <th width="18%">Melhor Marca</th>
+              <th width="20%">Classificação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Corrida/Caminhada 6 min</strong><br><span style="font-size: 7.5pt; color: #64748b;">Aptidão Cardiorrespiratória</span></td>
+              <td>${assessmentData.testes?.corrida6Min?.voltas ?? '-'} voltas (${assessmentData.testes?.corrida6Min?.perimetroPista ?? 200}m) + ${assessmentData.testes?.corrida6Min?.metrosUltimaVolta ?? 0}m</td>
+              <td><strong>${corrida6Tot != null ? `${corrida6Tot} m` : '-'}</strong></td>
+              <td><span class="badge-pill ${corrida6Class === 'Excelência' ? 'badge-excelencia' : corrida6Class === 'Muito bom' ? 'badge-muitobom' : corrida6Class === 'Bom' ? 'badge-bom' : corrida6Class === 'Razoável' ? 'badge-razoavel' : corrida6Class === 'Fraco' ? 'badge-fraco' : 'badge-neutral'}">${corrida6Class}</span></td>
+            </tr>
+            <tr>
+              <td><strong>2. Sentar e Alcançar</strong><br><span style="font-size: 7.5pt; color: #64748b;">Flexibilidade (Banco Wells)</span></td>
+              <td>T1: ${assessmentData.testes?.sentarAlcançar?.tentativa1 ?? '-'} cm | T2: ${assessmentData.testes?.sentarAlcançar?.tentativa2 ?? '-'} cm</td>
+              <td><strong>${sentarMelhor != null ? `${sentarMelhor} cm` : '-'}</strong></td>
+              <td><span class="badge-pill ${sentarClass === 'Excelência' ? 'badge-excelencia' : sentarClass === 'Muito bom' ? 'badge-muitobom' : sentarClass === 'Bom' ? 'badge-bom' : sentarClass === 'Razoável' ? 'badge-razoavel' : sentarClass === 'Fraco' ? 'badge-fraco' : 'badge-neutral'}">${sentarClass}</span></td>
+            </tr>
+            <tr>
+              <td><strong>3. Abdominais em 1 min</strong><br><span style="font-size: 7.5pt; color: #64748b;">Resistência Muscular Localizada</span></td>
+              <td>Repetições completas em 60 segundos</td>
+              <td><strong>${abdominaisReps != null ? `${abdominaisReps} reps` : '-'}</strong></td>
+              <td><span class="badge-pill ${abdominaisClass === 'Excelência' ? 'badge-excelencia' : abdominaisClass === 'Muito bom' ? 'badge-muitobom' : abdominaisClass === 'Bom' ? 'badge-bom' : abdominaisClass === 'Razoável' ? 'badge-razoavel' : abdominaisClass === 'Fraco' ? 'badge-fraco' : 'badge-neutral'}">${abdominaisClass}</span></td>
+            </tr>
+            <tr>
+              <td><strong>4. Arremesso de Medicine Ball</strong><br><span style="font-size: 7.5pt; color: #64748b;">Força Explosiva MMSS (2 kg)</span></td>
+              <td>T1: ${assessmentData.testes?.arremessoMedicineBall?.tentativa1 ?? '-'} cm | T2: ${assessmentData.testes?.arremessoMedicineBall?.tentativa2 ?? '-'} cm</td>
+              <td><strong>${medBallMelhor != null ? `${medBallMelhor} cm` : '-'}</strong></td>
+              <td><span class="badge-pill ${medBallClass === 'Excelência' ? 'badge-excelencia' : medBallClass === 'Muito bom' ? 'badge-muitobom' : medBallClass === 'Bom' ? 'badge-bom' : medBallClass === 'Razoável' ? 'badge-razoavel' : medBallClass === 'Fraco' ? 'badge-fraco' : 'badge-neutral'}">${medBallClass}</span></td>
+            </tr>
+            <tr>
+              <td><strong>5. Salto Horizontal</strong><br><span style="font-size: 7.5pt; color: #64748b;">Força Explosiva MMII</span></td>
+              <td>T1: ${assessmentData.testes?.saltoHorizontal?.tentativa1 ?? '-'} cm | T2: ${assessmentData.testes?.saltoHorizontal?.tentativa2 ?? '-'} cm</td>
+              <td><strong>${saltoMelhor != null ? `${saltoMelhor} cm` : '-'}</strong></td>
+              <td><span class="badge-pill ${saltoClass === 'Excelência' ? 'badge-excelencia' : saltoClass === 'Muito bom' ? 'badge-muitobom' : saltoClass === 'Bom' ? 'badge-bom' : saltoClass === 'Razoável' ? 'badge-razoavel' : saltoClass === 'Fraco' ? 'badge-fraco' : 'badge-neutral'}">${saltoClass}</span></td>
+            </tr>
+            <tr>
+              <td><strong>6. Quadrado 4 × 4 metros</strong><br><span style="font-size: 7.5pt; color: #64748b;">Agilidade e Mudança de Direção</span></td>
+              <td>T1: ${assessmentData.testes?.quadrado4x4?.tentativa1 ?? '-'} s | T2: ${assessmentData.testes?.quadrado4x4?.tentativa2 ?? '-'} s</td>
+              <td><strong>${quadMelhor != null ? `${quadMelhor} s` : '-'}</strong></td>
+              <td><span class="badge-pill ${quadClass === 'Excelência' ? 'badge-excelencia' : quadClass === 'Muito bom' ? 'badge-muitobom' : quadClass === 'Bom' ? 'badge-bom' : quadClass === 'Razoável' ? 'badge-razoavel' : quadClass === 'Fraco' ? 'badge-fraco' : 'badge-neutral'}">${quadClass}</span></td>
+            </tr>
+            <tr>
+              <td><strong>7. Corrida de 20 metros</strong><br><span style="font-size: 7.5pt; color: #64748b;">Velocidade de Deslocamento</span></td>
+              <td>T1: ${assessmentData.testes?.corrida20m?.tentativa1 ?? '-'} s | T2: ${assessmentData.testes?.corrida20m?.tentativa2 ?? '-'} s</td>
+              <td><strong>${velMelhor != null ? `${velMelhor} s` : '-'}</strong></td>
+              <td><span class="badge-pill ${velClass === 'Excelência' ? 'badge-excelencia' : velClass === 'Muito bom' ? 'badge-muitobom' : velClass === 'Bom' ? 'badge-bom' : velClass === 'Razoável' ? 'badge-razoavel' : velClass === 'Fraco' ? 'badge-fraco' : 'badge-neutral'}">${velClass}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- OBSERVAÇÕES -->
+      <div class="section">
+        <div class="section-title">Observações</div>
+        <div class="obs-container">
+          ${assessmentData.observacoes || 'Nenhuma observação registrada.'}
+        </div>
+      </div>
+
+      <!-- RODAPÉ -->
+      <div class="footer">
+        <div>
+          <span>IFEsporte — Sistema de Gestão Esportiva</span><br>
+          <span style="font-size: 7.5pt; color: #94a3b8;">Bateria de Testes Motores PROESP-Br (GAYA et al., 2021)</span>
+        </div>
+        <div class="signature-box">
+          Assinatura do Avaliador / Treinador
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 300);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+};
+
 const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,11 +566,10 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Estados para novas funcionalidades: Comparação, Gráfico de Evolução e PDF
+  // Sub-visões: Histórico, Comparação e Gráfico de Evolução
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'compare' | 'evolution'
   const [compareIds, setCompareIds] = useState([]);
   const [evolutionMetric, setEvolutionMetric] = useState('saltoHorizontalMelhor');
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Modalidades do aluno
   const studentModalidades = useMemo(() => {
@@ -319,7 +761,6 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
     setIsEditing(true);
   };
 
-  // Toggle de modalidade cadastrada do aluno (Cenário A)
   const handleToggleStudentModality = (mod) => {
     let next;
     if (selectedStudentModalidades.includes(mod)) {
@@ -358,7 +799,6 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
     setSubmitting(true);
     setMessage('');
 
-    // Definir string final da modalidade
     let finalMod = formData.modalidade;
     if (studentModalidades.length > 0) {
       finalMod = selectedStudentModalidades.join(', ') || 'Nenhuma selecionada';
@@ -457,6 +897,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
     return [...assessments].sort((a, b) => new Date(a.dataAvaliacao) - new Date(b.dataAvaliacao));
   }, [assessments]);
 
+  // Estilos Padronizados
   const inputStyle = {
     width: '100%',
     padding: '10px 14px',
@@ -465,9 +906,10 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
     fontSize: '0.875rem',
     fontFamily: 'var(--font)',
     outline: 'none',
-    background: 'var(--bg-card)',
+    background: 'var(--bg)',
     color: 'var(--text)',
-    transition: 'all var(--transition-fast)'
+    transition: 'all var(--transition-fast)',
+    minHeight: '42px'
   };
 
   const calculatedBoxStyle = {
@@ -478,7 +920,16 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    minHeight: '62px'
+    minHeight: '58px'
+  };
+
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '16px',
+    paddingBottom: '8px',
+    borderBottom: '1px solid var(--border-light)'
   };
 
   return (
@@ -499,7 +950,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODO 1: FORMULÁRIO DE NOVA AVALIAÇÃO OU EDIÇÃO                            */}
+      {/* MODO 1: FORMULÁRIO DE NOVA AVALIAÇÃO OU EDIÇÃO REORGANIZADO EM 4 SEÇÕES   */}
       {/* ========================================================================= */}
       {(isCreating || isEditing) && (
         <form onSubmit={handleSubmit}>
@@ -515,12 +966,12 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
             gap: '12px'
           }}>
             <div>
-              <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h5 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Activity size={20} style={{ color: 'var(--primary)' }} />
                 <span>{isEditing ? 'Editar Avaliação Física' : 'Nova Avaliação de Aptidão Física (PROESP-Br 2021)'}</span>
               </h5>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>
-                Os dados pessoais de {student.nome} ({student.sexo === 'M' ? 'Masculino' : student.sexo === 'F' ? 'Feminino' : 'Sexo não informado'}, {student.dataNascimento ? `${calculateAge(student.dataNascimento, formData.dataAvaliacao)} anos` : 'idade n/d'}) já estão vinculados.
+                Atleta: <strong>{student.nome}</strong> ({student.sexo === 'M' ? 'Masculino' : student.sexo === 'F' ? 'Feminino' : 'Gênero n/i'}, {student.dataNascimento ? `${calculateAge(student.dataNascimento, formData.dataAvaliacao)} anos` : 'idade n/d'}) • Turma: {student.turma || student.serie || '-'}
               </p>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -544,21 +995,27 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
           </div>
 
           <div className="row g-4">
-            {/* SEÇÃO 1: DADOS DA AVALIAÇÃO E MODALIDADE INTELIGENTE */}
+            
+            {/* ── SEÇÃO 1: INFORMAÇÕES DA AVALIAÇÃO ── */}
             <div className="col-12">
               <div style={{
-                background: 'var(--bg)',
+                background: 'var(--bg-card)',
                 borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border-light)',
-                padding: '20px 24px'
+                border: '1.5px solid var(--border-light)',
+                padding: '22px 24px',
+                boxShadow: 'var(--shadow-xs)'
               }}>
-                <h6 style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '16px', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Calendar size={16} /> Seção 1 — Dados da Avaliação & Prática Esportiva
-                </h6>
+                <div style={sectionHeaderStyle}>
+                  <div style={{ width: '4px', height: '18px', borderRadius: '2px', background: 'var(--primary)' }}></div>
+                  <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Informações da Avaliação
+                  </h6>
+                </div>
 
                 <div className="row g-3">
+                  {/* Linha 1: Data, Horário, Temperatura */}
                   <div className="col-md-4">
-                    <label className="form-label text-muted small fw-bold">Data da Avaliação *</label>
+                    <label className="form-label text-muted small fw-bold mb-1">Data da Avaliação <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input 
                       type="date" 
                       value={formData.dataAvaliacao} 
@@ -568,7 +1025,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label text-muted small fw-bold">Horário</label>
+                    <label className="form-label text-muted small fw-bold mb-1">Horário</label>
                     <input 
                       type="time" 
                       value={formData.horario} 
@@ -577,40 +1034,35 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label text-muted small fw-bold">Temperatura Ambiente (°C)</label>
+                    <label className="form-label text-muted small fw-bold mb-1">Temperatura Ambiente (°C)</label>
                     <input 
                       type="number" 
                       step="0.1" 
-                      placeholder="Ex: 26" 
+                      placeholder="Ex: 25" 
                       value={formData.temperatura} 
                       onChange={(e) => setFormData(prev => ({ ...prev, temperatura: e.target.value }))} 
                       style={inputStyle} 
                     />
                   </div>
 
-                  {/* LÓGICA DE MODALIDADE PRATICADA (CENÁRIO A / CENÁRIO B) */}
+                  {/* Bloco de Modalidade Esportiva Praticada */}
                   <div className="col-12">
                     <div style={{
-                      background: 'var(--bg-card)',
+                      background: 'var(--bg)',
                       borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border)',
+                      border: '1px solid var(--border-light)',
                       padding: '16px 20px',
-                      marginTop: '6px'
+                      marginTop: '4px'
                     }}>
-                      <div className="mb-2">
-                        <label className="form-label fw-bold text-dark mb-1" style={{ fontSize: '0.875rem' }}>
-                          Modalidade Esportiva Praticada com Frequência
-                        </label>
-                        <p className="text-muted small m-0" style={{ fontSize: '0.75rem' }}>
-                          Identificação das modalidades habituais do atleta para contextualização da avaliação física.
-                        </p>
-                      </div>
-
-                      {/* PERGUNTA INICIAL: O ALUNO PRATICA ALGUMA MODALIDADE? */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '6px', marginBottom: '14px' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>
-                          O aluno pratica alguma modalidade esportiva com frequência?
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                        <div>
+                          <label className="form-label fw-bold text-dark mb-0" style={{ fontSize: '0.875rem' }}>
+                            O aluno pratica alguma modalidade esportiva com frequência?
+                          </label>
+                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                            Contextualiza a aptidão física e condicionamento habitual do atleta.
+                          </small>
+                        </div>
                         <div className="btn-group" role="group">
                           <button
                             type="button"
@@ -644,14 +1096,13 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                       </div>
 
                       {!praticaAlgumaModalidade ? (
-                        <div className="p-3 rounded" style={{ background: 'var(--bg)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
-                          ✓ O registro será salvo como <strong>"Não pratica modalidade"</strong>. Os campos de frequência semanal, duração e tempo de prática foram desabilitados por serem não aplicáveis.
+                        <div className="p-3 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
+                          ✓ O registro será salvo como <strong>"Não pratica modalidade"</strong>.
                         </div>
                       ) : studentModalidades.length > 0 ? (
-                        /* CENÁRIO A: ALUNO POSSUI MODALIDADES CADASTRADAS */
                         <div>
-                          <label className="form-label text-muted small fw-bold mb-1">Modalidades do Aluno (Marque as praticadas)</label>
-                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
+                          <label className="form-label text-muted small fw-bold mb-2">Modalidades do Aluno (Selecione as praticadas)</label>
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             {studentModalidades.map((mod) => {
                               const isChecked = selectedStudentModalidades.includes(mod);
                               return (
@@ -666,7 +1117,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                                     padding: '8px 14px',
                                     borderRadius: 'var(--radius-md)',
                                     border: isChecked ? '1.5px solid var(--primary)' : '1px solid var(--border)',
-                                    background: isChecked ? 'var(--primary-light)' : 'var(--bg)',
+                                    background: isChecked ? 'var(--primary-light)' : 'var(--bg-card)',
                                     color: isChecked ? 'var(--primary)' : 'var(--text-secondary)',
                                     fontWeight: isChecked ? 700 : 500,
                                     fontSize: '0.875rem',
@@ -687,10 +1138,9 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           </div>
                         </div>
                       ) : (
-                        /* CENÁRIO B: ALUNO NÃO POSSUI NENHUMA MODALIDADE CADASTRADA */
-                        <div className="row g-2 align-items-center mt-1">
+                        <div className="row g-2 align-items-center">
                           <div className="col-md-6">
-                            <label className="form-label text-muted small fw-bold">Selecione a Modalidade Praticada</label>
+                            <label className="form-label text-muted small fw-bold mb-1">Selecione a Modalidade Praticada</label>
                             <select 
                               value={fallbackModalidade} 
                               onChange={(e) => {
@@ -707,15 +1157,12 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     </div>
                   </div>
 
-                  {/* CAMPOS DE PRÁTICA COM EXPLICAÇÃO DETALHADA E OBJETIVA */}
+                  {/* Campos de Rotina de Prática */}
                   {praticaAlgumaModalidade && (
                     <>
-                      {/* FREQUÊNCIA SEMANAL */}
                       <div className="col-md-4">
-                        <label className="form-label text-dark fw-bold mb-1" style={{ fontSize: '0.875rem' }}>
-                          Frequência semanal
-                        </label>
-                        <div className="input-group mb-1">
+                        <label className="form-label text-muted small fw-bold mb-1">Frequência Semanal</label>
+                        <div className="input-group">
                           <input 
                             type="number" 
                             min="1" 
@@ -727,17 +1174,11 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           />
                           <span className="input-group-text" style={{ fontSize: '0.8125rem', background: 'var(--bg)' }}>sessões/sem</span>
                         </div>
-                        <p className="text-muted m-0" style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
-                          Quantas vezes por semana o aluno costuma praticar essa modalidade? <span className="text-primary fw-semibold">(Ex: 3 vezes por semana)</span>
-                        </p>
                       </div>
 
-                      {/* DURAÇÃO MÉDIA DA SESSÃO */}
                       <div className="col-md-4">
-                        <label className="form-label text-dark fw-bold mb-1" style={{ fontSize: '0.875rem' }}>
-                          Duração média da sessão
-                        </label>
-                        <div className="input-group mb-1">
+                        <label className="form-label text-muted small fw-bold mb-1">Duração Média da Sessão</label>
+                        <div className="input-group">
                           <input 
                             type="number" 
                             placeholder="Ex: 90" 
@@ -747,32 +1188,23 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           />
                           <span className="input-group-text" style={{ fontSize: '0.8125rem', background: 'var(--bg)' }}>minutos</span>
                         </div>
-                        <p className="text-muted m-0" style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
-                          Quanto tempo, em média, dura cada treino ou sessão de prática? <span className="text-primary fw-semibold">(Ex: 90 minutos)</span>
-                        </p>
                       </div>
 
-                      {/* TEMPO DE PRÁTICA */}
                       <div className="col-md-4">
-                        <label className="form-label text-dark fw-bold mb-1" style={{ fontSize: '0.875rem' }}>
-                          Tempo de prática
-                        </label>
+                        <label className="form-label text-muted small fw-bold mb-1">Tempo de Prática Regular</label>
                         <input 
                           type="text" 
                           placeholder="Ex: 2 anos e 6 meses" 
                           value={formData.tempoPratica} 
                           onChange={(e) => setFormData(prev => ({ ...prev, tempoPratica: e.target.value }))} 
-                          style={{ ...inputStyle, marginBottom: '4px' }} 
+                          style={inputStyle} 
                         />
-                        <p className="text-muted m-0" style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
-                          Há quanto tempo o aluno pratica essa modalidade de forma regular? <span className="text-primary fw-semibold">(Ex: 2 anos e 6 meses)</span>
-                        </p>
                       </div>
                     </>
                   )}
 
-                  {/* DEFICIÊNCIA */}
-                  <div className="col-12 mt-3 pt-3 border-top" style={{ borderColor: 'var(--border-light)' }}>
+                  {/* Deficiência */}
+                  <div className="col-12 mt-2 pt-2 border-top" style={{ borderColor: 'var(--border-light)' }}>
                     <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
                       <div>
                         <label className="form-label text-dark fw-bold m-0" style={{ fontSize: '0.875rem' }}>
@@ -813,26 +1245,25 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
               </div>
             </div>
 
-            {/* SEÇÃO 2: MEDIDAS CORPORAIS & CÁLCULOS AUTOMÁTICOS (IMC E RCE) */}
+            {/* ── SEÇÃO 2: DADOS ANTROPOMÉTRICOS E INDICADORES DE SAÚDE ── */}
             <div className="col-12">
               <div style={{
-                background: 'var(--bg)',
+                background: 'var(--bg-card)',
                 borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border-light)',
-                padding: '20px 24px'
+                border: '1.5px solid var(--border-light)',
+                padding: '22px 24px',
+                boxShadow: 'var(--shadow-xs)'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                  <h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Scale size={16} /> Seção 2 — Medidas Corporais e Indicadores de Saúde
+                <div style={sectionHeaderStyle}>
+                  <div style={{ width: '4px', height: '18px', borderRadius: '2px', background: 'var(--primary)' }}></div>
+                  <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Dados Antropométricos e Indicadores de Saúde
                   </h6>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                    Cálculos de IMC e RCE automáticos em tempo real
-                  </span>
                 </div>
 
                 <div className="row g-3">
                   <div className="col-6 col-md-3">
-                    <label className="form-label text-muted small fw-bold">Massa Corporal (kg)</label>
+                    <label className="form-label text-muted small fw-bold mb-1">Massa Corporal (kg)</label>
                     <input 
                       type="text" 
                       placeholder="Ex: 62.5" 
@@ -842,7 +1273,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     />
                   </div>
                   <div className="col-6 col-md-3">
-                    <label className="form-label text-muted small fw-bold">Estatura (cm)</label>
+                    <label className="form-label text-muted small fw-bold mb-1">Estatura (cm)</label>
                     <input 
                       type="text" 
                       placeholder="Ex: 172.0" 
@@ -852,7 +1283,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     />
                   </div>
                   <div className="col-6 col-md-3">
-                    <label className="form-label text-muted small fw-bold">Envergadura (cm)</label>
+                    <label className="form-label text-muted small fw-bold mb-1">Envergadura (cm)</label>
                     <input 
                       type="text" 
                       placeholder="Ex: 176.0" 
@@ -862,7 +1293,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     />
                   </div>
                   <div className="col-6 col-md-3">
-                    <label className="form-label text-muted small fw-bold">Perímetro da Cintura (cm)</label>
+                    <label className="form-label text-muted small fw-bold mb-1">Perímetro da Cintura (cm)</label>
                     <input 
                       type="text" 
                       placeholder="Ex: 74.0" 
@@ -873,11 +1304,11 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                   </div>
 
                   {/* IMC & RCE Cards Calculados */}
-                  <div className="col-md-6">
+                  <div className="col-md-6 mt-3">
                     <div style={calculatedBoxStyle}>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
-                          <span className="text-muted small d-block" style={{ fontSize: '0.75rem' }}>IMC Calculado:</span>
+                          <span className="text-muted small d-block" style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>IMC Calculado</span>
                           <strong style={{ fontSize: '1.25rem', color: 'var(--primary)' }}>
                             {liveCalculations.calculos.imc != null ? `${liveCalculations.calculos.imc} kg/m²` : '—'}
                           </strong>
@@ -906,11 +1337,11 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     </div>
                   </div>
 
-                  <div className="col-md-6">
+                  <div className="col-md-6 mt-3">
                     <div style={calculatedBoxStyle}>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
-                          <span className="text-muted small d-block" style={{ fontSize: '0.75rem' }}>Razão Cintura-Estatura (RCE):</span>
+                          <span className="text-muted small d-block" style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>Razão Cintura-Estatura (RCE)</span>
                           <strong style={{ fontSize: '1.25rem', color: 'var(--primary)' }}>
                             {liveCalculations.calculos.rce != null ? liveCalculations.calculos.rce : '—'}
                           </strong>
@@ -942,437 +1373,460 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
               </div>
             </div>
 
-            {/* SEÇÃO 3: OS 7 TESTES MOTORES (PROESP-Br 2021) */}
+            {/* ── SEÇÃO 3: TESTES DE APTIDÃO FÍSICA (PROESP-BR 2021) ── */}
             <div className="col-12">
-              <h6 style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '16px', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Trophy size={16} /> Seção 3 — Bateria de Testes Motores (PROESP-Br 2021)
-              </h6>
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1.5px solid var(--border-light)',
+                padding: '22px 24px',
+                boxShadow: 'var(--shadow-xs)'
+              }}>
+                <div style={sectionHeaderStyle}>
+                  <div style={{ width: '4px', height: '18px', borderRadius: '2px', background: 'var(--primary)' }}></div>
+                  <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Testes de Aptidão Física (PROESP-Br 2021)
+                  </h6>
+                </div>
 
-              <div className="row g-3">
-                {/* 1. CORRIDA 6 MIN */}
-                <div className="col-lg-6">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '18px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Heart size={16} style={{ color: '#ef4444' }} /> 1. Corrida/Caminhada de 6 min
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Aptidão Cardiorrespiratória</span>
-                      </div>
-                      <div className="row g-2 mb-3">
-                        <div className="col-4">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Voltas Completas</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 6" 
-                            value={formData.testes.corrida6Min.voltas} 
-                            onChange={(e) => handleTestChange('corrida6Min', 'voltas', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                        <div className="col-4">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Perímetro Pista (m)</label>
-                          <input 
-                            type="text" 
-                            value={formData.testes.corrida6Min.perimetroPista} 
-                            onChange={(e) => handleTestChange('corrida6Min', 'perimetroPista', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                        <div className="col-4">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Metros Últ. Volta</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 80" 
-                            value={formData.testes.corrida6Min.metrosUltimaVolta} 
-                            onChange={(e) => handleTestChange('corrida6Min', 'metrosUltimaVolta', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={calculatedBoxStyle}>
-                      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Distância Total:</small>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
-                            {liveCalculations.calculos.corrida6MinTotal != null ? `${liveCalculations.calculos.corrida6MinTotal} m` : '—'}
+                <div className="row g-3">
+                  {/* 1. CORRIDA 6 MIN */}
+                  <div className="col-lg-6">
+                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Heart size={16} style={{ color: '#ef4444' }} /> 1. Corrida/Caminhada de 6 min
                           </strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>Aptidão Cardiorrespiratória</span>
                         </div>
-                        <div>
-                          {(() => {
-                            const pBadge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.corrida6Min);
-                            return (
-                              <span style={{ background: pBadge.bg, color: pBadge.color, border: `1px solid ${pBadge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {pBadge.label}
-                              </span>
-                            );
-                          })()}
+                        <div className="row g-2 mb-3">
+                          <div className="col-4">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Voltas</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 6" 
+                              value={formData.testes.corrida6Min.voltas} 
+                              onChange={(e) => handleTestChange('corrida6Min', 'voltas', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                          <div className="col-4">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Pista (m)</label>
+                            <input 
+                              type="text" 
+                              value={formData.testes.corrida6Min.perimetroPista} 
+                              onChange={(e) => handleTestChange('corrida6Min', 'perimetroPista', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                          <div className="col-4">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Últ. Volta (m)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 80" 
+                              value={formData.testes.corrida6Min.metrosUltimaVolta} 
+                              onChange={(e) => handleTestChange('corrida6Min', 'metrosUltimaVolta', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={calculatedBoxStyle}>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Distância Total:</small>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
+                              {liveCalculations.calculos.corrida6MinTotal != null ? `${liveCalculations.calculos.corrida6MinTotal} m` : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            {(() => {
+                              const pBadge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.corrida6Min);
+                              return (
+                                <span style={{ background: pBadge.bg, color: pBadge.color, border: `1px solid ${pBadge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {pBadge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 2. SENTAR E ALCANÇAR */}
-                <div className="col-lg-6">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '18px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Ruler size={16} style={{ color: '#3b82f6' }} /> 2. Sentar e Alcançar (Flexibilidade)
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Banco de Wells (cm)</span>
-                      </div>
-                      <div className="row g-2 mb-3">
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 1 (cm)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 24.5" 
-                            value={formData.testes.sentarAlcançar.tentativa1} 
-                            onChange={(e) => handleTestChange('sentarAlcançar', 'tentativa1', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 2 (cm)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 26.0" 
-                            value={formData.testes.sentarAlcançar.tentativa2} 
-                            onChange={(e) => handleTestChange('sentarAlcançar', 'tentativa2', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={calculatedBoxStyle}>
-                      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Melhor Marca:</small>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
-                            {liveCalculations.calculos.sentarAlcançarMelhor != null ? `${liveCalculations.calculos.sentarAlcançarMelhor} cm` : '—'}
+                  {/* 2. SENTAR E ALCANÇAR */}
+                  <div className="col-lg-6">
+                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Ruler size={16} style={{ color: '#3b82f6' }} /> 2. Sentar e Alcançar
                           </strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>Flexibilidade (cm)</span>
                         </div>
-                        <div>
-                          {(() => {
-                            const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.sentarAlcançar);
-                            return (
-                              <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
+                        <div className="row g-2 mb-3">
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 1 (cm)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 24.5" 
+                              value={formData.testes.sentarAlcançar.tentativa1} 
+                              onChange={(e) => handleTestChange('sentarAlcançar', 'tentativa1', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 2 (cm)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 26.0" 
+                              value={formData.testes.sentarAlcançar.tentativa2} 
+                              onChange={(e) => handleTestChange('sentarAlcançar', 'tentativa2', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={calculatedBoxStyle}>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Melhor Marca:</small>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
+                              {liveCalculations.calculos.sentarAlcançarMelhor != null ? `${liveCalculations.calculos.sentarAlcançarMelhor} cm` : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            {(() => {
+                              const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.sentarAlcançar);
+                              return (
+                                <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 3. ABDOMINAIS 1 MINUTO */}
-                <div className="col-lg-6">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '18px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Activity size={16} style={{ color: '#10b981' }} /> 3. Abdominais em 1 minuto
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Resistência Muscular</span>
-                      </div>
-                      <div className="mb-3">
-                        <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Repetições completas em 60s</label>
-                        <input 
-                          type="number" 
-                          placeholder="Ex: 38" 
-                          value={formData.testes.abdominais1Min.repeticoes} 
-                          onChange={(e) => handleTestChange('abdominais1Min', 'repeticoes', e.target.value)} 
-                          style={inputStyle} 
-                        />
-                      </div>
-                    </div>
-                    <div style={calculatedBoxStyle}>
-                      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Classificação:</small>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
-                            {formData.testes.abdominais1Min.repeticoes ? `${formData.testes.abdominais1Min.repeticoes} reps` : '—'}
+                  {/* 3. ABDOMINAIS 1 MINUTO */}
+                  <div className="col-lg-6">
+                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Activity size={16} style={{ color: '#10b981' }} /> 3. Abdominais em 1 minuto
                           </strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>Resistência Muscular</span>
                         </div>
-                        <div>
-                          {(() => {
-                            const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.abdominais1Min);
-                            return (
-                              <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
+                        <div className="mb-3">
+                          <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Repetições completas em 60s</label>
+                          <input 
+                            type="number" 
+                            placeholder="Ex: 38" 
+                            value={formData.testes.abdominais1Min.repeticoes} 
+                            onChange={(e) => handleTestChange('abdominais1Min', 'repeticoes', e.target.value)} 
+                            style={inputStyle} 
+                          />
+                        </div>
+                      </div>
+                      <div style={calculatedBoxStyle}>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Resultado:</small>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
+                              {formData.testes.abdominais1Min.repeticoes ? `${formData.testes.abdominais1Min.repeticoes} reps` : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            {(() => {
+                              const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.abdominais1Min);
+                              return (
+                                <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 4. ARREMESSO DE MEDICINE BALL */}
-                <div className="col-lg-6">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '18px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Dumbbell size={16} style={{ color: '#8b5cf6' }} /> 4. Arremesso de Medicine Ball (2 kg)
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Força MMSS (cm)</span>
-                      </div>
-                      <div className="row g-2 mb-3">
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 1 (cm)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 340" 
-                            value={formData.testes.arremessoMedicineBall.tentativa1} 
-                            onChange={(e) => handleTestChange('arremessoMedicineBall', 'tentativa1', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 2 (cm)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 365" 
-                            value={formData.testes.arremessoMedicineBall.tentativa2} 
-                            onChange={(e) => handleTestChange('arremessoMedicineBall', 'tentativa2', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={calculatedBoxStyle}>
-                      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Melhor Arremesso:</small>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
-                            {liveCalculations.calculos.arremessoMedicineBallMelhor != null ? `${liveCalculations.calculos.arremessoMedicineBallMelhor} cm` : '—'}
+                  {/* 4. ARREMESSO MEDICINE BALL */}
+                  <div className="col-lg-6">
+                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Dumbbell size={16} style={{ color: '#8b5cf6' }} /> 4. Arremesso de Medicine Ball (2 kg)
                           </strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>Força MMSS (cm)</span>
                         </div>
-                        <div>
-                          {(() => {
-                            const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.arremessoMedicineBall);
-                            return (
-                              <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
+                        <div className="row g-2 mb-3">
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 1 (cm)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 340" 
+                              value={formData.testes.arremessoMedicineBall.tentativa1} 
+                              onChange={(e) => handleTestChange('arremessoMedicineBall', 'tentativa1', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 2 (cm)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 365" 
+                              value={formData.testes.arremessoMedicineBall.tentativa2} 
+                              onChange={(e) => handleTestChange('arremessoMedicineBall', 'tentativa2', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={calculatedBoxStyle}>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Melhor Arremesso:</small>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
+                              {liveCalculations.calculos.arremessoMedicineBallMelhor != null ? `${liveCalculations.calculos.arremessoMedicineBallMelhor} cm` : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            {(() => {
+                              const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.arremessoMedicineBall);
+                              return (
+                                <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 5. SALTO HORIZONTAL */}
-                <div className="col-lg-6">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '18px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <TrendingUp size={16} style={{ color: '#ec4899' }} /> 5. Salto Horizontal
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Força MMII (cm)</span>
-                      </div>
-                      <div className="row g-2 mb-3">
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 1 (cm)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 165.0" 
-                            value={formData.testes.saltoHorizontal.tentativa1} 
-                            onChange={(e) => handleTestChange('saltoHorizontal', 'tentativa1', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 2 (cm)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 178.0" 
-                            value={formData.testes.saltoHorizontal.tentativa2} 
-                            onChange={(e) => handleTestChange('saltoHorizontal', 'tentativa2', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={calculatedBoxStyle}>
-                      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Melhor Salto:</small>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
-                            {liveCalculations.calculos.saltoHorizontalMelhor != null ? `${liveCalculations.calculos.saltoHorizontalMelhor} cm` : '—'}
+                  {/* 5. SALTO HORIZONTAL */}
+                  <div className="col-lg-6">
+                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <TrendingUp size={16} style={{ color: '#ec4899' }} /> 5. Salto Horizontal
                           </strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>Força MMII (cm)</span>
                         </div>
-                        <div>
-                          {(() => {
-                            const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.saltoHorizontal);
-                            return (
-                              <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
+                        <div className="row g-2 mb-3">
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 1 (cm)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 165.0" 
+                              value={formData.testes.saltoHorizontal.tentativa1} 
+                              onChange={(e) => handleTestChange('saltoHorizontal', 'tentativa1', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 2 (cm)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 178.0" 
+                              value={formData.testes.saltoHorizontal.tentativa2} 
+                              onChange={(e) => handleTestChange('saltoHorizontal', 'tentativa2', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={calculatedBoxStyle}>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Melhor Salto:</small>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
+                              {liveCalculations.calculos.saltoHorizontalMelhor != null ? `${liveCalculations.calculos.saltoHorizontalMelhor} cm` : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            {(() => {
+                              const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.saltoHorizontal);
+                              return (
+                                <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 6. QUADRADO 4X4 */}
-                <div className="col-lg-6">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '18px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Timer size={16} style={{ color: '#f59e0b' }} /> 6. Quadrado de 4 × 4 metros
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Agilidade (segundos)</span>
-                      </div>
-                      <div className="row g-2 mb-3">
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 1 (s)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 4.85" 
-                            value={formData.testes.quadrado4x4.tentativa1} 
-                            onChange={(e) => handleTestChange('quadrado4x4', 'tentativa1', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 2 (s)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 4.70" 
-                            value={formData.testes.quadrado4x4.tentativa2} 
-                            onChange={(e) => handleTestChange('quadrado4x4', 'tentativa2', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={calculatedBoxStyle}>
-                      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Melhor Tempo (menor):</small>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
-                            {liveCalculations.calculos.quadrado4x4Melhor != null ? `${liveCalculations.calculos.quadrado4x4Melhor} s` : '—'}
+                  {/* 6. QUADRADO 4X4 */}
+                  <div className="col-lg-6">
+                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Timer size={16} style={{ color: '#f59e0b' }} /> 6. Quadrado de 4 × 4 metros
                           </strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>Agilidade (segundos)</span>
                         </div>
-                        <div>
-                          {(() => {
-                            const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.quadrado4x4);
-                            return (
-                              <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
+                        <div className="row g-2 mb-3">
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 1 (s)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 4.85" 
+                              value={formData.testes.quadrado4x4.tentativa1} 
+                              onChange={(e) => handleTestChange('quadrado4x4', 'tentativa1', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 2 (s)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 4.70" 
+                              value={formData.testes.quadrado4x4.tentativa2} 
+                              onChange={(e) => handleTestChange('quadrado4x4', 'tentativa2', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={calculatedBoxStyle}>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Melhor Tempo (menor):</small>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
+                              {liveCalculations.calculos.quadrado4x4Melhor != null ? `${liveCalculations.calculos.quadrado4x4Melhor} s` : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            {(() => {
+                              const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.quadrado4x4);
+                              return (
+                                <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 7. CORRIDA 20 METROS */}
-                <div className="col-lg-6">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '18px 20px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Flame size={16} style={{ color: '#06b6d4' }} /> 7. Corrida de 20 metros
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Velocidade (segundos)</span>
-                      </div>
-                      <div className="row g-2 mb-3">
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 1 (s)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 3.82" 
-                            value={formData.testes.corrida20m.tentativa1} 
-                            onChange={(e) => handleTestChange('corrida20m', 'tentativa1', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="form-label text-muted small" style={{ fontSize: '0.75rem' }}>Tentativa 2 (s)</label>
-                          <input 
-                            type="text" 
-                            placeholder="Ex: 3.74" 
-                            value={formData.testes.corrida20m.tentativa2} 
-                            onChange={(e) => handleTestChange('corrida20m', 'tentativa2', e.target.value)} 
-                            style={inputStyle} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={calculatedBoxStyle}>
-                      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                          <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Melhor Tempo (menor):</small>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
-                            {liveCalculations.calculos.corrida20mMelhor != null ? `${liveCalculations.calculos.corrida20mMelhor} s` : '—'}
+                  {/* 7. CORRIDA 20 METROS */}
+                  <div className="col-lg-6">
+                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Flame size={16} style={{ color: '#06b6d4' }} /> 7. Corrida de 20 metros
                           </strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>Velocidade (segundos)</span>
                         </div>
-                        <div>
-                          {(() => {
-                            const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.corrida20m);
-                            return (
-                              <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
+                        <div className="row g-2 mb-3">
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 1 (s)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 3.82" 
+                              value={formData.testes.corrida20m.tentativa1} 
+                              onChange={(e) => handleTestChange('corrida20m', 'tentativa1', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                          <div className="col-6">
+                            <label className="form-label text-muted small mb-1" style={{ fontSize: '0.75rem' }}>Tentativa 2 (s)</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ex: 3.74" 
+                              value={formData.testes.corrida20m.tentativa2} 
+                              onChange={(e) => handleTestChange('corrida20m', 'tentativa2', e.target.value)} 
+                              style={inputStyle} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={calculatedBoxStyle}>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Melhor Tempo (menor):</small>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text)' }}>
+                              {liveCalculations.calculos.corrida20mMelhor != null ? `${liveCalculations.calculos.corrida20mMelhor} s` : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            {(() => {
+                              const badge = getPerformanceBadge(liveCalculations.classificacoes.desempenho.corrida20m);
+                              return (
+                                <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* OBSERVAÇÕES */}
-                <div className="col-12">
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '16px 20px' }}>
-                    <label className="form-label text-muted small fw-bold">Observações Gerais do Avaliador</label>
-                    <textarea 
-                      rows="2" 
-                      placeholder="Anotações sobre a execução dos testes, condições climáticas ou recomendações..." 
-                      value={formData.observacoes} 
-                      onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))} 
-                      style={inputStyle} 
-                    />
-                  </div>
-                </div>
-
-                {/* BOTÕES DE AÇÃO */}
-                <div className="col-12 d-flex justify-content-end gap-2 pt-3 border-top" style={{ borderColor: 'var(--border-light)' }}>
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
-                    onClick={() => { setIsCreating(false); setIsEditing(false); }}
-                    disabled={submitting}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary" 
-                    disabled={submitting}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <CheckCircle2 size={16} /> {submitting ? 'Salvando...' : 'Salvar Avaliação'}
-                  </button>
                 </div>
               </div>
             </div>
+
+            {/* ── SEÇÃO 4: OBSERVAÇÕES ── */}
+            <div className="col-12">
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1.5px solid var(--border-light)',
+                padding: '22px 24px',
+                boxShadow: 'var(--shadow-xs)'
+              }}>
+                <div style={sectionHeaderStyle}>
+                  <div style={{ width: '4px', height: '18px', borderRadius: '2px', background: 'var(--primary)' }}></div>
+                  <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Observações
+                  </h6>
+                </div>
+                <textarea 
+                  rows="3" 
+                  placeholder="Anotações sobre a execução dos testes, recomendações físicas ou condições clínicas..." 
+                  value={formData.observacoes} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))} 
+                  style={{ ...inputStyle, minHeight: '80px' }} 
+                />
+              </div>
+            </div>
+
+            {/* BOTÕES DE AÇÃO DO FORMULÁRIO */}
+            <div className="col-12 d-flex justify-content-end gap-2 pt-2">
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => { setIsCreating(false); setIsEditing(false); }}
+                disabled={submitting}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                disabled={submitting}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <CheckCircle2 size={16} /> {submitting ? 'Salvando...' : 'Salvar Avaliação'}
+              </button>
+            </div>
+
           </div>
         </form>
       )}
@@ -1382,7 +1836,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
       {/* ========================================================================= */}
       {!isCreating && !isEditing && selectedAssessment && (
         <div>
-          {/* Header do Detalhamento */}
+          {/* Header do Detalhamento com Botão ÚNICO de Exportar PDF */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -1402,10 +1856,12 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
             </button>
 
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* ÚNICO BOTÃO EXPORTAR PDF */}
               <button 
                 className="btn btn-outline-primary btn-sm" 
-                onClick={() => setIsPdfModalOpen(true)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => exportAssessmentToPDF(selectedAssessment, student)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                title="Exportar Ficha de Aptidão Física em PDF"
               >
                 <Printer size={15} /> Exportar PDF
               </button>
@@ -1436,31 +1892,31 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
           </div>
 
           <div className="row g-4">
-            {/* Bloco 1: Dados da Sessão */}
+            {/* Bloco 1: Informações da Avaliação */}
             <div className="col-12">
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '20px' }}>
                 <div className="row g-3">
                   <div className="col-md-3">
-                    <span className="text-muted d-block small">Data e Horário</span>
+                    <span className="text-muted d-block small fw-bold text-uppercase">Data e Horário</span>
                     <strong style={{ color: 'var(--text)', fontSize: '0.875rem' }}>
                       {new Date(selectedAssessment.dataAvaliacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} {selectedAssessment.horario ? ` às ${selectedAssessment.horario}` : ''}
                     </strong>
                   </div>
                   <div className="col-md-3">
-                    <span className="text-muted d-block small">Temperatura</span>
+                    <span className="text-muted d-block small fw-bold text-uppercase">Temperatura</span>
                     <strong style={{ color: 'var(--text)', fontSize: '0.875rem' }}>
                       {selectedAssessment.temperatura != null ? `${selectedAssessment.temperatura} °C` : 'Não informada'}
                     </strong>
                   </div>
                   <div className="col-md-3">
-                    <span className="text-muted d-block small">Modalidade Frequente</span>
+                    <span className="text-muted d-block small fw-bold text-uppercase">Modalidade Esportiva</span>
                     <strong style={{ color: 'var(--text)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <SportIcon sport={selectedAssessment.modalidade || 'Futsal'} size={16} />
                       {selectedAssessment.modalidade || 'Geral'}
                     </strong>
                   </div>
                   <div className="col-md-3">
-                    <span className="text-muted d-block small">Rotina de Prática</span>
+                    <span className="text-muted d-block small fw-bold text-uppercase">Rotina de Prática</span>
                     <strong style={{ color: 'var(--text)', fontSize: '0.875rem' }}>
                       {selectedAssessment.modalidade === 'Não pratica modalidade' ? (
                         <span className="text-muted">Não aplicável</span>
@@ -1470,8 +1926,8 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     </strong>
                   </div>
                   {selectedAssessment.possuiDeficiencia && (
-                    <div className="col-12">
-                      <span className="text-muted d-block small">Deficiência Informada</span>
+                    <div className="col-12 pt-2 border-top">
+                      <span className="text-muted d-block small fw-bold">Deficiência Informada</span>
                       <span className="badge bg-warning text-dark">{selectedAssessment.deficienciaDescricao || 'Sim'}</span>
                     </div>
                   )}
@@ -1482,8 +1938,8 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
             {/* Bloco 2: Medidas Antropométricas & Indicadores de Saúde */}
             <div className="col-12">
               <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '20px' }}>
-                <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', fontSize: '0.9375rem' }}>
-                  Medidas Antropométricas & Indicadores de Saúde
+                <h6 style={{ fontWeight: 800, color: 'var(--text)', marginBottom: '16px', fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Dados Antropométricos e Indicadores de Saúde
                 </h6>
 
                 <div className="row g-3">
@@ -1525,7 +1981,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     <div style={{ ...calculatedBoxStyle, background: 'var(--bg)' }}>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
-                          <span className="text-muted small d-block">IMC Calculado</span>
+                          <span className="text-muted small d-block" style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>IMC Calculado</span>
                           <strong style={{ fontSize: '1.25rem', color: 'var(--primary)' }}>
                             {selectedAssessment.calculos?.imc != null ? `${selectedAssessment.calculos.imc} kg/m²` : '—'}
                           </strong>
@@ -1558,7 +2014,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     <div style={{ ...calculatedBoxStyle, background: 'var(--bg)' }}>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
-                          <span className="text-muted small d-block">Razão Cintura-Estatura (RCE)</span>
+                          <span className="text-muted small d-block" style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>Razão Cintura-Estatura (RCE)</span>
                           <strong style={{ fontSize: '1.25rem', color: 'var(--primary)' }}>
                             {selectedAssessment.calculos?.rce != null ? selectedAssessment.calculos.rce : '—'}
                           </strong>
@@ -1592,8 +2048,8 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
 
             {/* Bloco 3: Cards dos 7 Testes */}
             <div className="col-12">
-              <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', fontSize: '0.9375rem' }}>
-                Resultados dos Testes Motores (PROESP-Br 2021)
+              <h6 style={{ fontWeight: 800, color: 'var(--text)', marginBottom: '16px', fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Resultados dos Testes de Aptidão Física (PROESP-Br 2021)
               </h6>
 
               <div className="row g-3">
@@ -1602,7 +2058,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                   <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', padding: '16px' }}>
                     <div className="d-flex justify-content-between align-items-start mb-2">
                       <strong style={{ fontSize: '0.875rem', color: 'var(--text)' }}>1. Corrida/Caminhada de 6 min</strong>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Aptidão Cardiorrespiratória</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Cardiorrespiratória</span>
                     </div>
                     <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                       Voltas: <strong>{selectedAssessment.testes?.corrida6Min?.voltas ?? '—'}</strong> ({selectedAssessment.testes?.corrida6Min?.perimetroPista ?? 200}m) • Última volta: <strong>{selectedAssessment.testes?.corrida6Min?.metrosUltimaVolta ?? '—'}m</strong>
@@ -1661,7 +2117,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     </div>
                     <div className="d-flex justify-content-between align-items-center pt-2 border-top" style={{ borderColor: 'var(--border-light)' }}>
                       <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--text)' }}>
-                        {selectedAssessment.testes?.abdominais1Min?.repeticoes != null ? `${selectedAssessment.testes.abdominais1Min.repeticoes} reps/min` : '—'}
+                        {selectedAssessment.testes?.abdominais1Min?.repeticoes != null ? `${selectedAssessment.testes.abdominais1Min.repeticoes} reps` : '—'}
                       </span>
                       {(() => {
                         const pBadge = getPerformanceBadge(selectedAssessment.classificacoes?.desempenho?.abdominais1Min);
@@ -1801,7 +2257,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
       {/* ========================================================================= */}
       {!isCreating && !isEditing && !selectedAssessment && (
         <div>
-          {/* Header Principal da Aba */}
+          {/* Header Principal da Aba com ÚNICO Botão de Exportar PDF */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -1813,7 +2269,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
             gap: '12px'
           }}>
             <div>
-              <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h5 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.0625rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Activity size={18} style={{ color: 'var(--primary)' }} />
                 <span>Aptidão Física (PROESP-Br 2021)</span>
               </h5>
@@ -1822,26 +2278,26 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
               </p>
             </div>
 
-            {/* AÇÕES CENTRALIZADAS (BOTÃO ÚNICO + EXPORTAR PDF) */}
+            {/* AÇÕES CENTRALIZADAS (BOTÃO ÚNICO NOVO + BOTÃO ÚNICO EXPORTAR PDF) */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               {assessments.length > 0 && (
                 <button 
                   type="button" 
                   className="btn btn-outline-secondary"
-                  onClick={() => setIsPdfModalOpen(true)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}
+                  onClick={() => exportAssessmentToPDF(assessments[0], student)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600 }}
+                  title="Exportar Ficha de Aptidão Física em PDF"
                 >
                   <Printer size={16} /> Exportar PDF
                 </button>
               )}
 
-              {/* ÚNICO BOTÃO PRINCIPAL DE CRIAÇÃO */}
               {!isReadOnly && (
                 <button 
                   type="button" 
                   className="btn btn-primary" 
                   onClick={handleStartNew}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600 }}
                 >
                   <Plus size={16} /> Nova Avaliação
                 </button>
@@ -1935,7 +2391,6 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
               <div className="spinner-border text-primary" role="status"></div>
             </div>
           ) : assessments.length === 0 ? (
-            /* ESTADO VAZIO: SEM BOTÕES DUPLICADOS, COM MENSAGEM CLARA */
             <div style={{
               textAlign: 'center',
               padding: '64px 24px',
@@ -1956,7 +2411,6 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
             /* MODO: COMPARAÇÃO ENTRE DUAS AVALIAÇÕES                                   */
             /* ========================================================================= */
             <div className="fade-in">
-              {/* SELETORES DAS 2 AVALIAÇÕES */}
               <div style={{
                 background: 'var(--bg)',
                 borderRadius: 'var(--radius-lg)',
@@ -2248,12 +2702,10 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
 
                     <div style={{ width: '100%', overflowX: 'auto' }}>
                       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', maxHeight: '260px', overflow: 'visible' }}>
-                        {/* Linhas de Grade de Fundo */}
                         <line x1={padX} y1={padY} x2={width - padX} y2={padY} stroke="var(--border-light)" strokeDasharray="4" />
                         <line x1={padX} y1={height / 2} x2={width - padX} y2={height / 2} stroke="var(--border-light)" strokeDasharray="4" />
                         <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} stroke="var(--border-light)" />
 
-                        {/* Linha do Gráfico */}
                         <polyline
                           fill="none"
                           stroke="var(--primary)"
@@ -2263,7 +2715,6 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           points={polylinePoints}
                         />
 
-                        {/* Pontos e Rótulos */}
                         {points.map((p, i) => {
                           const cx = getX(i);
                           const cy = getY(p.val);
@@ -2375,6 +2826,16 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                         Ver Detalhes
                       </button>
 
+                      <button 
+                        type="button" 
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={(e) => { e.stopPropagation(); exportAssessmentToPDF(a, student); }}
+                        title="Exportar PDF desta avaliação"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Printer size={14} /> PDF
+                      </button>
+
                       {!isReadOnly && (
                         <>
                           <button 
@@ -2405,16 +2866,6 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
           )}
         </div>
       )}
-
-      {/* MODAL DE EXPORTAÇÃO PARA PDF */}
-      <PhysicalAssessmentPDFExport
-        isOpen={isPdfModalOpen}
-        onClose={() => setIsPdfModalOpen(false)}
-        assessments={assessments}
-        student={student}
-        selectedAssessmentId={selectedAssessment?._id}
-        initialCompareIds={compareIds}
-      />
     </div>
   );
 };

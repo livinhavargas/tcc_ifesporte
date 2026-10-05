@@ -1,332 +1,809 @@
-import React, { useEffect } from 'react';
-import ContextoSelector from './ContextoSelector';
+import React, { useMemo, useEffect } from 'react';
+import NumberStepper from '../../../components/NumberStepper';
 
-const atletismoForms = {
-  '100m': {
-    'Saída': ['Tempo de reação', 'Explosão inicial', 'Posicionamento na largada', 'Técnica da saída'],
-    'Aceleração': ['Aceleração', 'Frequência das passadas', 'Comprimento das passadas', 'Coordenação dos braços', 'Inclinação corporal'],
-    'Velocidade Máxima': ['Manutenção da velocidade', 'Estabilidade corporal', 'Relaxamento muscular', 'Oscilações durante a corrida'],
-    'Final da prova': ['Queda de rendimento', 'Manutenção da técnica', 'Resistência à fadiga']
-  },
-  '200m': {
-    'Saída': ['Tempo de reação', 'Explosão inicial', 'Posicionamento na largada', 'Técnica da saída'],
-    'Aceleração': ['Aceleração', 'Frequência das passadas', 'Comprimento das passadas', 'Coordenação dos braços', 'Inclinação corporal'],
-    'Velocidade Máxima': ['Manutenção da velocidade', 'Estabilidade corporal', 'Relaxamento muscular', 'Oscilações durante a corrida'],
-    'Curva': ['Eficiência na curva', 'Equilíbrio corporal', 'Saída da curva', 'Transição curva-reta', 'Manutenção da velocidade após a curva'],
-    'Final da prova': ['Queda de rendimento', 'Manutenção da técnica', 'Resistência à fadiga']
-  },
-  '400m': {
-    'Distribuição do esforço': ['Ritmo inicial', 'Ritmo intermediário', 'Ritmo final', 'Manutenção da velocidade', 'Resistência à fadiga', 'Técnica durante toda a prova']
-  },
-  '800m': {
-    'Geral': ['Estratégia de prova', 'Ritmo', 'Posicionamento', 'Economia de corrida', 'Sprint final', 'Controle do esforço']
-  },
-  '1500m': {
-    'Geral': ['Ritmo', 'Regularidade', 'Posicionamento', 'Economia de movimento', 'Resistência', 'Sprint final']
-  },
-  '3000m': {
-    'Geral': ['Regularidade do ritmo', 'Cadência', 'Economia de corrida', 'Resistência', 'Controle da fadiga']
-  },
-  '5000m': {
-    'Geral': ['Ritmo', 'Regularidade', 'Economia de corrida', 'Resistência', 'Recuperação após acelerações', 'Controle do esforço']
-  },
-  'Revezamento 100m': {
-    'Corredor 1': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 2': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 3': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe']
-  },
-  'Revezamento 4x100': {
-    'Corredor 1': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 2': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 3': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe']
-  },
-  'Revezamento 400m': {
-    'Corredor 1': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 2': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 3': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe', 'Estratégia da ordem dos corredores', 'Distribuição do esforço da equipe', 'Manutenção do ritmo coletivo']
-  },
-  'Revezamento 4x400': {
-    'Corredor 1': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 2': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 3': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Corredor 4': ['Saída', 'Velocidade', 'Recepção do bastão', 'Entrega do bastão'],
-    'Desempenho da Equipe': ['Sincronização', 'Tempo das trocas', 'Eficiência nas zonas de passagem', 'Perda de velocidade durante as trocas', 'Organização da equipe', 'Estratégia da ordem dos corredores', 'Distribuição do esforço da equipe', 'Manutenção do ritmo coletivo']
-  },
-  'Pentatlo': {
-    'Provas e Transições': ['Ritmo e Distribuição do Esforço', 'Técnica de Prova', 'Recuperação entre Provas', 'Manutenção da Eficiência'],
-    'Desempenho Geral': ['Resistência à Fadiga', 'Consistência do Desempenho', 'Preparação Física e Mental']
-  },
-  '100m com Barreiras': {
-    'Largada e Aproximação': ['Tempo de reação', 'Explosão na saída', 'Ritmo de aproximação à 1ª barreira'],
-    'Transposição de Barreiras': ['Ataque à barreira', 'Perda de altura', 'Ação da perna de ataque e de reboque', 'Manutenção do ritmo entre barreiras'],
-    'Sprint Final': ['Aceleração pós-última barreira', 'Manutenção da velocidade', 'Resistência à fadiga']
-  },
-  '110m com Barreiras': {
-    'Largada e Aproximação': ['Tempo de reação', 'Explosão na saída', 'Ritmo de aproximação à 1ª barreira'],
-    'Transposição de Barreiras': ['Ataque à barreira', 'Perda de altura', 'Ação da perna de ataque e de reboque', 'Manutenção do ritmo entre barreiras'],
-    'Sprint Final': ['Aceleração pós-última barreira', 'Manutenção da velocidade', 'Resistência à fadiga']
-  },
-  'Distância': {
-    'Corrida de aproximação': ['Velocidade', 'Ritmo', 'Estabilidade'],
-    'Impulsão': ['Precisão na tábua', 'Potência', 'Técnica da impulsão'],
-    'Fase aérea': ['Controle corporal', 'Equilíbrio', 'Técnica'],
-    'Aterrissagem': ['Extensão das pernas', 'Aproveitamento da distância', 'Técnica da queda']
-  },
-  'Altura': {
-    'Geral': ['Corrida de aproximação', 'Curva de aproximação', 'Impulsão', 'Passagem sobre o sarrafo', 'Controle corporal', 'Aterrissagem']
-  },
-  'Triplo': {
-    'Hop': ['Equilíbrio', 'Potência', 'Técnica'],
-    'Step': ['Manutenção da velocidade', 'Coordenação', 'Estabilidade'],
-    'Jump': ['Impulsão final', 'Controle corporal', 'Aterrissagem']
-  },
-  'Peso': {
-    'Geral': ['Postura inicial', 'Deslocamento', 'Transferência de força', 'Potência', 'Técnica de lançamento', 'Equilíbrio final']
-  },
-  'Dardo': {
-    'Geral': ['Corrida de aproximação', 'Ritmo', 'Cruzamento dos passos', 'Transferência de força', 'Técnica de lançamento', 'Equilíbrio após o lançamento']
-  },
-  'Disco': {
-    'Geral': ['Rotação', 'Equilíbrio', 'Velocidade angular', 'Técnica de lançamento', 'Controle corporal', 'Finalização do movimento']
-  }
-};
+export const PROVAS_ATLETISMO = [
+  { id: '100m', label: '100m rasos', grupo: 'Velocidade' },
+  { id: '100m_barreiras', label: '100m com barreiras', grupo: 'Velocidade' },
+  { id: '110m_barreiras', label: '110m com barreiras', grupo: 'Velocidade' },
+  { id: '200m', label: '200m rasos', grupo: 'Velocidade' },
+  { id: '400m', label: '400m rasos', grupo: 'Velocidade' },
+  { id: '400m_barreiras', label: '400m com barreiras', grupo: 'Velocidade' },
 
-const getFormStructure = (modalidadeStr) => {
-  if (!modalidadeStr) return null;
-  const norm = modalidadeStr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  { id: '800m', label: '800m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 0.8 },
+  { id: '1500m', label: '1500m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 1.5 },
+  { id: '3000m', label: '3000m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 3.0 },
+  { id: '5000m', label: '5000m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 5.0 },
 
-  if (norm.includes('100m com barreiras') || norm.includes('100m barreiras')) return { key: '100m com Barreiras', structure: atletismoForms['100m com Barreiras'] };
-  if (norm.includes('110m com barreiras') || norm.includes('110m barreiras')) return { key: '110m com Barreiras', structure: atletismoForms['110m com Barreiras'] };
-  if (norm.includes('4x100')) return { key: 'Revezamento 4x100', structure: atletismoForms['Revezamento 4x100'] };
-  if (norm.includes('4x400')) return { key: 'Revezamento 4x400', structure: atletismoForms['Revezamento 4x400'] };
-  if (norm.includes('pentatlo')) return { key: 'Pentatlo', structure: atletismoForms['Pentatlo'] };
-  if (norm.includes('100m')) return { key: '100m', structure: atletismoForms['100m'] };
-  if (norm.includes('200m')) return { key: '200m', structure: atletismoForms['200m'] };
-  if (norm.includes('400m')) return { key: '400m', structure: atletismoForms['400m'] };
-  if (norm.includes('800m')) return { key: '800m', structure: atletismoForms['800m'] };
-  if (norm.includes('1500m')) return { key: '1500m', structure: atletismoForms['1500m'] };
-  if (norm.includes('3000m')) return { key: '3000m', structure: atletismoForms['3000m'] };
-  if (norm.includes('5000m')) return { key: '5000m', structure: atletismoForms['5000m'] };
+  { id: 'revezamento_4x100m', label: 'Revezamento 4x100m', grupo: 'Revezamento' },
+  { id: 'revezamento_4x400m', label: 'Revezamento 4x400m', grupo: 'Revezamento' },
 
-  if (norm.includes('distancia')) return { key: 'Distância', structure: atletismoForms['Distância'] };
-  if (norm.includes('altura')) return { key: 'Altura', structure: atletismoForms['Altura'] };
-  if (norm.includes('triplo')) return { key: 'Triplo', structure: atletismoForms['Triplo'] };
+  { id: 'salto_altura', label: 'Salto em Altura', grupo: 'Saltos' },
+  { id: 'salto_distancia', label: 'Salto em Distância', grupo: 'Saltos' },
+  { id: 'salto_triplo', label: 'Salto Triplo', grupo: 'Saltos' },
 
-  if (norm.includes('peso')) return { key: 'Peso', structure: atletismoForms['Peso'] };
-  if (norm.includes('disco')) return { key: 'Disco', structure: atletismoForms['Disco'] };
-  if (norm.includes('dardo')) return { key: 'Dardo', structure: atletismoForms['Dardo'] };
+  { id: 'arremesso_peso', label: 'Arremesso de Peso', grupo: 'Lançamentos' },
+  { id: 'lancamento_disco', label: 'Lançamento de Disco', grupo: 'Lançamentos' },
+  { id: 'lancamento_dardo', label: 'Lançamento de Dardo', grupo: 'Lançamentos' },
 
-  const match = Object.keys(atletismoForms).find(key => norm.includes(key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
-  return match ? { key: match, structure: atletismoForms[match] } : null;
-};
+  { id: 'pentatlo', label: 'Pentatlo', grupo: 'Combinadas' }
+];
 
-const AtletismoForm = ({ formData, setFormData, handleInputChange, handleSubmit, students, setMensagem }) => {
-  const formInfo = getFormStructure(formData.modalidade);
-  const structure = formInfo?.structure || {};
-  const isRevezamento = formInfo?.key?.includes('Revezamento');
+// Utilitário para cálculo de Pace automático
+export const calculatePace = (tempoStr, distanciaKm) => {
+  if (!tempoStr || !distanciaKm) return '';
 
-  // Inicializa respostas vazias ao montar se nao estiver editando
-  useEffect(() => {
-    if (formInfo && !formData.editingId && (!formData.respostas || Object.keys(formData.respostas).length === 0)) {
-      const novasRespostas = {};
-      Object.entries(structure).forEach(([section, items]) => {
-        items.forEach(item => {
-          novasRespostas[`${section} - ${item}`] = 3;
-        });
-      });
-      setFormData(prev => ({ ...prev, respostas: novasRespostas }));
+  const clean = String(tempoStr).trim();
+  let totalSegundos = 0;
+
+  if (clean.includes(':')) {
+    const parts = clean.split(':');
+    if (parts.length === 2) {
+      const min = parseFloat(parts[0]) || 0;
+      const seg = parseFloat(parts[1]) || 0;
+      totalSegundos = min * 60 + seg;
+    } else if (parts.length === 3) {
+      const h = parseFloat(parts[0]) || 0;
+      const min = parseFloat(parts[1]) || 0;
+      const seg = parseFloat(parts[2]) || 0;
+      totalSegundos = h * 3600 + min * 60 + seg;
     }
-  }, [formData.modalidade, formData.editingId]);
+  } else {
+    totalSegundos = parseFloat(clean) || 0;
+  }
 
-  const handleRespostaChange = (key, val) => {
+  if (totalSegundos <= 0) return '';
+
+  const segundosPorKm = totalSegundos / distanciaKm;
+  const paceMin = Math.floor(segundosPorKm / 60);
+  const paceSeg = Math.round(segundosPorKm % 60);
+
+  return `${paceMin}'${String(paceSeg).padStart(2, '0')}"/km`;
+};
+
+const normalizeProvaStr = (str) => {
+  return (str || '')
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s_-]/g, "");
+};
+
+const AtletismoForm = ({
+  formData,
+  setFormData,
+  students = []
+}) => {
+  const dados = formData.dadosEspecificos || {};
+  const rawSubtipo = formData.subtipoProva || '100m';
+  const normRaw = normalizeProvaStr(rawSubtipo);
+
+  const selectedProva = PROVAS_ATLETISMO.find(p => 
+    p.id === rawSubtipo || 
+    normalizeProvaStr(p.id) === normRaw ||
+    normalizeProvaStr(p.label).includes(normRaw) ||
+    normRaw.includes(normalizeProvaStr(p.label))
+  ) || PROVAS_ATLETISMO[0];
+
+  const selectedProvaId = selectedProva.id;
+
+  const updateDados = (updates) => {
     setFormData(prev => ({
       ...prev,
-      respostas: { ...prev.respostas, [key]: Number(val) }
+      dadosEspecificos: {
+        ...(prev.dadosEspecificos || {}),
+        ...updates
+      }
     }));
   };
 
-  const generateDiagnostic = () => {
-    let text = "";
-    let minNota = 6, maxNota = -1;
-    let minAtr = '', maxAtr = '';
-    let soma = 0, count = 0;
-    
-    Object.keys(formData.respostas || {}).forEach(key => {
-      const nota = Number(formData.respostas[key]);
-      soma += nota;
-      count++;
-      if (nota > maxNota) { maxNota = nota; maxAtr = key; }
-      if (nota < minNota) { minNota = nota; minAtr = key; }
-    });
-    
-    if (count === 0) return "";
+  // Cálculo automático do Pace para 800m, 1500m, 3000m, 5000m
+  const computedPace = useMemo(() => {
+    if (selectedProva?.distanciaKm && dados.tempo) {
+      return calculatePace(dados.tempo, selectedProva.distanciaKm);
+    }
+    return '';
+  }, [selectedProva, dados.tempo]);
 
-    const media = (soma / count).toFixed(1);
-    const nivel = media >= 4.5 ? 'Excelente' : media >= 3.5 ? 'Bom' : media >= 2.5 ? 'Regular' : 'Atenção';
-    
-    const formatAtr = (atr) => atr.split(' - ').pop();
-    const sectionName = (atr) => atr.split(' - ')[0];
-    const sub = formInfo?.key || 'Atletismo';
-    
-    if (isRevezamento) {
-      text += `A equipe obteve um Índice Técnico Geral ${nivel} (${media}) na prova de Revezamento ${sub}. `;
-      text += `O principal ponto forte apresentado foi "${formatAtr(maxAtr)}" no contexto de ${sectionName(maxAtr)} (Nota ${maxNota}). `;
-      if (minNota < 4) {
-        text += `Aspectos que precisam ser melhorados: a equipe demonstrou maior dificuldade em "${formatAtr(minAtr)}" (${sectionName(minAtr)}), com nota ${minNota}. `;
-        if (minAtr.toLowerCase().includes('troca') || minAtr.toLowerCase().includes('bastão')) {
-          text += `Como recomendação, é fundamental intensificar o treinamento focado na sincronia das passagens de bastão para evitar perda de velocidade nas zonas de troca. `;
-        }
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      dadosEspecificos: {
+        ...(prev.dadosEspecificos || {}),
+        paceCalculado: computedPace || '',
+        pace: computedPace || ''
       }
+    }));
+  }, [computedPace, setFormData]);
+
+  // Tentativas dinâmicas para Saltos em Distância/Triplo e Arremessos/Lançamentos
+  const distanciasTentativas = Array.isArray(dados.distanciasTentativas) ? dados.distanciasTentativas : [];
+  const handleTentativasQtdChange = (qtd) => {
+    const current = [...distanciasTentativas];
+    if (qtd > current.length) {
+      while (current.length < qtd) current.push('');
     } else {
-      text += `O atleta obteve uma Nota Técnica Geral ${nivel} (${media}) na prova de ${sub}. `;
-      text += `O principal ponto forte identificado foi "${formatAtr(maxAtr)}" na fase de ${sectionName(maxAtr)} (Nota ${maxNota}). `;
-      if (minNota < 4) {
-        text += `Aspecto que precisa ser aprimorado: houve perda de desempenho técnico em "${formatAtr(minAtr)}" durante a fase de ${sectionName(minAtr)} (Nota ${minNota}). `;
-      }
-      
-      // Regras Específicas
-      if (sub === '200m' && minAtr.toLowerCase().includes('curva')) {
-        text += `Identificou-se uma perda sensível de rendimento durante a curva ou na transição para a reta, sendo recomendado foco técnico nesta etapa. `;
-      }
-      if (sub === '400m') {
-        if (minNota < 4 && minAtr.includes('Ritmo')) {
-          text += `A distribuição de esforço não foi ideal, prejudicando a manutenção da velocidade. É sugerido trabalhar a resistência de velocidade. `;
-        } else {
-          text += `O atleta distribuiu corretamente o esforço ao longo da corrida. `;
-        }
-      }
-      if (sub === '800m' && (minAtr.includes('Sprint final') || minAtr.includes('Controle do esforço'))) {
-        text += `Houve indícios de aceleração precoce ou perda excessiva de rendimento na parte final. Melhorar a estratégia de prova é crucial. `;
-      }
-      if (sub === '1500m') {
-        text += `A estratégia adotada apresentou consistência, porém requer ajustes na cadência e economia de movimento. `;
-      }
-      if (sub === '3000m' || sub === '5000m') {
-        if (minNota < 3.5) {
-          text += `Foram notadas grandes variações e oscilações significativas de desempenho, afetando a regularidade do ritmo. `;
-        } else {
-          text += `Houve constância e excelente controle de fadiga durante toda a prova. `;
-        }
-      }
-      if (sub === 'Distância' && minNota < 4) {
-        text += `O relatório aponta que a fase de ${sectionName(minAtr)} foi onde ocorreu a maior perda de rendimento e performance. `;
-      }
-      if (sub === 'Altura' && minNota < 4) {
-        text += `Durante a análise técnica, a etapa de ${formatAtr(minAtr)} foi a que apresentou maior dificuldade para o atleta. `;
-      }
-      if (sub === 'Triplo' && minNota < 4) {
-        text += `Na avaliação mecânica, a fase de ${sectionName(minAtr)} necessita de maior desenvolvimento e treino específico de pliometria. `;
-      }
-      if (sub === 'Peso' && (minAtr.includes('Transferência') || minAtr.includes('Técnica'))) {
-        text += `O diagnóstico indica falhas na transferência de força e execução técnica do arremesso, o que diminui a potência final. `;
-      }
-      if (sub === 'Dardo' && minNota < 4) {
-        text += `A avaliação apontou possíveis perdas de potência e eficiência técnica durante a execução, especificamente em ${formatAtr(minAtr)}. `;
-      }
-      if (sub === 'Disco' && (minAtr.includes('Sincronização') || minAtr.includes('Estabilidade') || minAtr.includes('Rotação'))) {
-        text += `Destaca-se a necessidade imperativa de melhorar a sincronização e estabilidade do eixo corporal durante o giro. `;
-      }
+      current.splice(qtd);
     }
-    
-    text += `Conclusão técnica: A análise indica que o atleta possui características consistentes, mas a margem de melhoria reside no refinamento das especificidades táticas e coordenativas da prova.`;
-    return text;
+    updateDados({
+      quantidadeTentativas: qtd,
+      distanciasTentativas: current
+    });
   };
 
-  const processSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.aluno) {
-      setMensagem('Preencha o Aluno Avaliado.');
-      return;
-    }
-    const diagnostico = generateDiagnostic();
-    
-    // Injetamos o diagnóstico
-    handleSubmit(e, diagnostico, isRevezamento ? 'Coletiva' : 'Individual');
+  const handleDistanciaTentativaChange = (idx, val) => {
+    const updated = [...distanciasTentativas];
+    updated[idx] = val;
+    updateDados({ distanciasTentativas: updated });
   };
+
+  // Revezamento (4 atletas obrigatórios)
+  const atletasRevezamento = Array.isArray(dados.atletasRevezamento) ? dados.atletasRevezamento : ['', '', '', ''];
+  const temposIndividuais = Array.isArray(dados.temposIndividuais) ? dados.temposIndividuais : ['', '', '', ''];
+
+  const handleRevezamentoAtletaChange = (idx, val) => {
+    const updated = [...atletasRevezamento];
+    updated[idx] = val;
+    updateDados({ atletasRevezamento: updated });
+    // Atualiza lista de atletas vinculados na análise
+    setFormData(prev => ({
+      ...prev,
+      atletas: updated.filter(Boolean)
+    }));
+  };
+
+  const handleTempoIndividualChange = (idx, val) => {
+    const updated = [...temposIndividuais];
+    updated[idx] = val;
+    updateDados({ temposIndividuais: updated });
+  };
+
+  // Pentatlo sub-fields
+  const pentatloData = dados.pentatlo || {};
+  const updatePentatlo = (field, val) => {
+    updateDados({
+      pentatlo: {
+        ...(dados.pentatlo || {}),
+        [field]: val
+      }
+    });
+  };
+
+  // Identificação do grupo de prova
+  const isCorridasCurta = ['100m', '100m_barreiras', '110m_barreiras', '200m', '400m', '400m_barreiras'].includes(selectedProvaId);
+  const isCorridasFundo = ['800m', '1500m', '3000m', '5000m'].includes(selectedProvaId);
+  const isRevezamento = ['revezamento_4x100m', 'revezamento_4x400m'].includes(selectedProvaId);
+  const isSaltoAltura = selectedProvaId === 'salto_altura';
+  const isTentativasProva = ['salto_distancia', 'salto_triplo', 'arremesso_peso', 'lancamento_disco', 'lancamento_dardo'].includes(selectedProvaId);
+  const isPentatlo = selectedProvaId === 'pentatlo';
 
   return (
-    <div className="card-flat shadow-sm mb-5 border p-4 bg-white border-top border-4 border-orange">
-      <h5 className="fw-bold mb-4 text-blue-dark">Avaliação Técnica - {formInfo?.key || formData.modalidade}</h5>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      <form onSubmit={processSubmit}>
-        <div className="row g-3 mb-4">
-          <div className="col-md-6">
-            <label className="form-label fw-bold small text-muted">Aluno(s) Avaliado(s) / Equipe</label>
-            <select className="form-select bg-light" name="aluno" value={formData.aluno} onChange={handleInputChange} required>
-              {(() => {
-                const filteredStudents = students.filter(s => {
-                  if (formData.modalidade?.includes('100m com Barreiras')) return s.sexo === 'Feminino';
-                  if (formData.modalidade?.includes('110m com Barreiras')) return s.sexo === 'Masculino';
-                  return true;
-                });
+      {/* ── GRUPO 1: 100m, 200m, 400m E PROVAS COM BARREIRAS ── */}
+      {isCorridasCurta && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={formData.aluno || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                required
+              >
+                <option value="">Selecione o atleta</option>
+                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+              </select>
+            </div>
 
-                if (filteredStudents.length === 0) {
-                  return <option value="">Nenhum atleta elegível cadastrado nesta modalidade.</option>;
-                }
-                return (
-                  <>
-                    <option value="">Selecione o aluno/líder da equipe...</option>
-                    {filteredStudents.map(s => <option key={s._id} value={s._id}>{s.nome} ({s.sexo})</option>)}
-                  </>
-                );
-              })()}
-            </select>
-            {isRevezamento && <small className="text-muted mt-1 d-block">Para análise de revezamento, selecione o líder ou um dos membros da equipe. A avaliação englobará todos.</small>}
-          </div>
-          <div className="col-md-6">
-            <ContextoSelector modalidade={formData.modalidade || 'Atletismo'} value={formData.contexto} onChange={handleInputChange} />
-          </div>
-          <div className="col-md-6">
-            <label className="form-label fw-bold small text-muted">Data da Análise</label>
-            <input type="date" className="form-control bg-light" name="data" value={formData.data} onChange={handleInputChange} required />
-          </div>
-        </div>
-
-        {Object.entries(structure).map(([section, items]) => (
-          <div key={section} className="bg-light p-4 rounded-4 mb-4 border">
-            <h6 className="fw-bold text-orange mb-3 border-bottom pb-2"><i className="bi bi-record-circle me-2"></i>{section}</h6>
-            <div className="row g-4">
-              {items.map(item => {
-                const key = `${section} - ${item}`;
-                return (
-                  <div key={key} className="col-md-6">
-                    <div className="d-flex justify-content-between mb-1">
-                      <label className="fw-bold text-blue-dark">{item}</label>
-                      <span className="badge bg-blue-dark text-white fw-bold">{formData.respostas[key] || 3} / 5</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      className="form-range" 
-                      min="1" max="5" step="1" 
-                      value={formData.respostas[key] || 3} 
-                      onChange={(e) => handleRespostaChange(key, e.target.value)} 
-                    />
-                    <div className="d-flex justify-content-between small text-muted">
-                      <span>Precisa Melhorar</span>
-                      <span>Excelente</span>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <div>
+                <NumberStepper
+                  value={dados.quantidadeAdversarios || 0}
+                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
+                  min={0}
+                  ariaLabel="Quantidade de adversários"
+                />
+              </div>
             </div>
           </div>
-        ))}
 
-        <div className="row mt-4">
-          <div className="col-12 text-end">
-            <button type="submit" className="btn btn-orange px-5 py-2 fw-bold rounded-pill text-white shadow-sm">
-              <i className="bi bi-check-circle-fill me-2"></i>
-              {formData?.editingId ? 'Salvar Alterações' : 'Salvar Análise'}
-            </button>
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar, 2º lugar, 3º..."
+                value={dados.colocacao || ''}
+                onChange={(e) => updateDados({ colocacao: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                4. Tempo
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 10.85s ou 00:10.85"
+                value={dados.tempo || ''}
+                onChange={(e) => updateDados({ tempo: e.target.value })}
+              />
+            </div>
           </div>
         </div>
-      </form>
+      )}
+
+      {/* ── GRUPO 2: 800m, 1500m, 3000m E 5000m (com Pace Automático) ── */}
+      {isCorridasFundo && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={formData.aluno || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                required
+              >
+                <option value="">Selecione o atleta</option>
+                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+              </select>
+            </div>
+
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <div>
+                <NumberStepper
+                  value={dados.quantidadeAdversarios || 0}
+                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
+                  min={0}
+                  ariaLabel="Quantidade de adversários"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar"
+                value={dados.colocacao || ''}
+                onChange={(e) => updateDados({ colocacao: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                4. Tempo
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 02:15 ou 135 (segundos)"
+                value={dados.tempo || ''}
+                onChange={(e) => updateDados({ tempo: e.target.value })}
+              />
+            </div>
+
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                5. Pace Calculado Automaticamente
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                value={computedPace || '—'}
+                readOnly
+                style={{
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary)',
+                  fontWeight: 800,
+                  border: '1.5px solid var(--primary)'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── GRUPO 3: REVEZAMENTOS 4x100m E 4x400m ── */}
+      {isRevezamento && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+            <label className="form-label" style={{ fontWeight: 700, marginBottom: '10px', display: 'block' }}>
+              1. Selecionar os Quatro Atletas que Correram <span style={{ color: 'var(--error)' }}>*</span>
+            </label>
+            <div className="row g-2">
+              {[0, 1, 2, 3].map((pos) => (
+                <div key={pos} className="col-12 col-sm-6">
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Atleta {pos + 1} <span style={{ color: 'var(--error)' }}>*</span>:</span>
+                  <select
+                    className="form-select form-select-sm"
+                    value={atletasRevezamento[pos] || ''}
+                    onChange={(e) => handleRevezamentoAtletaChange(pos, e.target.value)}
+                    required
+                  >
+                    <option value="">Selecione o atleta {pos + 1}</option>
+                    {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="row g-3">
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                2. Quantas equipes participaram <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <div>
+                <NumberStepper
+                  value={dados.quantidadeEquipes || 0}
+                  onChange={(v) => updateDados({ quantidadeEquipes: v })}
+                  min={0}
+                  ariaLabel="Quantidade de equipes"
+                />
+              </div>
+            </div>
+
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar"
+                value={dados.colocacao || ''}
+                onChange={(e) => updateDados({ colocacao: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                4. Tempo Final da Equipe
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Tempo total (ex: 42.80s)"
+                value={dados.tempo || ''}
+                onChange={(e) => updateDados({ tempo: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* 5. Tempo individual por atleta */}
+          <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
+              5. Tempo Individual por Atleta
+            </label>
+            <div className="row g-2">
+              {[0, 1, 2, 3].map((pos) => (
+                <div key={pos} className="col-12 col-sm-6 col-md-3">
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tempo Atleta {pos + 1}:</span>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 10.50s"
+                    value={temposIndividuais[pos] || ''}
+                    onChange={(e) => handleTempoIndividualChange(pos, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── GRUPO 4: SALTO EM ALTURA ── */}
+      {isSaltoAltura && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={formData.aluno || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                required
+              >
+                <option value="">Selecione o atleta</option>
+                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+              </select>
+            </div>
+
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <div>
+                <NumberStepper
+                  value={dados.quantidadeAdversarios || 0}
+                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
+                  min={0}
+                  ariaLabel="Quantidade de adversários"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar"
+                value={dados.colocacao || ''}
+                onChange={(e) => updateDados({ colocacao: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                4. Maior altura pulada
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1.85m ou 185 cm"
+                value={dados.maiorAltura || ''}
+                onChange={(e) => updateDados({ maiorAltura: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── GRUPO 5 & 6: SALTO DISTÂNCIA/TRIPLO & ARREMESSO PESO/DISCO/DARDO (TENTATIVAS) ── */}
+      {isTentativasProva && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="row g-3">
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={formData.aluno || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                required
+              >
+                <option value="">Selecione o atleta</option>
+                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+              </select>
+            </div>
+
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <div>
+                <NumberStepper
+                  value={dados.quantidadeAdversarios || 0}
+                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
+                  min={0}
+                  ariaLabel="Quantidade de adversários"
+                />
+              </div>
+            </div>
+
+            <div className="col-12 col-md-4">
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar"
+                value={dados.colocacao || ''}
+                onChange={(e) => updateDados({ colocacao: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
+                4. Selecionar quantas tentativas teve
+              </label>
+              <NumberStepper
+                value={dados.quantidadeTentativas || 0}
+                onChange={handleTentativasQtdChange}
+                min={0}
+                max={10}
+                ariaLabel="Quantidade de tentativas"
+              />
+            </div>
+
+            {/* 5. Informar a distância de cada tentativa */}
+            {distanciasTentativas.length > 0 ? (
+              <div>
+                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px', display: 'block' }}>
+                  5. Distância de cada tentativa
+                </label>
+                <div className="row g-2">
+                  {distanciasTentativas.map((dist, idx) => (
+                    <div key={idx} className="col-12 col-sm-6 col-md-4 col-lg-3">
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Tentativa {idx + 1}:</span>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Ex: 6.45m"
+                        value={dist || ''}
+                        onChange={(e) => handleDistanciaTentativaChange(idx, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0, fontStyle: 'italic' }}>
+                Nenhuma tentativa registrada.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── GRUPO 7: PENTATLO ── */}
+      {isPentatlo && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          
+          {/* Seção 0: Informações Gerais */}
+          <div style={{ background: 'var(--bg-card)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+            <h6 style={{ fontWeight: 800, color: 'var(--text)', marginBottom: '14px', fontSize: '0.9375rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+              PENTATLO — Informações Gerais
+            </h6>
+            <div className="row g-3">
+              <div className="col-12 col-md-4">
+                <label className="form-label" style={{ fontWeight: 700 }}>
+                  1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
+                </label>
+                <select
+                  className="form-select"
+                  value={formData.aluno || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                  required
+                >
+                  <option value="">Selecione o atleta</option>
+                  {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+                </select>
+              </div>
+
+              <div className="col-12 col-md-4">
+                <label className="form-label" style={{ fontWeight: 700 }}>
+                  2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
+                </label>
+                <div>
+                  <NumberStepper
+                    value={dados.quantidadeAdversarios || 0}
+                    onChange={(v) => updateDados({ quantidadeAdversarios: v })}
+                    min={0}
+                    ariaLabel="Quantidade de adversários"
+                  />
+                </div>
+              </div>
+
+              <div className="col-12 col-md-4">
+                <label className="form-label" style={{ fontWeight: 700 }}>
+                  3. Colocação Geral <span style={{ color: 'var(--error)' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ex: 1º lugar geral"
+                  value={dados.colocacao || ''}
+                  onChange={(e) => updateDados({ colocacao: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: '4px 0 0' }}>
+              Provas Específicas do Pentatlo:
+            </h6>
+
+            {/* Prova 1: Corrida com barreiras */}
+            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🏃 1. Corrida com Barreiras</span>
+              </div>
+              <div className="row g-3">
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Tempo da Corrida com Barreiras:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 14.5s"
+                    value={pentatloData.barreirasTempo || ''}
+                    onChange={(e) => updatePentatlo('barreirasTempo', e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Colocação Específica na Prova:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 1º lugar"
+                    value={pentatloData.barreirasColocacao || ''}
+                    onChange={(e) => updatePentatlo('barreirasColocacao', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Prova 2: Corrida 800m */}
+            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>⏱️ 2. Corrida 800m</span>
+              </div>
+              <div className="row g-3">
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Tempo dos 800m:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 02:20"
+                    value={pentatloData.corrida800mTempo || ''}
+                    onChange={(e) => updatePentatlo('corrida800mTempo', e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Colocação Específica nos 800m:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 2º lugar"
+                    value={pentatloData.corrida800mColocacao || ''}
+                    onChange={(e) => updatePentatlo('corrida800mColocacao', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Prova 3: Arremesso de peso */}
+            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🎯 3. Arremesso de Peso</span>
+              </div>
+              <div className="row g-3">
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Distância do Arremesso:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 12.30m"
+                    value={pentatloData.arremessoPesoDistancia || ''}
+                    onChange={(e) => updatePentatlo('arremessoPesoDistancia', e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Colocação no Arremesso:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 1º lugar"
+                    value={pentatloData.arremessoPesoColocacao || ''}
+                    onChange={(e) => updatePentatlo('arremessoPesoColocacao', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Prova 4: Salto em altura */}
+            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🪜 4. Salto em Altura</span>
+              </div>
+              <div className="row g-3">
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Altura Alcançada:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 1.70m"
+                    value={pentatloData.saltoAlturaAltura || ''}
+                    onChange={(e) => updatePentatlo('saltoAlturaAltura', e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Colocação no Salto em Altura:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 3º lugar"
+                    value={pentatloData.saltoAlturaColocacao || ''}
+                    onChange={(e) => updatePentatlo('saltoAlturaColocacao', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Prova 5: Salto em distância */}
+            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>📏 5. Salto em Distância</span>
+              </div>
+              <div className="row g-3">
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Distância Alcançada:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 5.80m"
+                    value={pentatloData.saltoDistanciaDistancia || ''}
+                    onChange={(e) => updatePentatlo('saltoDistanciaDistancia', e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-sm-6">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Colocação no Salto em Distância:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ex: 1º lugar"
+                    value={pentatloData.saltoDistanciaColocacao || ''}
+                    onChange={(e) => updatePentatlo('saltoDistanciaColocacao', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

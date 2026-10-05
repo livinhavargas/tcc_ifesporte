@@ -90,7 +90,7 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font)' }}>
+    <div style={{ display: 'flex', minHeight: '100dvh', fontFamily: 'var(--font)' }}>
       {/* Left Panel — Branding */}
       <div style={{
         flex: '0 0 42%',
@@ -127,7 +127,7 @@ const Login = ({ onLogin }) => {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '48px 32px',
+        padding: 'clamp(20px, 4vw, 48px) clamp(16px, 3vw, 32px)',
         background: 'var(--bg)',
         position: 'relative'
       }}>
@@ -163,7 +163,7 @@ const Login = ({ onLogin }) => {
           maxWidth: '420px',
           background: 'var(--bg-card)',
           borderRadius: 'var(--radius-xl)',
-          padding: '40px 36px',
+          padding: 'clamp(24px, 5vw, 40px) clamp(16px, 4vw, 36px)',
           boxShadow: 'var(--shadow-md)',
           border: '1px solid var(--border-light)'
         }}>

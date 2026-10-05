@@ -85,6 +85,11 @@ const getAllEvents = async (req, res) => {
 };
 
 const createEvent = async (req, res) => {
+  const userTipo = (req.userTipo || '').toLowerCase();
+  if (userTipo === 'estudante') {
+    return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda.' });
+  }
+
   const event = new Event(req.body);
   try {
     const newEvent = await event.save();
@@ -117,6 +122,11 @@ const getEventById = async (req, res) => {
 
 const updateEvent = async (req, res) => {
   try {
+    const userTipo = (req.userTipo || '').toLowerCase();
+    if (userTipo === 'estudante') {
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda.' });
+    }
+
     const { id } = req.params;
     if (id && id.startsWith('pe_')) {
       return res.status(400).json({ 
@@ -134,6 +144,11 @@ const updateEvent = async (req, res) => {
 
 const deleteEvent = async (req, res) => {
   try {
+    const userTipo = (req.userTipo || '').toLowerCase();
+    if (userTipo === 'estudante') {
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda.' });
+    }
+
     const { id } = req.params;
     if (id && id.startsWith('pe_')) {
       return res.status(400).json({ 

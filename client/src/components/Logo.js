@@ -1,13 +1,25 @@
 import React from 'react';
 
-const Logo = ({ className = '', style = {}, width, height = "100%", circleColor = 'var(--primary)', textColor = 'var(--accent)' }) => {
+const Logo = ({ 
+  className = '', 
+  style = {}, 
+  width, 
+  height = "100%", 
+  circleColor = 'var(--primary)', 
+  textColor = 'var(--accent)',
+  collapsed = false,
+  iconOnly = false
+}) => {
+  const isCompact = collapsed || iconOnly;
+
   return (
     <svg 
       className={className} 
       style={{ display: 'inline-block', maxWidth: '100%', height: height, width: width || 'auto', verticalAlign: 'middle', ...style }} 
-      viewBox="0 -10 520 110" 
+      viewBox={isCompact ? "0 -10 75 110" : "0 -10 520 110"} 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
+      aria-label={isCompact ? "IFesporte Ícone" : "IFesporte Logo"}
     >
       {/* Icon 'i' */}
       <circle cx="10" cy="10" r="10" fill={circleColor} />
@@ -25,20 +37,23 @@ const Logo = ({ className = '', style = {}, width, height = "100%", circleColor 
       <rect x="48" y="0" width="20" height="20" rx="4" fill={textColor} />
       <rect x="48" y="48" width="20" height="20" rx="4" fill={textColor} />
 
-      {/* Text "esporte" */}
-      <text 
-        x="80" 
-        y="80" 
-        fontFamily="'Inter', 'Plus Jakarta Sans', sans-serif" 
-        fontWeight="700" 
-        fontSize="92px" 
-        letterSpacing="-2px"
-        fill={textColor}
-      >
-        esporte
-      </text>
+      {/* Text "esporte" - only shown in full view */}
+      {!isCompact && (
+        <text 
+          x="80" 
+          y="80" 
+          fontFamily="'Inter', 'Plus Jakarta Sans', sans-serif" 
+          fontWeight="700" 
+          fontSize="92px" 
+          letterSpacing="-2px"
+          fill={textColor}
+        >
+          esporte
+        </text>
+      )}
     </svg>
   );
 };
 
 export default Logo;
+

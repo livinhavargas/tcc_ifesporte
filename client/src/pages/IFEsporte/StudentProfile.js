@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import Layout from '../../components/Layout';
 import ModalidadesSelector from '../../components/ModalidadesSelector';
 import ModalidadePosicaoSelector from '../../components/ModalidadePosicaoSelector';
 import SportIcon from '../../components/SportIcon';
-import { getStudentPositionForSport, isSportWithPositions } from '../../utils/sportPositions';
-import IMCCard from '../../components/IMCCard';
-import { isCollectiveSport } from './components/ContextoSelector';
-import { isSportAnalysisSupported } from '../../utils/sportAnalysisRules';
-import { addNotification } from '../../utils/notifications';
-import { renderDiagnosticCard } from './Analises';
+import { getStudentPositionForSport } from '../../utils/sportPositions';
+import { calculateIMC } from '../../components/IMCCard';
 import PhysicalAssessmentTab from '../../components/PhysicalAssessmentTab';
 import { apiUrl } from '../../services/api';
 
@@ -19,13 +16,10 @@ const StudentProfile = () => {
   const userType = localStorage.getItem('tipo'); 
   
   const [student, setStudent] = useState(null);
-  const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [mensagem, setMensagem] = useState('');
-  const [activeTab, setActiveTab] = useState('perfil'); // perfil, estatisticas
-  const [showModalidadePicker, setShowModalidadePicker] = useState(false);
-  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  const [activeTab, setActiveTab] = useState('perfil'); // perfil, aptidao
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
 
@@ -42,38 +36,10 @@ const StudentProfile = () => {
         const data = await response.json();
         setStudent(data);
       }
-      try {
-        const analisesRes = await fetch(apiUrl('/api/analysis'), {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (analisesRes.ok) {
-          const analisesData = await analisesRes.json();
-          setAnalyses(analisesData.filter(a => a.aluno && a.aluno._id === id));
-        }
-      } catch (err) {
-        console.error('Erro ao buscar análises:', err);
-      }
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDeleteAnalysis = async (analysisId) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta análise?')) return;
-    try {
-      const res = await fetch(apiUrl(`/api/analysis/${analysisId}`), {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (res.ok) {
-        addNotification('Análise Excluída', 'Uma avaliação técnica foi removida do sistema.');
-        setAnalyses(prev => prev.filter(a => a._id !== analysisId));
-        setSelectedAnalysis(null);
-      }
-    } catch (e) {
-      console.error('Erro ao excluir:', e);
     }
   };
 
@@ -203,27 +169,6 @@ const StudentProfile = () => {
     return age;
   };
 
-  const groupedAnalyses = React.useMemo(() => {
-    if (!analyses || analyses.length === 0) return {};
-    const grouped = {};
-    analyses.forEach(a => {
-      if (!isSportAnalysisSupported(a.modalidade)) return;
-      const mod = a.modalidade || 'Outros';
-      if (!grouped[mod]) grouped[mod] = [];
-      grouped[mod].push(a);
-    });
-    Object.keys(grouped).forEach(mod => {
-      grouped[mod].sort((a, b) => new Date(b.dataAvaliacao || b.data) - new Date(a.dataAvaliacao || a.data));
-    });
-    return grouped;
-  }, [analyses]);
-  const hasAnalyses = Object.keys(groupedAnalyses).length > 0;
-
-  const supportedModalidades = React.useMemo(() => {
-    const mods = student?.modalidades || student?.esportes || [];
-    return mods.filter(mod => isSportAnalysisSupported(mod));
-  }, [student]);
-
   const handleDelete = async () => {
     if (!window.confirm(`Tem certeza que deseja excluir o atleta ${student.nome}?`)) return;
     try {
@@ -238,10 +183,338 @@ const StudentProfile = () => {
     }
   };
 
+  const handleExportPDF = () => {
+    if (!student) return;
+    const imc = calculateIMC(student.peso, student.altura);
+    const studentSports = student.modalidades || student.esportes || [];
+    const formattedSports = studentSports.map(m => {
+      const pos = getStudentPositionForSport(student, m);
+      const hasValidPos = pos && pos !== 'Indefinido' && pos !== 'Não sei' && pos.trim() !== '';
+      return hasValidPos ? `${m} · ${pos}` : m;
+    });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>Ficha do Atleta - ${student.nome || 'Atleta'}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 14mm 16mm;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #0f172a;
+          }
+          body {
+            background: #ffffff;
+            font-size: 11px;
+            line-height: 1.45;
+          }
+          .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #0284c7;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+          }
+          .brand-title {
+            font-size: 22px;
+            font-weight: 900;
+            color: #0284c7;
+            letter-spacing: -0.5px;
+          }
+          .brand-subtitle {
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+          }
+          .photo-box {
+            width: 76px;
+            height: 76px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+          }
+          .photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          .photo-placeholder {
+            font-size: 28px;
+            font-weight: 800;
+            color: #94a3b8;
+          }
+          .section {
+            margin-bottom: 12px;
+            page-break-inside: avoid;
+          }
+          .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #0369a1;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 3px;
+            margin-bottom: 6px;
+          }
+          .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px 12px;
+          }
+          .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px 12px;
+          }
+          .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px 12px;
+          }
+          .field {
+            display: flex;
+            flex-direction: column;
+          }
+          .field-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 2px;
+          }
+          .field-value {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #0f172a;
+            padding: 4px 8px;
+            background: #f8fafc;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+          }
+          .chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+          .chip {
+            padding: 4px 10px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            color: #0369a1;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 11px;
+          }
+          .footer {
+            margin-top: 18px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #94a3b8;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="brand-title">IFEsporte</div>
+            <div class="brand-subtitle">Ficha Cadastral do Atleta</div>
+          </div>
+          <div class="photo-box">
+            ${student.foto ? `<img src="${student.foto}" alt="Foto" />` : `<div class="photo-placeholder">${(student.nome || 'A').charAt(0).toUpperCase()}</div>`}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Dados Pessoais e Escolares</div>
+          <div class="grid-3">
+            <div class="field">
+              <span class="field-label">Nome Completo</span>
+              <div class="field-value">${student.nome || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Turma</span>
+              <div class="field-value">${student.turma || student.serie || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Matrícula</span>
+              <div class="field-value">${student.matricula || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">CPF</span>
+              <div class="field-value">${student.cpf || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">E-mail</span>
+              <div class="field-value">${student.email || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Telefone</span>
+              <div class="field-value">${student.telefone || '-'}</div>
+            </div>
+          </div>
+          <div class="grid-4" style="margin-top: 6px;">
+            <div class="field">
+              <span class="field-label">Data de Nascimento</span>
+              <div class="field-value">${student.dataNascimento ? new Date(student.dataNascimento).toLocaleDateString('pt-BR') : '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Idade</span>
+              <div class="field-value">${calculateAge(student.dataNascimento)} anos</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Gênero</span>
+              <div class="field-value">${student.sexo || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">RG</span>
+              <div class="field-value">${student.rg || '-'}</div>
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top: 6px;">
+            <div class="field" style="grid-column: span 2;">
+              <span class="field-label">Logradouro</span>
+              <div class="field-value">${student.endereco || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Cidade / UF</span>
+              <div class="field-value">${[student.cidade, student.estado].filter(Boolean).join(' / ') || '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Dados Físicos</div>
+          <div class="grid-3">
+            <div class="field">
+              <span class="field-label">Altura</span>
+              <div class="field-value">${student.altura ? `${student.altura} m` : '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Peso</span>
+              <div class="field-value">${student.peso ? `${student.peso} kg` : '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">IMC</span>
+              <div class="field-value">${imc ? `${imc.formatted} (${imc.classification})` : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Modalidades</div>
+          <div class="chips-container">
+            ${formattedSports.length > 0 ? formattedSports.map(s => `<span class="chip">${s}</span>`).join('') : '<span style="color: #64748b; font-style: italic;">Nenhuma modalidade vinculada.</span>'}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Vestuário e Uniforme</div>
+          <div class="grid-4">
+            <div class="field">
+              <span class="field-label">Nº Camiseta</span>
+              <div class="field-value">${student.numeroCamisa || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Nº Calçado</span>
+              <div class="field-value">${student.numeroCalcado || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Tam. Camisa</span>
+              <div class="field-value">${student.tamanhoCamisa || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Tam. Calção</span>
+              <div class="field-value">${student.tamanhoCalcao || '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Contato de Emergência / Responsável</div>
+          <div class="grid-2">
+            <div class="field">
+              <span class="field-label">Nome do Responsável</span>
+              <div class="field-value">${student.nomeResponsavel || '-'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Telefone do Responsável</span>
+              <div class="field-value">${student.telefoneResponsavel || '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Histórico Médico e Restrições</div>
+          <div class="grid-2">
+            <div class="field">
+              <span class="field-label">Alergias</span>
+              <div class="field-value">${student.alergias || 'Nenhuma declarada'}</div>
+            </div>
+            <div class="field">
+              <span class="field-label">Lesões Anteriores</span>
+              <div class="field-value">${student.lesoesAnteriores || 'Nenhuma declarada'}</div>
+            </div>
+            <div class="field" style="grid-column: span 2; margin-top: 6px;">
+              <span class="field-label">Observações Médicas / Restrições</span>
+              <div class="field-value">${student.observacoesMedicas || 'Nenhuma observação ou restrição.'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span>IFEsporte — Sistema de Gestão Esportiva</span>
+          <span>Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   if (loading) return <Layout><div className="text-center py-5"><div className="spinner-border text-primary"></div></div></Layout>;
   if (!student) return <Layout><div className="text-center py-5">Aluno não encontrado.</div></Layout>;
 
-  const fieldStyle = isEditing ? {
+  const fieldStyle = {
     width: '100%',
     padding: '10px 14px',
     borderRadius: 'var(--radius-md)',
@@ -251,36 +524,62 @@ const StudentProfile = () => {
     outline: 'none',
     transition: 'all var(--transition-fast)',
     background: 'var(--bg)',
+    color: 'var(--text)',
     minHeight: '44px'
-  } : {
+  };
+
+  const readOnlyFieldStyle = {
     width: '100%',
-    padding: '10px 0',
-    border: 'none',
-    borderBottom: '1px dashed var(--border)',
-    borderRadius: 0,
-    fontSize: '0.9375rem',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
+    background: 'var(--bg)',
+    border: '1px solid var(--border-light)',
+    fontSize: '0.875rem',
     fontWeight: '600',
     color: 'var(--text)',
-    background: 'transparent',
-    minHeight: 'auto',
-    pointerEvents: 'none'
+    minHeight: '44px',
+    display: 'flex',
+    alignItems: 'center'
   };
+
+  const imcData = calculateIMC(student?.peso, student?.altura);
+  const studentSports = student?.modalidades || student?.esportes || [];
 
   return (
     <Layout>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        {/* Top Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }} className="d-none-print">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button className="btn btn-secondary rounded-circle" style={{ width: '42px', height: '42px', padding: 0 }} onClick={() => navigate('/alunos')}>
-              <i className="bi bi-arrow-left" style={{ fontSize: '1rem' }}></i>
+      <div style={{ width: '100%', maxWidth: 'var(--content-max-width)', margin: '0 auto', paddingBottom: '36px' }}>
+        {/* Top Header com Botão Voltar Funcional */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }} className="d-none-print">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              type="button"
+              className="btn btn-secondary" 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 600,
+                fontSize: '0.875rem'
+              }} 
+              onClick={() => navigate('/alunos')}
+              title="Voltar para Alunos"
+            >
+              <ArrowLeft size={18} />
+              <span>Voltar</span>
             </button>
-            <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Informações do Atleta</h2>
+            <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', letterSpacing: '-0.3px' }}>
+              Informações do Atleta
+            </h2>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn btn-outline-secondary" onClick={() => window.print()}>
-              <i className="bi bi-printer-fill me-2"></i>Exportar Ficha (PDF)
-            </button>
+            {activeTab === 'perfil' && (
+              <button className="btn btn-outline-secondary" onClick={handleExportPDF} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+                <i className="bi bi-printer-fill"></i>
+                <span>Exportar Ficha (PDF)</span>
+              </button>
+            )}
             {userType !== 'estudante' && (
               <button className="btn btn-outline-danger" onClick={handleDelete}>
                 Excluir Atleta
@@ -297,797 +596,529 @@ const StudentProfile = () => {
             padding: '12px 16px',
             fontSize: '0.8125rem',
             fontWeight: 600,
-            marginBottom: '24px',
+            marginBottom: '20px',
             display: 'flex', alignItems: 'center', gap: '8px'
           }}>
             <i className={`bi ${mensagem.includes('✅') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`}></i>{mensagem}
           </div>
         )}
 
-        <div className="row g-4">
-          {/* Lado Esquerdo - Info Resumo & Gestão da Foto */}
-          <div className="col-lg-4" style={{ alignSelf: 'flex-start' }}>
-            <div style={{
-              background: 'var(--bg-card)',
-              borderRadius: 'var(--radius-xl)',
-              border: '1px solid var(--border-light)',
-              boxShadow: 'var(--shadow-sm)',
-              padding: '28px 24px',
-              textAlign: 'center'
-            }}>
-              
-              {/* Foto / Avatar com Gerenciamento */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
-                <div style={{ position: 'relative', width: '140px', height: '140px', marginBottom: '16px' }}>
-                  <div style={{
-                    width: '140px', height: '140px', borderRadius: '50%',
-                    background: 'var(--primary)', color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '3.25rem', fontWeight: 700, overflow: 'hidden',
-                    border: '4px solid var(--bg-card)',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}>
-                    {student.foto ? (
-                      <img src={student.foto} alt="Foto do Atleta" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      student.nome ? student.nome.charAt(0).toUpperCase() : 'A'
-                    )}
-                  </div>
-                </div>
-
-                {/* Ações de Foto (Adicionar / Alterar / Excluir) */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <input 
-                    type="file" 
-                    id="atletaFotoInput" 
-                    accept="image/*" 
-                    style={{ display: 'none' }} 
-                    onChange={handlePhotoUpload} 
-                  />
-                  
-                  {!student.foto ? (
-                    <label htmlFor="atletaFotoInput" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}>
-                      <i className="bi bi-camera-fill"></i> Adicionar Foto
-                    </label>
-                  ) : (
-                    <>
-                      <label htmlFor="atletaFotoInput" className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}>
-                        <i className="bi bi-pencil-fill"></i> Alterar Foto
-                      </label>
-                      <button 
-                        type="button" 
-                        onClick={handlePhotoDelete} 
-                        className="btn btn-outline-danger" 
-                        style={{ padding: '6px 12px', fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <i className="bi bi-trash-fill"></i> Excluir Foto
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px', fontSize: '1.25rem' }}>{student.nome}</h4>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginBottom: '20px' }}>
-                {student.turma || student.serie || 'S/ Turma'} {student.matricula ? `• ${student.matricula}` : ''}
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px', textAlign: 'left' }}>
-                 {(student.modalidades || student.esportes || []).map((m, i) => {
-                   const pos = getStudentPositionForSport(student, m);
-                   const hasPos = isSportWithPositions(m);
-                   return (
-                     <div key={i} style={{
-                       background: 'var(--bg)',
-                       border: '1px solid var(--border-light)',
-                       borderRadius: 'var(--radius-md)',
-                       padding: '8px 12px',
-                       display: 'flex',
-                       alignItems: 'center',
-                       justifyContent: 'space-between',
-                       gap: '8px'
-                     }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
-                         <SportIcon sport={m} size={16} />
-                         <span>{m}</span>
-                       </div>
-                       {hasPos && (
-                         <span className="badge" style={{
-                           background: (pos === 'Indefinido' || pos === 'Não sei') ? 'var(--border-light)' : 'var(--primary-light)',
-                           color: (pos === 'Indefinido' || pos === 'Não sei') ? 'var(--text-tertiary)' : 'var(--primary)',
-                           fontSize: '0.6875rem',
-                           fontWeight: 600
-                         }}>
-                           {pos}
-                         </span>
-                       )}
-                     </div>
-                   );
-                 })}
-              </div>
-
-              {(student.email || student.cpf) && (
-                <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '16px', textAlign: 'left', marginBottom: '16px' }}>
-                  {student.email && <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '8px' }}><i className="bi bi-envelope-fill" style={{ color: 'var(--primary)' }}></i> <strong>{student.email}</strong></div>}
-                  {student.cpf && <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}><i className="bi bi-person-vcard-fill" style={{ color: 'var(--success)' }}></i> <strong>{student.cpf}</strong></div>}
-                </div>
-              )}
-
-              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '16px', textAlign: 'left' }}>
-                <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '12px', fontSize: '0.8125rem' }}>Contato de Emergência</h6>
-                {student.nomeResponsavel || student.telefoneResponsavel ? (
-                  <>
-                    {student.nomeResponsavel && <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}><i className="bi bi-person-fill me-2"></i> {student.nomeResponsavel}</div>}
-                    {student.telefoneResponsavel && <div style={{ fontSize: '0.8125rem', color: 'var(--error)', fontWeight: 600 }}><i className="bi bi-telephone-plus-fill me-2"></i> {student.telefoneResponsavel}</div>}
-                  </>
-                ) : (
-                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontStyle: 'italic' }}>Nenhum contato de emergência.</div>
-                )}
-              </div>
-            </div>
+        {/* ── Bloco Compacto de Identificação Visual (Somente Foto + Ações) ── */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '24px',
+          textAlign: 'center'
+        }} className="d-none-print">
+          <div style={{
+            width: '120px',
+            height: '120px',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--primary)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2.75rem',
+            fontWeight: 800,
+            overflow: 'hidden',
+            border: '4px solid var(--bg-card)',
+            boxShadow: 'var(--shadow-md)',
+            marginBottom: '10px'
+          }}>
+            {student.foto ? (
+              <img src={student.foto} alt={`Foto de ${student.nome || 'Atleta'}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              student.nome ? student.nome.charAt(0).toUpperCase() : 'A'
+            )}
           </div>
 
-          {/* Lado Direito - Tabs Content */}
-          <div className="col-lg-8">
-            <div style={{
-              background: 'var(--bg-card)',
-              borderRadius: 'var(--radius-xl)',
-              border: '1px solid var(--border-light)',
-              boxShadow: 'var(--shadow-sm)',
-              overflow: 'hidden',
-              height: '100%'
-            }}>
-              
-              {/* Tabs Navigation */}
-              <div style={{
-                background: 'var(--bg)',
-                padding: '16px 24px 0',
-                borderBottom: '1px solid var(--border-light)',
+          {/* Ações de Foto (Adicionar / Alterar / Excluir) */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <input 
+              type="file" 
+              id="atletaFotoInput" 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+              onChange={handlePhotoUpload} 
+            />
+            
+            {!student.foto ? (
+              <label htmlFor="atletaFotoInput" className="btn btn-secondary btn-sm" style={{ padding: '6px 14px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0, borderRadius: 'var(--radius-md)', fontWeight: 600 }}>
+                <i className="bi bi-camera-fill"></i> Adicionar Foto
+              </label>
+            ) : (
+              <>
+                <label htmlFor="atletaFotoInput" className="btn btn-secondary btn-sm" style={{ padding: '5px 12px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0, borderRadius: 'var(--radius-md)', fontWeight: 600 }}>
+                  <i className="bi bi-pencil-fill"></i> Alterar Foto
+                </label>
+                <button 
+                  type="button" 
+                  onClick={handlePhotoDelete} 
+                  className="btn btn-outline-danger btn-sm" 
+                  style={{ padding: '5px 12px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: 'var(--radius-md)', fontWeight: 600 }}
+                >
+                  <i className="bi bi-trash-fill"></i> Excluir Foto
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Card Principal em Largura Total ── */}
+        <div style={{
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--border-light)',
+          boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden',
+          width: '100%'
+        }}>
+          {/* Tabs Navigation */}
+          <div style={{
+            background: 'var(--bg)',
+            padding: '16px 24px 0',
+            borderBottom: '1px solid var(--border-light)',
+            display: 'flex',
+            gap: '8px'
+          }} className="d-none-print">
+            <button 
+              onClick={() => setActiveTab('perfil')}
+              style={{
+                padding: '12px 20px',
+                borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+                border: 'none',
+                borderBottom: activeTab === 'perfil' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                background: activeTab === 'perfil' ? 'var(--bg-card)' : 'transparent',
+                color: activeTab === 'perfil' ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
                 display: 'flex',
+                alignItems: 'center',
                 gap: '8px'
-              }} className="d-none-print">
-                <button 
-                  onClick={() => setActiveTab('perfil')}
-                  style={{
-                    padding: '12px 20px',
-                    borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-                    border: 'none',
-                    borderBottom: activeTab === 'perfil' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-                    background: activeTab === 'perfil' ? 'var(--bg-card)' : 'transparent',
-                    color: activeTab === 'perfil' ? 'var(--primary)' : 'var(--text-secondary)',
-                    fontWeight: 700,
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <i className="bi bi-person-lines-fill"></i> Perfil
-                </button>
-                <button 
-                  onClick={() => setActiveTab('aptidao')}
-                  style={{
-                    padding: '12px 20px',
-                    borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-                    border: 'none',
-                    borderBottom: activeTab === 'aptidao' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-                    background: activeTab === 'aptidao' ? 'var(--bg-card)' : 'transparent',
-                    color: activeTab === 'aptidao' ? 'var(--primary)' : 'var(--text-secondary)',
-                    fontWeight: 700,
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <i className="bi bi-activity"></i> Aptidão Física
-                </button>
-                <button 
-                  onClick={() => setActiveTab('estatisticas')}
-                  style={{
-                    padding: '12px 20px',
-                    borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-                    border: 'none',
-                    borderBottom: activeTab === 'estatisticas' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-                    background: activeTab === 'estatisticas' ? 'var(--bg-card)' : 'transparent',
-                    color: activeTab === 'estatisticas' ? 'var(--primary)' : 'var(--text-secondary)',
-                    fontWeight: 700,
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <i className="bi bi-graph-up-arrow"></i> Análises
-                </button>
-              </div>
+              }}
+            >
+              <i className="bi bi-person-lines-fill"></i> Ficha do Atleta
+            </button>
+            <button 
+              onClick={() => setActiveTab('aptidao')}
+              style={{
+                padding: '12px 20px',
+                borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+                border: 'none',
+                borderBottom: activeTab === 'aptidao' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                background: activeTab === 'aptidao' ? 'var(--bg-card)' : 'transparent',
+                color: activeTab === 'aptidao' ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <i className="bi bi-activity"></i> Aptidão Física
+            </button>
+          </div>
 
-              <div style={{ padding: '32px' }}>
-                
-                {/* TAB 1: PERFIL */}
-                {activeTab === 'perfil' && (
-                  <form onSubmit={handleSave}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '24px' }}>
-                       <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem' }}>Ficha Completa do Atleta</h5>
-                       {userType !== 'estudante' && !isEditing && (
-                         <button type="button" className="btn btn-outline-primary" onClick={() => setIsEditing(true)} style={{ padding: '6px 16px', fontSize: '0.8125rem' }}>
-                           <i className="bi bi-pencil-fill me-2"></i>Editar Dados
-                         </button>
-                       )}
+          <div style={{ padding: 'clamp(20px, 4vw, 36px)' }}>
+            
+            {/* TAB 1: PERFIL / FICHA COMPLETA */}
+            {activeTab === 'perfil' && (
+              <form onSubmit={handleSave}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+                   <div>
+                     <h5 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.125rem' }}>Ficha Completa do Atleta</h5>
+                     <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '2px 0 0' }}>Dados cadastrais, acadêmicos, físicos, esportivos e médicos.</p>
+                   </div>
+                   {userType !== 'estudante' && !isEditing && (
+                     <button type="button" className="btn btn-outline-primary" onClick={() => setIsEditing(true)} style={{ padding: '8px 20px', fontSize: '0.8125rem', fontWeight: 600, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                       <i className="bi bi-pencil-fill"></i> Editar Dados
+                     </button>
+                   )}
+                </div>
+
+                <div className="row g-3">
+                  {/* Section 1: Dados Escolares e Pessoais */}
+                  <div className="col-12">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: 'var(--primary)' }}></div>
+                      <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Dados Pessoais
+                      </h6>
                     </div>
-
-                    <div className="row g-4">
-                      {/* Section: Academic */}
-                      <div className="col-12"><h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dados Escolares e Pessoais</h6></div>
-                      
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Nome Completo</label>
-                        <input type="text" name="nome" value={student.nome || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} required />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Matrícula</label>
-                        <input type="text" name="matricula" value={student.matricula || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Turma</label>
-                        {isEditing ? (
-                          <select className="form-select" name="turma" value={student.turma || student.serie || ''} onChange={handleInputChange} style={fieldStyle}>
-                            <option value="">Selecione...</option>
-                            {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        ) : (
-                          <input type="text" value={student.turma || student.serie || '-'} readOnly style={fieldStyle} />
-                        )}
-                      </div>
-
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Data de Nasc.</label>
-                        <input type="date" name="dataNascimento" value={student.dataNascimento ? student.dataNascimento.split('T')[0] : ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Idade</label>
-                        <input type="text" value={`${calculateAge(student.dataNascimento)} anos`} disabled style={fieldStyle} />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Gênero</label>
-                        {isEditing ? (
-                          <select className="form-select" name="sexo" value={student.sexo || ''} onChange={handleInputChange} style={fieldStyle} required>
-                            <option value="Feminino">Feminino</option>
-                            <option value="Masculino">Masculino</option>
-                            <option value="Outro">Outro</option>
-                          </select>
-                        ) : (
-                          <input type="text" value={student.sexo || '-'} readOnly style={fieldStyle} />
-                        )}
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">CPF</label>
-                        <input type="text" name="cpf" value={student.cpf || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="000.000.000-00" style={fieldStyle} />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">RG</label>
-                        <input type="text" name="rg" value={student.rg || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="00.000.000-0" style={fieldStyle} />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Telefone</label>
-                        <input type="text" name="telefone" value={student.telefone || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="(00) 00000-0000" style={fieldStyle} />
-                      </div>
-                      
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Logradouro</label>
-                        <input type="text" name="endereco" value={student.endereco || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Rua, Bairro, Nº" style={fieldStyle} />
-                      </div>
-                      <div className="col-md-4">
-                        <label className="form-label text-muted small fw-bold">Cidade</label>
-                        <input type="text" name="cidade" value={student.cidade || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="Cidade" style={fieldStyle} />
-                      </div>
-                      <div className="col-md-2">
-                        <label className="form-label text-muted small fw-bold">Estado</label>
-                        <input type="text" name="estado" value={student.estado || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="UF" maxLength="2" style={{ ...fieldStyle, textTransform: 'uppercase' }} />
-                      </div>
-
-                      {/* Section: Guardian */}
-                      <div className="col-12 mt-4"><h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dados do Responsável</h6></div>
-                      
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Nome do Responsável</label>
-                        <input type="text" name="nomeResponsavel" value={student.nomeResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Telefone do Responsável</label>
-                        <input type="text" name="telefoneResponsavel" value={student.telefoneResponsavel || ''} onChange={handleInputChange} disabled={!isEditing} placeholder="(00) 00000-0000" style={fieldStyle} />
-                      </div>
-
-                      {/* Section: Antropometria */}
-                      <div className="col-12 mt-4"><h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Antropometria</h6></div>
-
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Peso (kg)</label>
-                        <input type="number" step="0.1" name="peso" value={student.peso || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Altura (m)</label>
-                        <input type="number" step="0.01" name="altura" value={student.altura || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
-                      </div>
-
-                      <div className="col-12">
-                        <IMCCard peso={student?.peso} altura={student?.altura} />
-                      </div>
-
-                      {/* Section: Dados Esportivos */}
-                      <div className="col-12 mt-4"><h6 style={{ fontWeight: 700, color: 'var(--primary)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dados Esportivos</h6></div>
-
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Nº Camiseta</label>
-                        <input type="number" name="numeroCamisa" value={student.numeroCamisa || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Nº Calçado</label>
-                        <input type="number" name="numeroCalcado" value={student.numeroCalcado || ''} onChange={handleInputChange} disabled={!isEditing} style={fieldStyle} />
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Tam. Camisa</label>
-                        {isEditing ? (
-                          <select className="form-select" name="tamanhoCamisa" value={student.tamanhoCamisa || ''} onChange={handleInputChange} style={fieldStyle}>
-                            <option value="">Selecione...</option>
-                            <option value="P">P</option>
-                            <option value="M">M</option>
-                            <option value="G">G</option>
-                            <option value="GG">GG</option>
-                          </select>
-                        ) : (
-                          <input type="text" value={student.tamanhoCamisa || '-'} readOnly style={fieldStyle} />
-                        )}
-                      </div>
-                      <div className="col-md-3">
-                        <label className="form-label text-muted small fw-bold">Tam. Calção</label>
-                        {isEditing ? (
-                          <select className="form-select" name="tamanhoCalcao" value={student.tamanhoCalcao || ''} onChange={handleInputChange} style={fieldStyle}>
-                            <option value="">Selecione...</option>
-                            <option value="P">P</option>
-                            <option value="M">M</option>
-                            <option value="G">G</option>
-                            <option value="GG">GG</option>
-                          </select>
-                        ) : (
-                          <input type="text" value={student.tamanhoCalcao || '-'} readOnly style={fieldStyle} />
-                        )}
-                      </div>
-                      
-                      <div className="col-12">
-                        <label className="form-label text-muted small fw-bold mb-2">Modalidades e Posições do Atleta</label>
-                        {isEditing ? (
-                          <div>
-                            <ModalidadesSelector 
-                              selected={student.modalidades || student.esportes || []}
-                              onChange={(novos) => setStudent(prev => ({ ...prev, modalidades: novos }))}
-                              gender={student.sexo}
-                            />
-                            <ModalidadePosicaoSelector
-                              selectedModalidades={student.modalidades || student.esportes || []}
-                              posicoesPorModalidade={student.posicoesPorModalidade || []}
-                              onChange={(novasPos) => setStudent(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
-                            />
-                          </div>
-                        ) : (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
-                            {(student.modalidades || student.esportes || []).length > 0 ? (
-                              (student.modalidades || student.esportes || []).map((m, idx) => {
-                                const pos = getStudentPositionForSport(student, m);
-                                const hasPos = isSportWithPositions(m);
-                                return (
-                                  <div key={idx} style={{
-                                    background: 'var(--bg)',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '1.5px solid var(--border-light)',
-                                    padding: '14px 16px',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '6px'
-                                  }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)' }}>
-                                      <SportIcon sport={m} size={18} />
-                                      <span>{m}</span>
-                                    </div>
-                                    {hasPos && (
-                                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span>Posição:</span>
-                                        <strong style={{ 
-                                          color: (pos === 'Indefinido' || pos === 'Não sei') ? 'var(--text-tertiary)' : 'var(--primary)',
-                                          background: (pos === 'Indefinido' || pos === 'Não sei') ? 'transparent' : 'var(--primary-light)',
-                                          padding: (pos === 'Indefinido' || pos === 'Não sei') ? '0' : '2px 8px',
-                                          borderRadius: 'var(--radius-sm)'
-                                        }}>
-                                          {pos}
-                                        </strong>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })
-                            ) : (
-                              <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontStyle: 'italic' }}>Nenhuma modalidade vinculada.</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Section: Medical */}
-                      <div className="col-12 mt-4"><h6 style={{ fontWeight: 700, color: 'var(--error)', margin: 0, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Histórico Médico</h6></div>
-
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Alergias</label>
-                        {isEditing ? (
-                          <textarea name="alergias" rows="2" value={student.alergias || ''} onChange={handleInputChange} placeholder="Nenhuma declarada..." style={fieldStyle}></textarea>
-                        ) : (
-                          <div style={{ ...fieldStyle, minHeight: '38px', whiteSpace: 'pre-wrap' }}>{student.alergias || '-'}</div>
-                        )}
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-bold">Lesões Anteriores</label>
-                        {isEditing ? (
-                          <textarea name="lesoesAnteriores" rows="2" value={student.lesoesAnteriores || ''} onChange={handleInputChange} placeholder="Nenhuma declarada..." style={fieldStyle}></textarea>
-                        ) : (
-                          <div style={{ ...fieldStyle, minHeight: '38px', whiteSpace: 'pre-wrap' }}>{student.lesoesAnteriores || '-'}</div>
-                        )}
-                      </div>
-                      <div className="col-md-12">
-                        <label className="form-label text-muted small fw-bold">Observações Médicas / Restrições</label>
-                        {isEditing ? (
-                          <textarea name="observacoesMedicas" rows="2" value={student.observacoesMedicas || ''} onChange={handleInputChange} placeholder="Vazio..." style={fieldStyle}></textarea>
-                        ) : (
-                          <div style={{ ...fieldStyle, minHeight: '38px', whiteSpace: 'pre-wrap' }}>{student.observacoesMedicas || '-'}</div>
-                        )}
-                      </div>
-
-                      {isEditing && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px', width: '100%', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
-                          <button type="button" className="btn btn-secondary" onClick={() => { setIsEditing(false); fetchStudent(); }}>Cancelar</button>
-                          <button type="submit" className="btn btn-primary">Salvar Alterações</button>
-                        </div>
-                      )}
-                    </div>
-                  </form>
-                )}
-
-                {/* TAB: APTIDÃO FÍSICA (PROESP-BR 2021) */}
-                {activeTab === 'aptidao' && (
-                  <PhysicalAssessmentTab student={student} userType={userType} />
-                )}
-
-                {/* TAB: ANÁLISES */}
-                {activeTab === 'estatisticas' && (
-                  <div>
-                    {/* VISUALIZAÇÃO COMPLETA DA ANÁLISE SELECIONADA */}
-                    {selectedAnalysis ? (
-                      <div className="fade-in">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                          <button 
-                            className="btn btn-outline-secondary btn-sm" 
-                            onClick={() => setSelectedAnalysis(null)} 
-                            style={{ padding: '6px 14px', fontSize: '0.8125rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                          >
-                            <i className="bi bi-arrow-left"></i> Voltar para Análises
-                          </button>
-
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <button 
-                              className="btn btn-outline-primary btn-sm" 
-                              onClick={() => navigate(`/analises?editId=${selectedAnalysis._id}`)}
-                              style={{ padding: '6px 14px', fontSize: '0.8125rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                            >
-                              <i className="bi bi-pencil"></i> Editar
-                            </button>
-                            <button 
-                              className="btn btn-outline-danger btn-sm" 
-                              onClick={() => handleDeleteAnalysis(selectedAnalysis._id)}
-                              style={{ padding: '6px 14px', fontSize: '0.8125rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                            >
-                              <i className="bi bi-trash"></i> Excluir
-                            </button>
-                            
-                            <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.8125rem', padding: '6px 12px' }}>
-                              Data: {new Date(selectedAnalysis.dataAvaliacao || selectedAnalysis.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Cabeçalho da Análise */}
-                        <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                            <div style={{
-                              width: '52px', height: '52px', borderRadius: 'var(--radius-md)',
-                              background: 'var(--primary-light)', color: 'var(--primary)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                              <SportIcon sport={selectedAnalysis.modalidade} size={28} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: '200px' }}>
-                              <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 4px', fontSize: '1.25rem' }}>
-                                {selectedAnalysis.modalidade}
-                              </h4>
-                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 600 }}>
-                                  <i className="bi bi-geo-alt-fill me-1"></i> Contexto: {selectedAnalysis.contexto || (isCollectiveSport(selectedAnalysis.modalidade) ? 'Jogo' : 'Treino')}
-                                </span>
-                                {selectedAnalysis.subtipo && (
-                                  <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600 }}>
-                                    {selectedAnalysis.subtipo}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>Índice Geral</div>
-                              <span className="badge" style={{ background: 'var(--primary)', color: '#fff', fontSize: '1.125rem', padding: '6px 16px', fontWeight: 700 }}>
-                                <i className="bi bi-star-fill me-1"></i> {selectedAnalysis.resultados?.indiceGeral || '5.0'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="row g-3 pt-3 border-top" style={{ fontSize: '0.875rem' }}>
-                            <div className="col-md-6">
-                              <span style={{ color: 'var(--text-tertiary)' }}>Atleta: </span>
-                              <strong style={{ color: 'var(--text)' }}>{student.nome}</strong> ({student.sexo || 'Gênero n/i'})
-                            </div>
-                            <div className="col-md-6">
-                              <span style={{ color: 'var(--text-tertiary)' }}>Categoria / Turma: </span>
-                              <strong style={{ color: 'var(--text)' }}>{student.turma || student.serie || 'Principal'}</strong>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Diagnóstico Inteligente */}
-                        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-                          <h6 style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '14px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <i className="bi bi-robot" style={{ fontSize: '1.25rem' }}></i> Diagnóstico Inteligente Gerado
-                          </h6>
-                          {renderDiagnosticCard(selectedAnalysis.diagnostico)}
-                        </div>
-
-                        {/* Notas Detalhadas por Critério */}
-                        <div className="mb-4">
-                          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid var(--border-light)' }}>
-                            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', fontSize: '0.9375rem' }}>Notas dos Critérios Avaliados</h6>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
-                              {selectedAnalysis.respostas && Object.entries(selectedAnalysis.respostas).map(([key, val]) => (
-                                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>
-                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                  </span>
-                                  <span className="badge" style={{ background: Number(val) >= 4 ? 'var(--success)' : Number(val) >= 3 ? 'var(--primary)' : 'var(--warning)', color: '#fff', fontSize: '0.875rem', fontWeight: 700, minWidth: '40px', padding: '6px 12px' }}>
-                                    {val} / 5
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Observações Adicionais */}
-                        {selectedAnalysis.observacoes && (
-                          <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '18px 20px', border: '1px solid var(--border-light)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                            <strong style={{ color: 'var(--text)', display: 'block', marginBottom: '4px' }}><i className="bi bi-chat-quote-fill me-2" style={{ color: 'var(--primary)' }}></i>Observações do Treinador:</strong>
-                            {selectedAnalysis.observacoes}
-                          </div>
-                        )}
-                      </div>
+                  </div>
+                  
+                  {/* Linha 1: Nome, Turma, Matrícula */}
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Nome Completo {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <input type="text" name="nome" value={student.nome || ''} onChange={handleInputChange} style={fieldStyle} required />
                     ) : (
-                      <>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '24px' }}>
-                           <h5 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.0625rem' }}>
-                             {showModalidadePicker ? 'Selecione o esporte do atleta para criar a análise' : 'Análises Realizadas'}
-                           </h5>
-                           
-                           <div style={{ display: 'flex', gap: '8px' }}>
-                             {showModalidadePicker ? (
-                               <button className="btn btn-secondary" onClick={() => setShowModalidadePicker(false)} style={{ padding: '8px 18px', fontSize: '0.875rem' }}>
-                                 Cancelar
-                               </button>
-                             ) : (
-                               userType !== 'estudante' && (
-                                 <button className="btn btn-primary" onClick={() => setShowModalidadePicker(true)} style={{ padding: '8px 20px', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                                   <i className="bi bi-plus-circle-fill"></i> Criar Análise
-                                 </button>
-                               )
-                             )}
-                           </div>
-                        </div>
-
-                        {showModalidadePicker ? (
-                          <div style={{ padding: '12px 0' }}>
-                            {supportedModalidades.length > 0 ? (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-                                {supportedModalidades.map(mod => {
-                                  const parts = mod.split('-').map(p => p.trim());
-                                  let baseMod = parts[0];
-                                  
-                                  // Map display name to route ID
-                                  const routeMap = {
-                                    'Atletismo': 'atletismo',
-                                    'Badminton': 'badminton',
-                                    'Tênis de Mesa': 'tenis-de-mesa',
-                                    'Xadrez': 'xadrez',
-                                    'Basquete': 'basquete',
-                                    'Futsal': 'futsal',
-                                    'Futebol': 'futebol',
-                                    'Handebol': 'handebol',
-                                    'Voleibol': 'voleibol',
-                                    'Vôlei de Praia': 'volei-praia'
-                                  };
-                                  const sportRouteId = routeMap[baseMod] || baseMod.toLowerCase().replace(/\s+/g, '-');
-                                  const studentGender = student.sexo || 'Feminino';
-                                  
-                                  // Build navigation URL to SportDetail with Analyses tab
-                                  let targetUrl = `/esportes/${sportRouteId}?genero=${encodeURIComponent(studentGender)}&tab=analises`;
-                                  
-                                  // For hierarchical sports (e.g. "Atletismo - Corridas - 200m"), add cat/sub params
-                                  if (parts.length >= 2) {
-                                    targetUrl += `&cat=${encodeURIComponent(parts[1])}`;
-                                    if (parts.length >= 3) {
-                                      targetUrl += `&sub=${encodeURIComponent(parts[2])}`;
-                                    }
-                                  }
-                                  
-                                  return (
-                                    <button 
-                                      key={mod} 
-                                      className="btn btn-outline-primary hover-lift"
-                                      style={{
-                                        padding: '24px 16px',
-                                        borderRadius: 'var(--radius-lg)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: '12px',
-                                        minHeight: '130px',
-                                        justifyContent: 'center',
-                                        textAlign: 'center'
-                                      }}
-                                      onClick={() => navigate(targetUrl)}
-                                    >
-                                      <SportIcon sport={baseMod} size={28} />
-                                      <div>
-                                        <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>{mod}</div>
-                                        <small style={{ opacity: 0.7, fontSize: '0.75rem' }}>Criar avaliação de {student.nome.split(' ')[0]}</small>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div style={{ textAlign: 'center', padding: '40px 16px', background: 'var(--bg)', borderRadius: 'var(--radius-lg)', border: '1.5px dashed var(--border)' }}>
-                                <i className="bi bi-info-circle" style={{ fontSize: '2rem', color: 'var(--text-tertiary)', display: 'block', marginBottom: '12px' }}></i>
-                                <p style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.9375rem', marginBottom: '8px' }}>
-                                  {student.modalidades && student.modalidades.length > 0 
-                                    ? 'Nenhuma das modalidades deste atleta possui avaliações por análise.' 
-                                    : 'Este atleta ainda não possui modalidades cadastradas.'}
-                                </p>
-                                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '16px' }}>
-                                  {student.modalidades && student.modalidades.length > 0
-                                    ? 'As modalidades deste atleta (como Xadrez, Tênis de Mesa ou Vôlei de Praia) não utilizam o sistema de análises técnicas.'
-                                    : 'Vincule esportes no perfil do aluno para iniciar a criação de análises.'}
-                                </p>
-                                <button className="btn btn-primary" onClick={() => { setActiveTab('perfil'); setShowModalidadePicker(false); setIsEditing(true); }}>
-                                  <i className="bi bi-pencil-fill me-2"></i> Editar Perfil e Gerenciar Modalidades
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            {hasAnalyses ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                                {Object.keys(groupedAnalyses).map(mod => (
-                                  <div key={mod}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
-                                      <SportIcon sport={mod} size={18} />
-                                      <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>{mod}</h6>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
-                                      {groupedAnalyses[mod].map(analise => (
-                                        <div 
-                                          key={analise._id} 
-                                          className="card-flat hover-lift"
-                                          style={{
-                                            background: 'var(--bg)',
-                                            borderRadius: 'var(--radius-lg)',
-                                            padding: '18px',
-                                            border: '1.5px solid var(--border)',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            justifyContent: 'space-between',
-                                            minHeight: '160px',
-                                            cursor: 'pointer',
-                                            transition: 'all var(--transition-base)'
-                                          }}
-                                          onClick={() => setSelectedAnalysis(analise)}
-                                          title="Clique para abrir a análise completa"
-                                        >
-                                          <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                              <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 600 }}>
-                                                {analise.contexto || (isCollectiveSport(analise.modalidade) ? 'Jogo' : 'Treino')}
-                                              </span>
-                                              <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
-                                                <i className="bi bi-calendar3 me-1"></i>
-                                                {new Date(analise.dataAvaliacao || analise.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                                              </span>
-                                            </div>
-                                            <h6 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.9375rem', margin: '0 0 12px' }}>
-                                              {analise.subtipo ? `${analise.subtipo}` : 'Análise Geral'}
-                                            </h6>
-                                          </div>
-
-                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
-                                            <span className="badge" style={{ background: 'var(--primary)', color: '#fff', fontSize: '0.75rem', fontWeight: 700 }}>
-                                              ★ {analise.resultados?.indiceGeral || '5.0'}
-                                            </span>
-                                            <div style={{ display: 'flex', gap: '6px' }}>
-                                              <button 
-                                                className="btn btn-outline-secondary btn-sm" 
-                                                onClick={() => setSelectedAnalysis(analise)}
-                                                style={{ padding: '3px 8px', fontSize: '0.75rem', fontWeight: 600 }}
-                                                title="Ver detalhes"
-                                              >
-                                                <i className="bi bi-eye me-1"></i> Detalhes
-                                              </button>
-                                              <button 
-                                                className="btn btn-outline-primary btn-sm" 
-                                                onClick={(e) => { e.stopPropagation(); navigate(`/analises?editId=${analise._id}`); }}
-                                                style={{ padding: '3px 8px', fontSize: '0.75rem', fontWeight: 600 }}
-                                                title="Editar Análise"
-                                              >
-                                                <i className="bi bi-pencil me-1"></i> Editar
-                                              </button>
-                                              <button 
-                                                className="btn btn-outline-danger btn-sm" 
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteAnalysis(analise._id); }}
-                                                style={{ padding: '3px 8px', fontSize: '0.75rem', fontWeight: 600 }}
-                                                title="Excluir Análise"
-                                              >
-                                                <i className="bi bi-trash me-1"></i> Excluir
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div style={{
-                                textAlign: 'center', padding: '48px 16px',
-                                background: 'var(--bg)', borderRadius: 'var(--radius-lg)',
-                                border: '1.5px dashed var(--border)'
-                              }}>
-                                <i className="bi bi-clipboard-x" style={{ fontSize: '2.25rem', color: 'var(--text-tertiary)', display: 'block', marginBottom: '12px' }}></i>
-                                <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
-                                  {supportedModalidades.length === 0
-                                    ? 'Nenhuma das modalidades deste atleta possui avaliações por análise.'
-                                    : 'Nenhuma análise registrada'}
-                                </h6>
-                                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0 }}>
-                                  {supportedModalidades.length === 0
-                                    ? 'As modalidades deste atleta (como Xadrez, Tênis de Mesa ou Vôlei de Praia) não utilizam o sistema de análises técnicas.'
-                                    : 'Ainda não foram realizadas avaliações técnicas para este atleta.'}
-                                </p>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </>
+                      <div style={readOnlyFieldStyle}>{student.nome || '-'}</div>
                     )}
                   </div>
-                )}
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Turma</label>
+                    {isEditing ? (
+                      <select className="form-select" name="turma" value={student.turma || student.serie || ''} onChange={handleInputChange} style={fieldStyle}>
+                        <option value="">Selecione...</option>
+                        {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.turma || student.serie || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Matrícula {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <input type="text" name="matricula" value={student.matricula || ''} onChange={handleInputChange} style={fieldStyle} required />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.matricula || '-'}</div>
+                    )}
+                  </div>
 
-              </div>
-            </div>
+                  {/* Linha 2: CPF, E-mail, Telefone */}
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">CPF {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <input type="text" name="cpf" value={student.cpf || ''} onChange={handleInputChange} placeholder="000.000.000-00" style={fieldStyle} required />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.cpf || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">E-mail</label>
+                    {isEditing ? (
+                      <input type="email" name="email" value={student.email || ''} onChange={handleInputChange} placeholder="email@exemplo.com" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.email || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Telefone {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <input type="text" name="telefone" value={student.telefone || ''} onChange={handleInputChange} placeholder="(00) 00000-0000" style={fieldStyle} required />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.telefone || '-'}</div>
+                    )}
+                  </div>
+
+                  {/* Linha 3: Data de Nasc, Idade, Gênero, RG */}
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">Data de Nasc. {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <input type="date" name="dataNascimento" value={student.dataNascimento ? student.dataNascimento.split('T')[0] : ''} onChange={handleInputChange} style={fieldStyle} required />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.dataNascimento ? new Date(student.dataNascimento).toLocaleDateString('pt-BR') : '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">Idade</label>
+                    <div style={readOnlyFieldStyle}>{`${calculateAge(student.dataNascimento) ?? '-'} anos`}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">Gênero {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <select className="form-select" name="sexo" value={student.sexo || ''} onChange={handleInputChange} style={fieldStyle} required>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Outro">Outro</option>
+                      </select>
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.sexo || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">RG</label>
+                    {isEditing ? (
+                      <input type="text" name="rg" value={student.rg || ''} onChange={handleInputChange} placeholder="00.000.000-0" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.rg || '-'}</div>
+                    )}
+                  </div>
+
+                  {/* Linha 4: Endereço, Cidade, Estado */}
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small fw-bold mb-1">Logradouro</label>
+                    {isEditing ? (
+                      <input type="text" name="endereco" value={student.endereco || ''} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.endereco || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Cidade {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <input type="text" name="cidade" value={student.cidade || ''} onChange={handleInputChange} placeholder="Cidade" style={fieldStyle} required />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.cidade || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-2">
+                    <label className="form-label text-muted small fw-bold mb-1">Estado {isEditing && <span style={{ color: 'var(--error, #ef4444)' }}>*</span>}</label>
+                    {isEditing ? (
+                      <input type="text" name="estado" value={student.estado || ''} onChange={handleInputChange} placeholder="UF" maxLength="2" style={{ ...fieldStyle, textTransform: 'uppercase' }} required />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.estado || '-'}</div>
+                    )}
+                  </div>
+
+                  {/* Section 2: Dados Físicos / Antropometria */}
+                  <div className="col-12 mt-4">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: 'var(--primary)' }}></div>
+                      <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Dados Físicos
+                      </h6>
+                    </div>
+                  </div>
+
+                  {/* Altura, Peso, IMC no mesmo tamanho e alinhamento */}
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Altura (m)</label>
+                    {isEditing ? (
+                      <input type="number" step="0.01" name="altura" value={student.altura || ''} onChange={handleInputChange} placeholder="Ex: 1.75" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.altura ? `${student.altura} m` : '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">Peso (kg)</label>
+                    {isEditing ? (
+                      <input type="number" step="0.1" name="peso" value={student.peso || ''} onChange={handleInputChange} placeholder="Ex: 65.5" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.peso ? `${student.peso} kg` : '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label text-muted small fw-bold mb-1">IMC</label>
+                    <div style={{
+                      ...readOnlyFieldStyle,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px'
+                    }}>
+                      {imcData ? (
+                        <>
+                          <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--text)' }}>
+                            {imcData.formatted}
+                          </span>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 10px',
+                            borderRadius: '9999px',
+                            background: imcData.badgeBg,
+                            color: imcData.color,
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            border: `1px solid ${imcData.color}40`
+                          }}>
+                            <span>{imcData.dotSymbol}</span>
+                            <span>{imcData.classification}</span>
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontStyle: 'italic' }}>
+                          Informe peso e altura
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Section 3: Modalidades */}
+                  <div className="col-12 mt-4">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: 'var(--primary)' }}></div>
+                      <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Modalidades
+                      </h6>
+                    </div>
+
+                    {isEditing ? (
+                      <div>
+                        <ModalidadesSelector 
+                          selected={student.modalidades || student.esportes || []}
+                          onChange={(novos) => setStudent(prev => ({ ...prev, modalidades: novos }))}
+                          gender={student.sexo}
+                        />
+                        <ModalidadePosicaoSelector
+                          selectedModalidades={student.modalidades || student.esportes || []}
+                          posicoesPorModalidade={student.posicoesPorModalidade || []}
+                          onChange={(novasPos) => setStudent(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        {studentSports.length > 0 ? (
+                          studentSports.map((m, idx) => {
+                            const pos = getStudentPositionForSport(student, m);
+                            const hasValidPos = pos && pos !== 'Indefinido' && pos !== 'Não sei' && pos.trim() !== '';
+                            return (
+                              <div key={idx} style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: 'var(--bg)',
+                                border: '1px solid var(--border-light)',
+                                borderRadius: '9999px',
+                                padding: '8px 16px',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                color: 'var(--text)',
+                                boxShadow: 'var(--shadow-xs)'
+                              }}>
+                                <SportIcon sport={m} size={16} />
+                                <span>{m}{hasValidPos ? ` · ${pos}` : ''}</span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                            Nenhuma modalidade vinculada.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 4: Vestuário e Uniforme */}
+                  <div className="col-12 mt-4">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: 'var(--accent)' }}></div>
+                      <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Vestuário e Uniforme
+                      </h6>
+                    </div>
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">Nº Camiseta</label>
+                    {isEditing ? (
+                      <input type="number" name="numeroCamisa" value={student.numeroCamisa || ''} onChange={handleInputChange} placeholder="Ex: 10" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.numeroCamisa || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">Nº Calçado</label>
+                    {isEditing ? (
+                      <input type="number" name="numeroCalcado" value={student.numeroCalcado || ''} onChange={handleInputChange} placeholder="Ex: 40" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.numeroCalcado || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">Tamanho Camisa</label>
+                    {isEditing ? (
+                      <select className="form-select" name="tamanhoCamisa" value={student.tamanhoCamisa || ''} onChange={handleInputChange} style={fieldStyle}>
+                        <option value="">Selecione...</option>
+                        <option value="P">P</option>
+                        <option value="M">M</option>
+                        <option value="G">G</option>
+                        <option value="GG">GG</option>
+                      </select>
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.tamanhoCamisa || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small fw-bold mb-1">Tamanho Calção</label>
+                    {isEditing ? (
+                      <select className="form-select" name="tamanhoCalcao" value={student.tamanhoCalcao || ''} onChange={handleInputChange} style={fieldStyle}>
+                        <option value="">Selecione...</option>
+                        <option value="P">P</option>
+                        <option value="M">M</option>
+                        <option value="G">G</option>
+                        <option value="GG">GG</option>
+                      </select>
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.tamanhoCalcao || '-'}</div>
+                    )}
+                  </div>
+
+                  {/* Section 5: Contato de Emergência / Responsável */}
+                  <div className="col-12 mt-4">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: 'var(--accent)' }}></div>
+                      <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Contato de Emergência / Responsável
+                      </h6>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small fw-bold mb-1">Nome do Responsável</label>
+                    {isEditing ? (
+                      <input type="text" name="nomeResponsavel" value={student.nomeResponsavel || ''} onChange={handleInputChange} placeholder="Nome do responsável" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.nomeResponsavel || '-'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small fw-bold mb-1">Telefone do Responsável (Emergência)</label>
+                    {isEditing ? (
+                      <input type="text" name="telefoneResponsavel" value={student.telefoneResponsavel || ''} onChange={handleInputChange} placeholder="(00) 00000-0000" style={fieldStyle} />
+                    ) : (
+                      <div style={readOnlyFieldStyle}>{student.telefoneResponsavel || '-'}</div>
+                    )}
+                  </div>
+
+                  {/* Section 6: Histórico Médico */}
+                  <div className="col-12 mt-4">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '16px', borderRadius: '2px', background: 'var(--error)' }}></div>
+                      <h6 style={{ fontWeight: 800, color: 'var(--error)', margin: 0, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Histórico Médico e Restrições
+                      </h6>
+                    </div>
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small fw-bold mb-1">Alergias</label>
+                    {isEditing ? (
+                      <textarea name="alergias" rows="2" value={student.alergias || ''} onChange={handleInputChange} placeholder="Nenhuma declarada..." style={fieldStyle}></textarea>
+                    ) : (
+                      <div style={{ ...readOnlyFieldStyle, minHeight: '44px', whiteSpace: 'pre-wrap', alignItems: 'flex-start' }}>{student.alergias || 'Nenhuma declarada'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small fw-bold mb-1">Lesões Anteriores</label>
+                    {isEditing ? (
+                      <textarea name="lesoesAnteriores" rows="2" value={student.lesoesAnteriores || ''} onChange={handleInputChange} placeholder="Nenhuma declarada..." style={fieldStyle}></textarea>
+                    ) : (
+                      <div style={{ ...readOnlyFieldStyle, minHeight: '44px', whiteSpace: 'pre-wrap', alignItems: 'flex-start' }}>{student.lesoesAnteriores || 'Nenhuma declarada'}</div>
+                    )}
+                  </div>
+                  <div className="col-md-12">
+                    <label className="form-label text-muted small fw-bold mb-1">Observações Médicas / Restrições</label>
+                    {isEditing ? (
+                      <textarea name="observacoesMedicas" rows="2" value={student.observacoesMedicas || ''} onChange={handleInputChange} placeholder="Nenhuma observação ou restrição..." style={fieldStyle}></textarea>
+                    ) : (
+                      <div style={{ ...readOnlyFieldStyle, minHeight: '44px', whiteSpace: 'pre-wrap', alignItems: 'flex-start' }}>{student.observacoesMedicas || 'Nenhuma observação ou restrição registrada.'}</div>
+                    )}
+                  </div>
+
+                  {isEditing && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px', width: '100%', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                      <button type="button" className="btn btn-secondary" onClick={() => { setIsEditing(false); fetchStudent(); }}>Cancelar</button>
+                      <button type="submit" className="btn btn-primary">Salvar Alterações</button>
+                    </div>
+                  )}
+                </div>
+              </form>
+            )}
+
+            {/* TAB: APTIDÃO FÍSICA (PROESP-BR 2021) */}
+            {activeTab === 'aptidao' && (
+              <PhysicalAssessmentTab student={student} userType={userType} />
+            )}
           </div>
         </div>
       </div>

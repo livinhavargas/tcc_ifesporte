@@ -37,8 +37,26 @@ const Alunos = () => {
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
   const generosDisponiveis = ['Feminino', 'Masculino', 'Outro'];
-  const faixasEtarias = ['Sub15', 'Sub16', 'Sub17', 'Sub19'];
-  const cidadesDisponiveis = ['Praia Grande', 'São João do Sul', 'Sombrio', 'Balneário Gaivota', 'Araranguá', 'Torres', 'Outra'];
+  const faixasEtarias = ['Sub15', 'Sub16', 'Sub17', 'Sub18', 'Sub19'];
+  const cidadesDisponiveis = [
+    'Araranguá',
+    'Balneário Arroio do Silva',
+    'Balneário Gaivota',
+    'Ermo',
+    'Jacinto Machado',
+    'Maracajá',
+    'Meleiro',
+    'Morro Grande',
+    'Passo de Torres',
+    'Praia Grande',
+    'Santa Rosa do Sul',
+    'São João do Sul',
+    'Sombrio',
+    'Timbé do Sul',
+    'Torres',
+    'Turvo',
+    'Outra'
+  ];
 
   useEffect(() => {
     fetchStudents();
@@ -190,11 +208,29 @@ const Alunos = () => {
         if (filterIdade === 'Sub15') matchesIdade = age <= 15;
         else if (filterIdade === 'Sub16') matchesIdade = age === 16;
         else if (filterIdade === 'Sub17') matchesIdade = age === 17;
-        else if (filterIdade === 'Sub19') matchesIdade = age === 18 || age === 19;
+        else if (filterIdade === 'Sub18') matchesIdade = age === 18;
+        else if (filterIdade === 'Sub19') matchesIdade = age >= 19;
       }
     }
 
-    const mainCities = ['praia grande', 'são joão do sul', 'sombrio', 'balneário gaivota', 'araranguá', 'torres'];
+    const mainCities = [
+      'araranguá',
+      'balneário arroio do silva',
+      'balneário gaivota',
+      'ermo',
+      'jacinto machado',
+      'maracajá',
+      'meleiro',
+      'morro grande',
+      'passo de torres',
+      'praia grande',
+      'santa rosa do sul',
+      'são joão do sul',
+      'sombrio',
+      'timbé do sul',
+      'torres',
+      'turvo'
+    ];
     let matchesCidade = true;
     if (filterCidade) {
       const studentCidade = (student.cidade || '').trim().toLowerCase();
@@ -218,12 +254,27 @@ const Alunos = () => {
 
   return (
     <Layout>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+      <div style={{ width: '100%', maxWidth: 'var(--content-max-width)', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Meus Atletas</h2>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Gerencie todos os alunos inscritos nos seus esportes.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Users size={24} />
+            </div>
+            <div>
+              <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>Meus Atletas</h2>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Gerencie todos os alunos inscritos nos seus esportes.</p>
+            </div>
           </div>
           {userType !== 'estudante' && (
             <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}
@@ -251,25 +302,25 @@ const Alunos = () => {
                   style={{ ...inputStyle, paddingLeft: '38px', background: 'var(--bg)', width: '100%' }} />
               </div>
             </div>
-            <div className="col-6 col-lg-2">
+            <div className="col-12 col-sm-6 col-lg-2">
               <select className="form-select" value={filterTurma} onChange={(e) => setFilterTurma(e.target.value)} style={inputStyle}>
                 <option value="">Todas as Turmas</option>
                 {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            <div className="col-6 col-lg-2">
+            <div className="col-12 col-sm-6 col-lg-2">
               <select className="form-select" value={filterGenero} onChange={(e) => setFilterGenero(e.target.value)} style={inputStyle}>
                 <option value="">Todos (Gênero)</option>
                 {generosDisponiveis.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
-            <div className="col-6 col-lg-2">
+            <div className="col-12 col-sm-6 col-lg-2">
               <select className="form-select" value={filterIdade} onChange={(e) => setFilterIdade(e.target.value)} style={inputStyle}>
                 <option value="">Todas as Idades</option>
                 {faixasEtarias.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
-            <div className="col-6 col-lg-2">
+            <div className="col-12 col-sm-6 col-lg-2">
               <select className="form-select" value={filterCidade} onChange={(e) => setFilterCidade(e.target.value)} style={inputStyle}>
                 <option value="">Todas as Cidades</option>
                 {cidadesDisponiveis.map(c => <option key={c} value={c}>{c}</option>)}
@@ -325,11 +376,11 @@ const Alunos = () => {
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                 <div className="row g-3">
                   <div className="col-md-8">
-                    <label className="form-label">Nome Completo *</label>
+                    <label className="form-label">Nome Completo <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input type="text" className="form-control" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Nome do estudante" required />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Gênero *</label>
+                    <label className="form-label">Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <select className="form-select" name="sexo" value={formData.sexo} onChange={handleInputChange} required>
                       <option value="Feminino">Feminino</option>
                       <option value="Masculino">Masculino</option>
@@ -337,11 +388,11 @@ const Alunos = () => {
                     </select>
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Data de Nascimento *</label>
+                    <label className="form-label">Data de Nascimento <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input type="date" className="form-control" name="dataNascimento" value={formData.dataNascimento} onChange={handleInputChange} required />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Matrícula *</label>
+                    <label className="form-label">Matrícula <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input type="text" className="form-control" name="matricula" value={formData.matricula} onChange={handleInputChange} placeholder="Ex: 202312345" required />
                   </div>
                   <div className="col-md-4">
@@ -352,27 +403,27 @@ const Alunos = () => {
                     </select>
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">CPF *</label>
+                    <label className="form-label">CPF <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input type="text" className="form-control" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" required />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">RG (Opcional)</label>
+                    <label className="form-label">RG</label>
                     <input type="text" className="form-control" name="rg" value={formData.rg} onChange={handleInputChange} placeholder="00.000.000-0" />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Telefone *</label>
+                    <label className="form-label">Telefone <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input type="text" className="form-control" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" required />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Logradouro (Opcional)</label>
+                    <label className="form-label">Logradouro</label>
                     <input type="text" className="form-control" name="endereco" value={formData.endereco} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Cidade *</label>
+                    <label className="form-label">Cidade <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input type="text" className="form-control" name="cidade" value={formData.cidade} onChange={handleInputChange} placeholder="Ex: Vitória" required />
                   </div>
                   <div className="col-md-2">
-                    <label className="form-label">Estado *</label>
+                    <label className="form-label">Estado <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input type="text" className="form-control" name="estado" value={formData.estado} onChange={handleInputChange} placeholder="Ex: ES" maxLength="2" style={{ textTransform: 'uppercase' }} required />
                   </div>
                 </div>
@@ -447,15 +498,15 @@ const Alunos = () => {
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                 <div className="row g-3 mb-4">
                   <div className="col-md-3">
-                    <label className="form-label">Nº da Camiseta (Opcional)</label>
+                    <label className="form-label">Nº da Camiseta</label>
                     <input type="number" className="form-control" name="numeroCamisa" value={formData.numeroCamisa} onChange={handleInputChange} placeholder="Ex: 10" />
                   </div>
                   <div className="col-md-3">
-                    <label className="form-label">Nº do Calçado (Opcional)</label>
+                    <label className="form-label">Nº do Calçado</label>
                     <input type="number" className="form-control" name="numeroCalcado" value={formData.numeroCalcado} onChange={handleInputChange} placeholder="Ex: 40" />
                   </div>
                   <div className="col-md-3">
-                    <label className="form-label">Tamanho da Camisa (Opcional)</label>
+                    <label className="form-label">Tamanho da Camisa</label>
                     <select className="form-select" name="tamanhoCamisa" value={formData.tamanhoCamisa} onChange={handleInputChange}>
                       <option value="">Selecione...</option>
                       <option value="P">P</option>
@@ -465,7 +516,7 @@ const Alunos = () => {
                     </select>
                   </div>
                   <div className="col-md-3">
-                    <label className="form-label">Tamanho do Calção (Opcional)</label>
+                    <label className="form-label">Tamanho do Calção</label>
                     <select className="form-select" name="tamanhoCalcao" value={formData.tamanhoCalcao} onChange={handleInputChange}>
                       <option value="">Selecione...</option>
                       <option value="P">P</option>
@@ -509,7 +560,7 @@ const Alunos = () => {
             <div className="spinner-border" style={{ color: 'var(--primary)' }}></div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
             {filteredStudents.map(student => {
               const arrEsportes = student.modalidades?.length > 0 ? student.modalidades : (student.esportes || []);
               return (

@@ -1,260 +1,305 @@
 const Analysis = require('../models/Analysis');
 
+// Buscar todas as análises esportivas
 const getAllAnalyses = async (req, res) => {
   try {
-    const analyses = await Analysis.find().populate('aluno').sort({ createdAt: -1 });
+    const { modalidade, categoria, alunoId } = req.query;
+    const filter = {};
+    
+    if (modalidade) {
+      filter.modalidade = new RegExp(`^${modalidade.trim()}$`, 'i');
+    }
+    if (categoria && categoria !== 'Todas') {
+      filter.categoria = categoria;
+    }
+    if (alunoId) {
+      filter.$or = [
+        { aluno: alunoId },
+        { atletas: alunoId }
+      ];
+    }
+
+    const analyses = await Analysis.find(filter)
+      .populate('aluno')
+      .populate('atletas')
+      .populate('avaliador', 'nome email')
+      .sort({ data: -1, createdAt: -1 });
+
     res.json(analyses);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Erro ao buscar análises esportivas:', error);
+    res.status(500).json({ message: 'Erro ao buscar análises esportivas.' });
   }
 };
 
-const UNSUPPORTED_ANALYSIS_SPORTS = [
-  'xadrez',
-  'tênis de mesa',
-  'tenis de mesa',
-  'tênis de mesa individual',
-  'tenis de mesa individual',
-  'tênis de mesa dupla',
-  'tenis de mesa dupla',
-  'tênis de mesa (individual)',
-  'tênis de mesa (misto)',
-  'vôlei de praia',
-  'volei de praia',
-  'vôlei de praia (dupla)',
-  'badminton',
-  'salto com vara',
-  'vara',
-  'lançamento de martelo',
-  'martelo'
-];
+// Validação dos campos obrigatórios conforme modalidade
+const validateAnalysisFields = (data) => {
+  const { modalidade, equipeAdversaria, resultado, placar, subtipoProva, aluno, dadosEspecificos = {} } = data;
+  
+  if (!modalidade || typeof modalidade !== 'string' || !modalidade.trim()) {
+    return 'A modalidade esportiva é obrigatória.';
+  }
 
-const isSportAnalysisSupported = (modalidadeStr) => {
-  if (!modalidadeStr) return false;
-  const modLower = modalidadeStr.toLowerCase().trim();
-  return !UNSUPPORTED_ANALYSIS_SPORTS.some(unsupported => modLower.includes(unsupported));
+  const modLower = modalidade.toLowerCase().trim();
+
+  // ATLETISMO
+  if (modLower.includes('atletismo')) {
+    if (!subtipoProva) {
+      return 'A prova de atletismo é obrigatória.';
+    }
+
+    const provaLower = subtipoProva.toLowerCase();
+
+    // Revezamentos 4x100m e 4x400m
+    if (provaLower.includes('revezamento') || provaLower.includes('4x')) {
+      const { atletasRevezamento, quantidadeEquipes, colocacao } = dadosEspecificos;
+      if (!Array.isArray(atletasRevezamento) || atletasRevezamento.filter(Boolean).length < 4) {
+        return 'É obrigatório selecionar os quatro atletas do revezamento.';
+      }
+      if (quantidadeEquipes === undefined || quantidadeEquipes === null || quantidadeEquipes === '') {
+        return 'A quantidade de equipes é obrigatória.';
+      }
+      if (!colocacao) {
+        return 'A colocação é obrigatória.';
+      }
+      return null;
+    }
+
+    // Provas individuais de Atletismo (Corridas, Barreiras, Saltos, Lançamentos, Pentatlo)
+    if (!aluno) {
+      return 'É obrigatório selecionar o atleta.';
+    }
+    if (dadosEspecificos.quantidadeAdversarios === undefined || dadosEspecificos.quantidadeAdversarios === null || dadosEspecificos.quantidadeAdversarios === '') {
+      return 'A quantidade de adversários é obrigatória.';
+    }
+    if (!dadosEspecificos.colocacao) {
+      return 'A colocação é obrigatória.';
+    }
+
+    return null;
+  }
+
+  // DEMAIS MODALIDADES (Confronto)
+  if (!equipeAdversaria || !equipeAdversaria.trim()) {
+    return 'O nome da equipe adversária é obrigatório.';
+  }
+
+  if (!resultado || !['Vitória', 'Derrota', 'Empate'].includes(resultado)) {
+    return 'O resultado da partida é obrigatório (Vitória, Derrota ou Empate).';
+  }
+
+  // XADREZ: Não requer placar de gols/sets
+  if (modLower.includes('xadrez')) {
+    return null;
+  }
+
+  // HANDEBOL, BASQUETE, FUTSAL, FUTEBOL, VOLEIBOL, VÔLEI DE PRAIA, BADMINTON, TÊNIS DE MESA
+  if (placar === undefined || placar === null || placar === '') {
+    return 'O placar da partida é obrigatório.';
+  }
+
+  // Modalidades baseadas em sets
+  if (
+    modLower.includes('voleibol') ||
+    modLower.includes('vôlei') ||
+    modLower.includes('volei') ||
+    modLower.includes('badminton') ||
+    modLower.includes('tênis de mesa') ||
+    modLower.includes('tenis de mesa')
+  ) {
+    if (!dadosEspecificos.pontosCadaSet || (Array.isArray(dadosEspecificos.pontosCadaSet) && dadosEspecificos.pontosCadaSet.length === 0)) {
+      return 'Os pontos de cada set são obrigatórios.';
+    }
+  }
+
+  return null;
 };
 
+// Criar nova análise esportiva
 const createAnalysis = async (req, res) => {
   try {
-    const { 
-      tipoAnalise = 'Individual', 
-      aluno, 
-      modalidade, 
-      categoria = 'Geral', 
-      contexto = 'Treino',
-      data, 
-      subtipo = 'Geral', 
-      respostas = {}, 
-      observacoes,
-      diagnostico: reqDiagnostico
+    const userTipo = (req.userTipo || '').toLowerCase();
+    if (userTipo === 'estudante') {
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises.' });
+    }
+
+    const errorMsg = validateAnalysisFields(req.body);
+    if (errorMsg) {
+      return res.status(400).json({ message: errorMsg });
+    }
+
+    const {
+      modalidade,
+      categoria = 'Geral',
+      subtipoProva,
+      data = new Date(),
+      equipeAdversaria,
+      resultado,
+      placar,
+      aluno,
+      atletas = [],
+      dadosEspecificos = {},
+      observacoes
     } = req.body;
 
-    if (!isSportAnalysisSupported(modalidade)) {
-      return res.status(400).json({ message: 'Análises não são permitidas para esta modalidade.' });
-    }
-
-    let indiceGeral = 0;
-    let diagnostico = '';
-    
-    const notas = Object.entries(respostas || {});
-    if (notas.length > 0) {
-      // Calcular media e identificar maior/menor
-      let soma = 0;
-      let maxNota = -1;
-      let minNota = 6;
-      let melhorAtr = '';
-      let piorAtr = '';
-
-      notas.forEach(([atr, val]) => {
-        const num = Number(val);
-        soma += num;
-        if (num > maxNota) { maxNota = num; melhorAtr = atr; }
-        if (num < minNota) { minNota = num; piorAtr = atr; }
-      });
-
-      indiceGeral = (soma / notas.length).toFixed(1);
-      
-      const nivel = indiceGeral >= 4.5 ? 'Excelente' :
-                    indiceGeral >= 3.5 ? 'Bom' :
-                    indiceGeral >= 2.5 ? 'Regular' : 'Precisa Melhorar';
-
-      const formatAttr = s => {
-        // camelCase to spaced
-        return s.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-      };
-      
-      if (reqDiagnostico) {
-        diagnostico = reqDiagnostico;
-      } else {
-        diagnostico = `O atleta atingiu um Índice Geral ${nivel} (${indiceGeral}). `;
-        
-        if (maxNota >= 4) {
-          diagnostico += `O seu grande destaque foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
-        } else {
-          diagnostico += `Seu melhor desempenho foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
-        }
-        
-        if (minNota !== maxNota) {
-          diagnostico += `Para as próximas semanas, a sugestão é focar em treinos para melhorar ${formatAttr(piorAtr)} (Nota ${minNota}).`;
-        }
-      }
-    }
-
-    // fallback for retrocompatibility (legacy result string)
-    let legacyResultado = 'Bom';
-    if (indiceGeral >= 4.5) legacyResultado = 'Excelente';
-    else if (indiceGeral >= 3.5) legacyResultado = 'Bom';
-    else if (indiceGeral >= 2.5) legacyResultado = 'Regular';
-    else if (indiceGeral > 0) legacyResultado = 'Precisa Melhorar';
-    else legacyResultado = req.body.resultado || 'Bom'; // if old form used
-
-    const analysisData = {
-      tipoAnalise,
-      aluno,
-      modalidade,
-      categoria,
-      contexto,
+    const newAnalysis = new Analysis({
+      modalidade: modalidade.trim(),
+      categoria: categoria.trim(),
+      subtipoProva: subtipoProva ? subtipoProva.trim() : undefined,
       data,
-      subtipo,
-      respostas,
-      resultados: {
-        indiceGeral: Number(indiceGeral)
-      },
-      diagnostico,
-      observacoes,
-      resultado: legacyResultado
-    };
+      avaliador: req.userId || req.user?._id,
+      equipeAdversaria: equipeAdversaria ? equipeAdversaria.trim() : undefined,
+      resultado,
+      placar,
+      aluno: aluno || undefined,
+      atletas: Array.isArray(atletas) ? atletas : [],
+      dadosEspecificos,
+      observacoes: observacoes ? observacoes.trim() : undefined
+    });
 
-    const newAnalysis = new Analysis(analysisData);
     await newAnalysis.save();
+    const populated = await Analysis.findById(newAnalysis._id)
+      .populate('aluno')
+      .populate('atletas')
+      .populate('avaliador', 'nome email');
 
-    res.status(201).json(newAnalysis);
+    res.status(201).json(populated);
   } catch (error) {
-    console.error(error);
-    res.status(400).json({ message: error.message });
+    console.error('Erro ao salvar análise esportiva:', error);
+    res.status(500).json({ message: error.message || 'Erro ao registrar análise esportiva.' });
   }
 };
 
-const getAnalysisByStudent = async (req, res) => {
-  try {
-    const analyses = await Analysis.find({ aluno: req.params.studentId }).sort({ createdAt: -1 });
-    res.json(analyses);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
+// Atualizar análise esportiva existente
 const updateAnalysis = async (req, res) => {
   try {
+    const userTipo = (req.userTipo || '').toLowerCase();
+    if (userTipo === 'estudante') {
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises.' });
+    }
+
     const { id } = req.params;
-    const { 
-      tipoAnalise = 'Individual', 
-      aluno, 
-      modalidade, 
-      categoria = 'Geral', 
-      contexto = 'Treino',
-      data, 
-      subtipo = 'Geral', 
-      respostas = {}, 
-      observacoes,
-      diagnostico: reqDiagnostico
+    const errorMsg = validateAnalysisFields(req.body);
+    if (errorMsg) {
+      return res.status(400).json({ message: errorMsg });
+    }
+
+    const {
+      modalidade,
+      categoria = 'Geral',
+      subtipoProva,
+      data,
+      equipeAdversaria,
+      resultado,
+      placar,
+      aluno,
+      atletas = [],
+      dadosEspecificos = {},
+      observacoes
     } = req.body;
 
-    if (!isSportAnalysisSupported(modalidade)) {
-      return res.status(400).json({ message: 'Análises não são permitidas para esta modalidade.' });
-    }
-
-    let indiceGeral = 0;
-    let diagnostico = '';
-    
-    const notas = Object.entries(respostas || {});
-    if (notas.length > 0) {
-      let soma = 0;
-      let maxNota = -1;
-      let minNota = 6;
-      let melhorAtr = '';
-      let piorAtr = '';
-
-      notas.forEach(([atr, val]) => {
-        const num = Number(val);
-        soma += num;
-        if (num > maxNota) { maxNota = num; melhorAtr = atr; }
-        if (num < minNota) { minNota = num; piorAtr = atr; }
-      });
-
-      indiceGeral = (soma / notas.length).toFixed(1);
-      
-      const nivel = indiceGeral >= 4.5 ? 'Excelente' :
-                    indiceGeral >= 3.5 ? 'Bom' :
-                    indiceGeral >= 2.5 ? 'Regular' : 'Precisa Melhorar';
-
-      const formatAttr = s => s.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-      
-      if (reqDiagnostico) {
-        diagnostico = reqDiagnostico;
-      } else {
-        diagnostico = `O atleta atingiu um Índice Geral ${nivel} (${indiceGeral}). `;
-        if (maxNota >= 4) {
-          diagnostico += `O seu grande destaque foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
-        } else {
-          diagnostico += `Seu melhor desempenho foi em ${formatAttr(melhorAtr)} (Nota ${maxNota}). `;
-        }
-        if (minNota !== maxNota) {
-          diagnostico += `Para as próximas semanas, a sugestão é focar em treinos para melhorar ${formatAttr(piorAtr)} (Nota ${minNota}).`;
-        }
-      }
-    }
-
-    let legacyResultado = 'Bom';
-    if (indiceGeral >= 4.5) legacyResultado = 'Excelente';
-    else if (indiceGeral >= 3.5) legacyResultado = 'Bom';
-    else if (indiceGeral >= 2.5) legacyResultado = 'Regular';
-    else if (indiceGeral > 0) legacyResultado = 'Precisa Melhorar';
-
-    const updateData = {
-      tipoAnalise,
-      aluno,
-      modalidade,
-      categoria,
-      contexto,
-      data,
-      subtipo,
-      respostas,
-      resultados: {
-        indiceGeral: Number(indiceGeral)
-      },
-      diagnostico,
-      observacoes,
-      resultado: legacyResultado
+    const updatePayload = {
+      modalidade: modalidade.trim(),
+      categoria: categoria.trim(),
+      subtipoProva: subtipoProva ? subtipoProva.trim() : undefined,
+      data: data || new Date(),
+      equipeAdversaria: equipeAdversaria ? equipeAdversaria.trim() : undefined,
+      resultado,
+      placar,
+      aluno: aluno || undefined,
+      atletas: Array.isArray(atletas) ? atletas : [],
+      dadosEspecificos,
+      observacoes: observacoes ? observacoes.trim() : undefined
     };
 
-    const updatedAnalysis = await Analysis.findByIdAndUpdate(id, updateData, { new: true }).populate('aluno');
-    if (!updatedAnalysis) {
-      return res.status(404).json({ message: 'Análise não encontrada' });
+    const updated = await Analysis.findByIdAndUpdate(id, updatePayload, { new: true })
+      .populate('aluno')
+      .populate('atletas')
+      .populate('avaliador', 'nome email');
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Análise esportiva não encontrada.' });
     }
 
-    res.json(updatedAnalysis);
+    res.json(updated);
   } catch (error) {
-    console.error(error);
-    res.status(400).json({ message: error.message });
+    console.error('Erro ao atualizar análise esportiva:', error);
+    res.status(500).json({ message: error.message || 'Erro ao atualizar análise esportiva.' });
   }
 };
 
+// Buscar análises de um aluno específico
+const getAnalysisByStudent = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const analyses = await Analysis.find({
+      $or: [
+        { aluno: studentId },
+        { atletas: studentId },
+        { 'dadosEspecificos.golsMarcados.atletaId': studentId },
+        { 'dadosEspecificos.cestas.atletaId': studentId },
+        { 'dadosEspecificos.cartoes.atletaId': studentId },
+        { 'dadosEspecificos.faltasCometidas.atletas': studentId },
+        { 'dadosEspecificos.atletasRevezamento': studentId }
+      ]
+    })
+      .populate('aluno')
+      .populate('atletas')
+      .populate('avaliador', 'nome email')
+      .sort({ data: -1, createdAt: -1 });
+
+    res.json(analyses);
+  } catch (error) {
+    console.error('Erro ao buscar análises do aluno:', error);
+    res.status(500).json({ message: 'Erro ao buscar análises do aluno.' });
+  }
+};
+
+// Buscar análise esportiva por ID
+const getAnalysisById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const analysis = await Analysis.findById(id)
+      .populate('aluno')
+      .populate('atletas')
+      .populate('avaliador', 'nome email');
+
+    if (!analysis) {
+      return res.status(404).json({ message: 'Análise esportiva não encontrada.' });
+    }
+    res.json(analysis);
+  } catch (error) {
+    console.error('Erro ao buscar análise esportiva:', error);
+    res.status(500).json({ message: 'Erro ao buscar análise esportiva.' });
+  }
+};
+
+// Excluir análise esportiva
 const deleteAnalysis = async (req, res) => {
   try {
-    const analysis = await Analysis.findByIdAndDelete(req.params.id);
-    if (!analysis) return res.status(404).json({ message: 'Análise não encontrada' });
-    res.json({ message: 'Análise removida com sucesso' });
+    const userTipo = (req.userTipo || '').toLowerCase();
+    if (userTipo === 'estudante') {
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises.' });
+    }
+
+    const { id } = req.params;
+    const analysis = await Analysis.findByIdAndDelete(id);
+    if (!analysis) {
+      return res.status(404).json({ message: 'Análise esportiva não encontrada.' });
+    }
+    res.json({ message: 'Análise esportiva removida com sucesso.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Erro ao excluir análise esportiva:', error);
+    res.status(500).json({ message: 'Erro ao excluir análise esportiva.' });
   }
 };
 
 module.exports = {
   getAllAnalyses,
+  getAnalysisById,
   createAnalysis,
   updateAnalysis,
   getAnalysisByStudent,
   deleteAnalysis
 };
+

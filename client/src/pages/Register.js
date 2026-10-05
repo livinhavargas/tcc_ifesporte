@@ -171,7 +171,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
   };
 
   return (
-    <div className={isEmbedded ? "w-100" : ""} style={isEmbedded ? {} : { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: '48px 24px', position: 'relative' }}>
+    <div className={isEmbedded ? "w-100" : ""} style={isEmbedded ? {} : { minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 'clamp(24px, 4vw, 48px) clamp(12px, 3vw, 24px)', position: 'relative' }}>
       {!isEmbedded && (
         <button
           onClick={toggleTheme}
@@ -199,7 +199,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
           <span>{isDark ? 'Claro' : 'Escuro'}</span>
         </button>
       )}
-      <div style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: '40px', boxShadow: isEmbedded ? 'none' : 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
+      <div style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: 'clamp(20px, 4vw, 40px)', boxShadow: isEmbedded ? 'none' : 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <h2 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.375rem', marginBottom: '8px' }}>Criação de Conta</h2>

@@ -1,271 +1,588 @@
-import React, { useState, useEffect } from 'react';
-import ContextoSelector from './ContextoSelector';
+import React from 'react';
+import NumberStepper from '../../../components/NumberStepper';
+import { Plus, Trash2 } from 'lucide-react';
 
-const HandebolForm = ({ formData, setFormData, handleInputChange, handleSubmit, students, setMensagem }) => {
-  const [tipoAnalise, setTipoAnalise] = useState('');
-  const [formInfo, setFormInfo] = useState({});
+const HandebolForm = ({
+  formData,
+  setFormData,
+  students = []
+}) => {
+  const dados = formData.dadosEspecificos || {};
 
-  // Auto-detectar tipoAnalise APENAS em EDIT mode
-  useEffect(() => {
-    if (formData.editingId) {
-      if (formData.tipoAnalise && structures[formData.tipoAnalise]) {
-        setTipoAnalise(formData.tipoAnalise);
-      } else if (formData.subtipo && structures[formData.subtipo]) {
-        setTipoAnalise(formData.subtipo);
-      } else if (formData.respostas && Object.keys(formData.respostas).length > 0) {
-        const keys = Object.keys(formData.respostas);
-        for (const typeKey of Object.keys(structures)) {
-          const match = structures[typeKey].some(s => s.fields.some(f => keys.includes(f.key)));
-          if (match) {
-            setTipoAnalise(typeKey);
-            break;
-          }
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.editingId]);
-
-  useEffect(() => {
-    setFormInfo(formData.respostas || {});
-  }, [formData.respostas]);
-
-  const handleSliderChange = (key, value) => {
-    const val = Number(value);
-    setFormInfo(prev => ({ ...prev, [key]: val }));
+  const updateDados = (updates) => {
     setFormData(prev => ({
       ...prev,
-      respostas: { ...prev.respostas, [key]: val }
+      dadosEspecificos: {
+        ...(prev.dadosEspecificos || {}),
+        ...updates
+      }
     }));
   };
 
-  const handleTipoChange = (e) => {
-    setTipoAnalise(e.target.value);
-    setFormInfo({});
-    setFormData(prev => ({ ...prev, respostas: {} }));
+  // Gols marcados
+  const golsMarcados = Array.isArray(dados.golsMarcados) ? dados.golsMarcados : [];
+  const handleAddGol = () => {
+    updateDados({ golsMarcados: [...golsMarcados, { atletaId: '', atletaNome: '' }] });
+  };
+  const handleRemoveGol = (idx) => {
+    updateDados({ golsMarcados: golsMarcados.filter((_, i) => i !== idx) });
+  };
+  const handleGolAtletaChange = (idx, atletaId) => {
+    const at = students.find(s => s._id === atletaId);
+    const updated = [...golsMarcados];
+    updated[idx] = { atletaId, atletaNome: at ? at.nome : '' };
+    updateDados({ golsMarcados: updated });
   };
 
-  const internalHandleSubmit = (e) => {
-    e.preventDefault();
-    if (!tipoAnalise) {
-      setMensagem('Por favor, selecione o tipo de análise (Ex: Individual - Ataque).');
-      return;
-    }
-
-    let diagnostico = '';
-    if (tipoAnalise === 'Individual - Ataque') diagnostico = gerarDiagnosticoIndAtaque(formInfo);
-    else if (tipoAnalise === 'Individual - Defesa') diagnostico = gerarDiagnosticoIndDefesa(formInfo);
-    else if (tipoAnalise === 'Coletiva - Ataque') diagnostico = gerarDiagnosticoColAtaque(formInfo);
-    else if (tipoAnalise === 'Coletiva - Defesa') diagnostico = gerarDiagnosticoColDefesa(formInfo);
-
-    const tipoFinal = tipoAnalise.includes('Coletiva') ? 'Coletiva' : 'Individual';
-    handleSubmit(e, diagnostico, tipoFinal);
-  };
-
-  const structures = {
-    'Individual - Ataque': [
-      { section: 'Arremessos', fields: [{ key: 'Ataque Ind - Precisao Arremessos', label: 'Precisão dos arremessos' }, { key: 'Ataque Ind - Potencia', label: 'Potência dos arremessos' }, { key: 'Ataque Ind - Momento', label: 'Escolha do momento para finalizar' }, { key: 'Ataque Ind - Variedade', label: 'Variedade dos tipos de arremesso' }, { key: 'Ataque Ind - Aproveitamento', label: 'Aproveitamento das oportunidades' }, { key: 'Ataque Ind - Controle Corporal', label: 'Controle corporal durante a finalização' }, { key: 'Ataque Ind - Pressao', label: 'Eficiência em situações de pressão' }] },
-      { section: 'Passe e Construção', fields: [{ key: 'Ataque Ind - Precisao Passes', label: 'Precisão dos passes' }, { key: 'Ataque Ind - Velocidade Passes', label: 'Velocidade dos passes' }, { key: 'Ataque Ind - Passes Profundidade', label: 'Passes em profundidade' }, { key: 'Ataque Ind - Assistencias', label: 'Assistências' }, { key: 'Ataque Ind - Circulacao', label: 'Circulação da bola' }, { key: 'Ataque Ind - Visao', label: 'Visão de jogo' }, { key: 'Ataque Ind - Decisao Passe', label: 'Tomada de decisão' }] },
-      { section: 'Drible e Progressão', fields: [{ key: 'Ataque Ind - Controle Bola', label: 'Controle da bola' }, { key: 'Ataque Ind - Dribles 1x1', label: 'Dribles em situações de um contra um' }, { key: 'Ataque Ind - Mudancas Direcao', label: 'Mudanças de direção' }, { key: 'Ataque Ind - Protecao Bola', label: 'Proteção da bola' }, { key: 'Ataque Ind - Progressao', label: 'Progressão ofensiva' }, { key: 'Ataque Ind - Romper Linhas', label: 'Capacidade de romper linhas defensivas' }] },
-      { section: 'Movimentação sem a Bola', fields: [{ key: 'Ataque Ind - Desmarcacao', label: 'Desmarcação' }, { key: 'Ataque Ind - Ataque Espacos', label: 'Ataque aos espaços' }, { key: 'Ataque Ind - Ocupacao', label: 'Ocupação das zonas ofensivas' }, { key: 'Ataque Ind - Sincronizacao', label: 'Sincronização com os companheiros' }, { key: 'Ataque Ind - Superioridade', label: 'Movimentações para gerar superioridade numérica' }] },
-      { section: 'Inteligência Ofensiva', fields: [{ key: 'Ataque Ind - Leitura Defesa', label: 'Leitura da defesa adversária' }, { key: 'Ataque Ind - Escolha Jogadas', label: 'Escolha das jogadas' }, { key: 'Ataque Ind - Tomada Decisao Ofensiva', label: 'Tomada de decisão' }, { key: 'Ataque Ind - Participacao Sistemas', label: 'Participação nos sistemas ofensivos' }, { key: 'Ataque Ind - Adaptacao', label: 'Adaptação às diferentes situações da partida' }] },
-      { section: 'Transição Ofensiva', fields: [{ key: 'Ataque Ind - Reacao Recuperacao', label: 'Reação após recuperar a posse' }, { key: 'Ataque Ind - Velocidade Contra-ataque', label: 'Velocidade para iniciar contra-ataques' }, { key: 'Ataque Ind - Eficiencia Contra-ataque', label: 'Eficiência nos contra-ataques' }, { key: 'Ataque Ind - Aproveitamento Superioridade', label: 'Aproveitamento das situações de superioridade numérica' }] }
-    ],
-    'Individual - Defesa': [
-      { section: 'Marcação Individual', fields: [{ key: 'Defesa Ind - Posicionamento', label: 'Posicionamento defensivo' }, { key: 'Defesa Ind - Postura Corporal', label: 'Postura corporal' }, { key: 'Defesa Ind - Controle Distancia', label: 'Controle da distância' }, { key: 'Defesa Ind - Eficiencia Marcacao', label: 'Eficiência na marcação' }, { key: 'Defesa Ind - Contencao', label: 'Contenção do adversário' }] },
-      { section: 'Recuperação da Posse', fields: [{ key: 'Defesa Ind - Interceptacoes', label: 'Interceptações' }, { key: 'Defesa Ind - Recuperacoes Bola', label: 'Recuperações de bola' }, { key: 'Defesa Ind - Antecipacoes', label: 'Antecipações' }, { key: 'Defesa Ind - Desarmes', label: 'Desarmes' }, { key: 'Defesa Ind - Provocar Erros', label: 'Capacidade de provocar erros ofensivos' }] },
-      { section: 'Contato Defensivo', fields: [{ key: 'Defesa Ind - Uso Corpo', label: 'Uso correto do corpo' }, { key: 'Defesa Ind - Controle Contato', label: 'Controle do contato físico' }, { key: 'Defesa Ind - Equilibrio', label: 'Equilíbrio' }, { key: 'Defesa Ind - Bloqueios Defensivos', label: 'Eficiência nos bloqueios defensivos' }, { key: 'Defesa Ind - Disciplina', label: 'Disciplina para evitar exclusões' }] },
-      { section: 'Cobertura Defensiva', fields: [{ key: 'Defesa Ind - Cobertura Companheiros', label: 'Cobertura aos companheiros' }, { key: 'Defesa Ind - Fechamento Linhas', label: 'Fechamento das linhas de passe' }, { key: 'Defesa Ind - Trocas Marcacao', label: 'Trocas de marcação' }, { key: 'Defesa Ind - Ocupacao Espacos', label: 'Ocupação dos espaços defensivos' }] },
-      { section: 'Inteligência Defensiva', fields: [{ key: 'Defesa Ind - Leitura Jogadas', label: 'Leitura das jogadas' }, { key: 'Defesa Ind - Antecipacao Jogadas', label: 'Antecipação' }, { key: 'Defesa Ind - Comunicacao', label: 'Comunicação' }, { key: 'Defesa Ind - Tomada Decisao', label: 'Tomada de decisão' }, { key: 'Defesa Ind - Disciplina Tatica', label: 'Disciplina tática' }] },
-      { section: 'Transição Defensiva', fields: [{ key: 'Defesa Ind - Reacao Perda', label: 'Reação após perder a posse' }, { key: 'Defesa Ind - Recomposicao', label: 'Recomposição' }, { key: 'Defesa Ind - Retorno Defensivo', label: 'Retorno defensivo' }, { key: 'Defesa Ind - Contra-ataques Adversarios', label: 'Organização durante contra-ataques adversários' }] }
-    ],
-    'Coletiva - Ataque': [
-      { section: 'Organização Ofensiva', fields: [{ key: 'Ataque Col - Circulacao Bola', label: 'Circulação da bola' }, { key: 'Ataque Col - Ritmo Ofensivo', label: 'Ritmo ofensivo' }, { key: 'Ataque Col - Amplitude', label: 'Amplitude' }, { key: 'Ataque Col - Profundidade', label: 'Profundidade' }, { key: 'Ataque Col - Ocupacao Espacos', label: 'Ocupação dos espaços' }, { key: 'Ataque Col - Comunicacao Ofensiva', label: 'Comunicação ofensiva' }] },
-      { section: 'Sistemas Ofensivos', fields: [{ key: 'Ataque Col - Jogadas Ensaiadas', label: 'Execução das jogadas ensaiadas' }, { key: 'Ataque Col - Movimentacoes Coletivas', label: 'Movimentações coletivas' }, { key: 'Ataque Col - Cruzamentos', label: 'Cruzamentos' }, { key: 'Ataque Col - Bloqueios Ofensivos', label: 'Bloqueios ofensivos' }, { key: 'Ataque Col - Trocas Posicao', label: 'Trocas de posição' }, { key: 'Ataque Col - Sincronizacao', label: 'Sincronização da equipe' }] },
-      { section: 'Criação de Oportunidades', fields: [{ key: 'Ataque Col - Qualidade Oportunidades', label: 'Qualidade das oportunidades criadas' }, { key: 'Ataque Col - Superioridade Numerica', label: 'Aproveitamento da superioridade numérica' }, { key: 'Ataque Col - Ultimo Passe', label: 'Eficiência no último passe' }, { key: 'Ataque Col - Romper Defesa', label: 'Capacidade de romper a defesa adversária' }] },
-      { section: 'Finalizações', fields: [{ key: 'Ataque Col - Qualidade Arremessos', label: 'Qualidade dos arremessos' }, { key: 'Ataque Col - Aproveitamento Finalizacoes', label: 'Aproveitamento das finalizações' }, { key: 'Ataque Col - Variedade Finalizacoes', label: 'Variedade das finalizações' }, { key: 'Ataque Col - Eficiencia Ofensiva', label: 'Eficiência ofensiva coletiva' }] },
-      { section: 'Contra-Ataques', fields: [{ key: 'Ataque Col - Velocidade Transicao', label: 'Velocidade da transição ofensiva' }, { key: 'Ataque Col - Organizacao Contra-ataques', label: 'Organização dos contra-ataques' }, { key: 'Ataque Col - Conversao Oportunidades', label: 'Conversão das oportunidades' }, { key: 'Ataque Col - Tomada Decisao', label: 'Tomada de decisão durante a transição' }] },
-      { section: 'Inteligência Tática', fields: [{ key: 'Ataque Col - Cumprimento Sistema', label: 'Cumprimento do sistema ofensivo' }, { key: 'Ataque Col - Comunicacao', label: 'Comunicação' }, { key: 'Ataque Col - Sincronizacao Atletas', label: 'Sincronização entre os atletas' }, { key: 'Ataque Col - Adaptacao', label: 'Adaptação às mudanças da defesa adversária' }] }
-    ],
-    'Coletiva - Defesa': [
-      { section: 'Organização Defensiva', fields: [{ key: 'Defesa Col - Compactacao', label: 'Compactação' }, { key: 'Defesa Col - Distancia Jogadores', label: 'Distância entre jogadores' }, { key: 'Defesa Col - Organizacao Sistema', label: 'Organização do sistema defensivo' }, { key: 'Defesa Col - Cobertura Setores', label: 'Cobertura entre setores' }] },
-      { section: 'Sistemas Defensivos', fields: [{ key: 'Defesa Col - Eficiencia Sistema', label: 'Eficiência do sistema defensivo utilizado' }, { key: 'Defesa Col - Coordenacao Movimentacoes', label: 'Coordenação das movimentações' }, { key: 'Defesa Col - Trocas Marcacao', label: 'Trocas de marcação' }, { key: 'Defesa Col - Adaptacao', label: 'Adaptação às ações ofensivas adversárias' }] },
-      { section: 'Pressão Defensiva', fields: [{ key: 'Defesa Col - Intensidade Marcacao', label: 'Intensidade da marcação' }, { key: 'Defesa Col - Pressao Portador', label: 'Pressão sobre o portador da bola' }, { key: 'Defesa Col - Recuperacao Posse', label: 'Recuperação da posse' }, { key: 'Defesa Col - Interceptacao Linhas', label: 'Interceptação das linhas de passe' }] },
-      { section: 'Proteção da Área', fields: [{ key: 'Defesa Col - Fechamento Seis Metros', label: 'Fechamento da região dos seis metros' }, { key: 'Defesa Col - Contestacao Arremessos', label: 'Contestação dos arremessos' }, { key: 'Defesa Col - Cobertura Pivos', label: 'Cobertura dos pivôs' }, { key: 'Defesa Col - Jogadas Proximas', label: 'Defesa das jogadas próximas à área' }] },
-      { section: 'Transição Defensiva', fields: [{ key: 'Defesa Col - Retorno Defensivo', label: 'Retorno defensivo' }, { key: 'Defesa Col - Organizacao Pos-perda', label: 'Organização após perda da posse' }, { key: 'Defesa Col - Contra-ataques', label: 'Defesa contra contra-ataques' }, { key: 'Defesa Col - Velocidade Recomposicao', label: 'Velocidade da recomposição' }] },
-      { section: 'Comunicação e Organização', fields: [{ key: 'Defesa Col - Comunicacao', label: 'Comunicação entre os atletas' }, { key: 'Defesa Col - Lideranca', label: 'Liderança defensiva' }, { key: 'Defesa Col - Coordenacao Coletiva', label: 'Coordenação coletiva' }, { key: 'Defesa Col - Disciplina Tatica', label: 'Disciplina tática' }] }
-    ]
-  };
-
-  const getMedia = (keys, info) => {
-    let sum = 0;
-    let count = 0;
-    keys.forEach(k => {
-      if (info[k]) {
-        sum += info[k];
-        count++;
+  // 7 metros da nossa equipe
+  const seteMetrosNossaEquipeLista = Array.isArray(dados.seteMetrosNossaEquipeLista) ? dados.seteMetrosNossaEquipeLista : [];
+  const handleSeteMetrosNossaQtdChange = (qtd) => {
+    const current = [...seteMetrosNossaEquipeLista];
+    if (qtd > current.length) {
+      while (current.length < qtd) {
+        current.push({ atletaId: '', resultouGol: false });
       }
+    } else {
+      current.splice(qtd);
+    }
+    updateDados({
+      seteMetrosNossaEquipeQtd: qtd,
+      seteMetrosNossaEquipeLista: current
     });
-    return count > 0 ? (sum / count).toFixed(1) : 'N/A';
+  };
+  const handleSeteMetrosNossaItemChange = (idx, field, val) => {
+    const updated = [...seteMetrosNossaEquipeLista];
+    updated[idx] = { ...updated[idx], [field]: val };
+    updateDados({ seteMetrosNossaEquipeLista: updated });
   };
 
-  const gerarDiagnosticoIndAtaque = (info) => {
-    let text = "Desempenho Ofensivo no Handebol: ";
-    const arremessos = Number(getMedia(['Ataque Ind - Precisao Arremessos', 'Ataque Ind - Momento', 'Ataque Ind - Aproveitamento'], info));
-    if (arremessos >= 4) text += "O atleta demonstra alta qualidade nos arremessos, selecionando os momentos corretos para a finalização e gerando excelente conversão para a equipe. ";
-    else if (arremessos <= 2) text += "Nota-se dificuldade e precipitação no momento de arremessar, forçando finalizações em situações adversas. ";
-    else text += "Desempenho mediano nos arremessos, cumprindo o papel, mas passível de melhoria no momento da tomada de decisão. ";
-    
-    const criacao = Number(getMedia(['Ataque Ind - Precisao Passes', 'Ataque Ind - Assistencias', 'Ataque Ind - Visao'], info));
-    if (criacao >= 4) text += "Apresenta excepcional visão de quadra e capacidade na distribuição de jogo. ";
-    else if (criacao <= 2) text += "Dificuldade na criação e circulação de passes ofensivos rápidos. ";
-    
-    return text;
+  // 7 metros do outro time (quem causou)
+  const seteMetrosOutroTimeCausadores = Array.isArray(dados.seteMetrosOutroTimeCausadores) ? dados.seteMetrosOutroTimeCausadores : [];
+  const handleAddSeteMetrosCausador = () => {
+    updateDados({ seteMetrosOutroTimeCausadores: [...seteMetrosOutroTimeCausadores, ''] });
+  };
+  const handleRemoveSeteMetrosCausador = (idx) => {
+    updateDados({ seteMetrosOutroTimeCausadores: seteMetrosOutroTimeCausadores.filter((_, i) => i !== idx) });
+  };
+  const handleSeteMetrosCausadorChange = (idx, val) => {
+    const updated = [...seteMetrosOutroTimeCausadores];
+    updated[idx] = val;
+    updateDados({ seteMetrosOutroTimeCausadores: updated });
   };
 
-  const gerarDiagnosticoIndDefesa = (info) => {
-    let text = "Desempenho Defensivo no Handebol: ";
-    const marcacao = Number(getMedia(['Defesa Ind - Posicionamento', 'Defesa Ind - Postura Corporal', 'Defesa Ind - Eficiencia Marcacao'], info));
-    if (marcacao >= 4) text += "O atleta exibe postura corporal correta e posicionamento preciso nas flutuações da marcação. ";
-    else if (marcacao <= 2) text += "Apresenta fragilidade no combate individual direto e tempo de reação tardio. ";
-    
-    return text;
+  // Dois minutos
+  const doisMinutosLista = Array.isArray(dados.doisMinutosLista) ? dados.doisMinutosLista : [];
+  const handleAddDoisMinutos = () => {
+    updateDados({ doisMinutosLista: [...doisMinutosLista, ''] });
+  };
+  const handleRemoveDoisMinutos = (idx) => {
+    updateDados({ doisMinutosLista: doisMinutosLista.filter((_, i) => i !== idx) });
+  };
+  const handleDoisMinutosChange = (idx, val) => {
+    const updated = [...doisMinutosLista];
+    updated[idx] = val;
+    updateDados({ doisMinutosLista: updated });
   };
 
-  const gerarDiagnosticoColAtaque = (info) => {
-    let text = "Organização Ofensiva Coletiva (Handebol): ";
-    const organizacao = Number(getMedia(['Ataque Col - Circulacao Bola', 'Ataque Col - Ritmo Ofensivo', 'Ataque Col - Ocupacao Espacos'], info));
-    if (organizacao >= 4) text += "A equipe detém controle rítmico do ataque, circulando a bola com velocidade e aproveitando os pontas. ";
-    else if (organizacao <= 2) text += "Falta agressividade coletiva. A bola circula de forma perimetral sem penetração. ";
-    
-    return text;
+  // Gols sofridos
+  const golsSofridosOrigens = Array.isArray(dados.golsSofridosOrigens) ? dados.golsSofridosOrigens : [];
+  const handleGolsSofridosQtdChange = (qtd) => {
+    const current = [...golsSofridosOrigens];
+    if (qtd > current.length) {
+      while (current.length < qtd) current.push('Situação de jogo');
+    } else {
+      current.splice(qtd);
+    }
+    updateDados({
+      golsSofridosQtd: qtd,
+      golsSofridosOrigens: current
+    });
+  };
+  const handleGolSofridoOrigemChange = (idx, origem) => {
+    const updated = [...golsSofridosOrigens];
+    updated[idx] = origem;
+    updateDados({ golsSofridosOrigens: updated });
   };
 
-  const gerarDiagnosticoColDefesa = (info) => {
-    let text = "Solidez Defensiva Coletiva (Handebol): ";
-    const compactacao = Number(getMedia(['Defesa Col - Compactacao', 'Defesa Col - Organizacao Sistema', 'Defesa Col - Fechamento Seis Metros'], info));
-    if (compactacao >= 4) text += "Sistema defensivo bem coordenado, flutuando com excelente timing e anulando pivôs. ";
-    else if (compactacao <= 2) text += "Defesa espaçada e sem cobertura central, permitindo infiltrações fáceis. ";
-    
-    return text;
+  // Desempate (7 Metros em caso de Empate)
+  const desempateSeteMetrosLista = Array.isArray(dados.desempateSeteMetrosLista) ? dados.desempateSeteMetrosLista : [];
+  const handleAddDesempateSeteMetros = () => {
+    const updated = [...desempateSeteMetrosLista, { atletaId: '', atletaNome: '', resultado: 'Acertou' }];
+    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
+    const erros = updated.filter(p => p.resultado === 'Errou').length;
+    updateDados({
+      desempateSeteMetrosLista: updated,
+      desempateSeteMetrosAcertos: acertos,
+      desempateSeteMetrosErros: erros
+    });
+  };
+  const handleRemoveDesempateSeteMetros = (idx) => {
+    const updated = desempateSeteMetrosLista.filter((_, i) => i !== idx);
+    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
+    const erros = updated.filter(p => p.resultado === 'Errou').length;
+    updateDados({
+      desempateSeteMetrosLista: updated,
+      desempateSeteMetrosAcertos: acertos,
+      desempateSeteMetrosErros: erros
+    });
+  };
+  const handleDesempateSeteMetrosChange = (idx, field, val) => {
+    const updated = [...desempateSeteMetrosLista];
+    if (field === 'atletaId') {
+      const at = students.find(s => s._id === val);
+      updated[idx] = { ...updated[idx], atletaId: val, atletaNome: at ? at.nome : '' };
+    } else {
+      updated[idx] = { ...updated[idx], [field]: val };
+    }
+    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
+    const erros = updated.filter(p => p.resultado === 'Errou').length;
+    updateDados({
+      desempateSeteMetrosLista: updated,
+      desempateSeteMetrosAcertos: acertos,
+      desempateSeteMetrosErros: erros
+    });
   };
 
-  const structure = structures[tipoAnalise] || [];
-
-  const inputStyle = {
-    width: '100%',
-    padding: '10px 14px',
-    borderRadius: 'var(--radius-md)',
-    border: '1.5px solid var(--border)',
-    fontSize: '0.875rem',
-    fontFamily: 'var(--font)',
-    outline: 'none',
-    transition: 'all var(--transition-fast)',
-    background: 'var(--bg)',
-    minHeight: '44px'
-  };
+  const isEmpate = formData.resultado === 'Empate';
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      borderRadius: 'var(--radius-xl)',
-      border: '1px solid var(--border-light)',
-      boxShadow: 'var(--shadow-md)',
-      padding: '32px',
-      marginBottom: '32px'
-    }}>
-      <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '24px', fontSize: '1.0625rem' }}>
-        Análise Técnica - Handebol
-      </h5>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      <form onSubmit={internalHandleSubmit}>
-        <div className="row g-3 mb-4" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '24px' }}>
-          <div className="col-md-3">
-            <label className="form-label text-muted small fw-bold">Tipo de Análise</label>
-            <select className="form-select" value={tipoAnalise} onChange={handleTipoChange} required style={{ ...inputStyle, borderColor: 'var(--primary)', fontWeight: 600 }}>
-              <option value="">Selecione...</option>
-              <option value="Individual - Ataque">Análise Individual – Ataque</option>
-              <option value="Individual - Defesa">Análise Individual – Defesa</option>
-              <option value="Coletiva - Ataque">Análise Coletiva – Ataque</option>
-              <option value="Coletiva - Defesa">Análise Coletiva – Defesa</option>
-            </select>
+      {/* 1. Equipe Adversária & 2. Resultado */}
+      <div className="row g-3">
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700 }}>
+            Equipe Adversária <span style={{ color: 'var(--error)' }}>*</span>
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Digite o nome da equipe adversária"
+            value={formData.equipeAdversaria || ''}
+            onChange={(e) => setFormData({ ...formData, equipeAdversaria: e.target.value })}
+            required
+          />
+        </div>
+
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700 }}>
+            Resultado <span style={{ color: 'var(--error)' }}>*</span>
+          </label>
+          <select
+            className="form-select"
+            value={formData.resultado || ''}
+            onChange={(e) => setFormData({ ...formData, resultado: e.target.value })}
+            required
+          >
+            <option value="">Selecione o resultado</option>
+            <option value="Vitória">Vitória</option>
+            <option value="Derrota">Derrota</option>
+            <option value="Empate">Empate</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 3. Placar (Campo para DIGITAR) */}
+      <div style={{
+        background: 'var(--bg)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '16px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <label className="form-label" style={{ fontWeight: 700 }}>
+          Placar <span style={{ color: 'var(--error)' }}>*</span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Digite o placar (ex: 28 x 24)"
+          value={typeof formData.placar === 'string' ? formData.placar : (formData.placar ? `${formData.placar.nos || 0} x ${formData.placar.adv || 0}` : '')}
+          onChange={(e) => setFormData({ ...formData, placar: e.target.value })}
+          required
+        />
+      </div>
+
+      {/* 4. Gols Marcados (Opcional) */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '16px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
+            Gols Marcados
+          </label>
+          <button
+            type="button"
+            onClick={handleAddGol}
+            className="btn btn-sm btn-secondary"
+            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+          >
+            <Plus size={14} /> Adicionar Autor do Gol
+          </button>
+        </div>
+
+        {golsMarcados.length === 0 ? (
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0 }}>
+            Nenhum gol registrado individualmente.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {golsMarcados.map((gol, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '45px' }}>
+                  Gol {idx + 1}:
+                </span>
+                <select
+                  className="form-select form-select-sm"
+                  value={gol.atletaId || ''}
+                  onChange={(e) => handleGolAtletaChange(idx, e.target.value)}
+                  style={{ flex: 1 }}
+                >
+                  <option value="">Selecione o atleta</option>
+                  {students.map(s => (
+                    <option key={s._id} value={s._id}>{s.nome}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveGol(idx)}
+                  className="btn btn-sm text-danger"
+                  style={{ padding: '4px 8px', background: 'transparent', border: 'none' }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
           </div>
-          <div className="col-md-3">
-            <ContextoSelector modalidade={formData.modalidade || 'Handebol'} value={formData.contexto} onChange={handleInputChange} style={inputStyle} />
+        )}
+      </div>
+
+      {/* 5. 7 Metros do Outro Time & 6. 7 Metros da Nossa Equipe */}
+      <div className="row g-3">
+        {/* 5. 7 metros do outro time */}
+        <div className="col-12 col-md-6">
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
+            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
+              7 Metros do Outro Time
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
+              <NumberStepper
+                value={dados.seteMetrosOutroTimeQtd || 0}
+                onChange={(v) => updateDados({ seteMetrosOutroTimeQtd: v })}
+                min={0}
+                ariaLabel="7 metros do outro time"
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Quem causou:</span>
+              <button
+                type="button"
+                onClick={handleAddSeteMetrosCausador}
+                className="btn btn-sm btn-secondary"
+                style={{ fontSize: '0.6875rem', padding: '2px 8px' }}
+              >
+                <Plus size={12} /> Atleta
+              </button>
+            </div>
+            {seteMetrosOutroTimeCausadores.map((atletaId, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <select
+                  className="form-select form-select-sm"
+                  value={atletaId}
+                  onChange={(e) => handleSeteMetrosCausadorChange(idx, e.target.value)}
+                >
+                  <option value="">Selecione quem causou</option>
+                  {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSeteMetrosCausador(idx)}
+                  className="btn btn-sm text-danger"
+                  style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
           </div>
-          <div className="col-md-3">
-            <label className="form-label text-muted small fw-bold">Data da Análise</label>
-            <input type="date" className="form-control" name="data" value={formData.data} onChange={handleInputChange} required style={inputStyle} />
+        </div>
+
+        {/* 6. 7 metros da nossa equipe */}
+        <div className="col-12 col-md-6">
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
+            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
+              7 Metros da Nossa Equipe
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
+              <NumberStepper
+                value={dados.seteMetrosNossaEquipeQtd || 0}
+                onChange={handleSeteMetrosNossaQtdChange}
+                min={0}
+                ariaLabel="7 metros da nossa equipe"
+              />
+            </div>
+
+            {seteMetrosNossaEquipeLista.map((item, idx) => (
+              <div key={idx} style={{
+                background: 'var(--bg)',
+                padding: '8px 10px',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '8px',
+                border: '1px solid var(--border-light)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Arremesso {idx + 1}:</span>
+                  <select
+                    className="form-select form-select-sm"
+                    value={item.atletaId || ''}
+                    onChange={(e) => handleSeteMetrosNossaItemChange(idx, 'atletaId', e.target.value)}
+                    style={{ flex: 1 }}
+                  >
+                    <option value="">Quem arremessou?</option>
+                    {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
+                  </select>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(item.resultouGol)}
+                    onChange={(e) => handleSeteMetrosNossaItemChange(idx, 'resultouGol', e.target.checked)}
+                  />
+                  Resultou em gol?
+                </label>
+              </div>
+            ))}
           </div>
-          <div className="col-md-3">
-            <label className="form-label text-muted small fw-bold">Aluno Avaliado</label>
-            <select className="form-select" name="aluno" value={formData.aluno} onChange={handleInputChange} required style={inputStyle}>
-              {students.length === 0 ? (
-                <option value="">Nenhum atleta cadastrado.</option>
-              ) : (
-                <option value="">Selecione...</option>
-              )}
-              {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
-            </select>
-            {tipoAnalise.includes('Coletiva') && (
-              <small style={{ color: 'var(--text-tertiary)', display: 'block', marginTop: '6px', fontSize: '0.75rem' }}>Nas análises coletivas, esta ficha ficará associada ao capitão/representante escolhido.</small>
+        </div>
+      </div>
+
+      {/* 7. Dois Minutos & 9. Defesas */}
+      <div className="row g-3">
+        {/* 7. Dois minutos */}
+        <div className="col-12 col-md-6">
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
+                Dois Minutos
+              </label>
+              <button
+                type="button"
+                onClick={handleAddDoisMinutos}
+                className="btn btn-sm btn-secondary"
+                style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              >
+                <Plus size={14} /> Atleta
+              </button>
+            </div>
+
+            {doisMinutosLista.length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0 }}>
+                Nenhum atleta tomou dois minutos.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {doisMinutosLista.map((atletaId, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <select
+                      className="form-select form-select-sm"
+                      value={atletaId}
+                      onChange={(e) => handleDoisMinutosChange(idx, e.target.value)}
+                    >
+                      <option value="">Selecione quem tomou</option>
+                      {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDoisMinutos(idx)}
+                      className="btn btn-sm text-danger"
+                      style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
 
-        {tipoAnalise && (
-          <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', marginBottom: '24px' }}>Avalie de 1 a 5 cada um dos critérios abaixo relativos à modalidade de Handebol (1 = Insuficiente, 5 = Excelente).</p>
-
-            {structure.map((sec, idx) => (
-              <div key={idx} style={{
-                background: 'var(--bg)',
-                borderRadius: 'var(--radius-md)',
-                padding: '20px',
-                border: '1px solid var(--border-light)',
-                marginBottom: '20px'
-              }}>
-                <h6 style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '16px', fontSize: '0.875rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
-                  <i className="bi bi-record-circle me-2"></i>{sec.section}
-                </h6>
-                <div className="row g-4">
-                  {sec.fields.map(field => (
-                    <div key={field.key} className="col-md-6">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-                        <label style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.8125rem' }}>{field.label}</label>
-                        <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600 }}>{formInfo[field.key] || 3} / 5</span>
-                      </div>
-                      <input 
-                        type="range" 
-                        className="form-range" 
-                        min="1" max="5" step="1" 
-                        value={formInfo[field.key] || 3} 
-                        onChange={(e) => handleSliderChange(field.key, e.target.value)} 
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>
-                        <span>Precisa Melhorar</span>
-                        <span>Excelente</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            
-            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginBottom: '24px' }}>
-              <label className="form-label text-muted small fw-bold">Anotações Adicionais (Opcional)</label>
-              <textarea className="form-control" name="observacoes" rows="2" value={formData.observacoes} onChange={handleInputChange} placeholder="Comentários extras sobre o posicionamento, agressividade, disciplina etc..." style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}></textarea>
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" className="btn btn-primary" style={{ padding: '12px 32px' }}>
-                <i className="bi bi-check-circle-fill me-2"></i>
-                {formData?.editingId ? 'Salvar Alterações' : 'Salvar Análise'}
-              </button>
+        {/* 9. Defesas */}
+        <div className="col-12 col-md-6">
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
+            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
+              Defesas
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade de Defesas:</span>
+              <NumberStepper
+                value={dados.defesasQtd || 0}
+                onChange={(v) => updateDados({ defesasQtd: v })}
+                min={0}
+                ariaLabel="Defesas"
+              />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 8. Gols Sofridos */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '16px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
+            Gols Sofridos
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
+            <NumberStepper
+              value={dados.golsSofridosQtd || 0}
+              onChange={handleGolsSofridosQtdChange}
+              min={0}
+              ariaLabel="Gols sofridos"
+            />
+          </div>
+        </div>
+
+        {golsSofridosOrigens.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {golsSofridosOrigens.map((origem, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', minWidth: '90px' }}>
+                  Gol sofrido {idx + 1}:
+                </span>
+                <select
+                  className="form-select form-select-sm"
+                  value={origem}
+                  onChange={(e) => handleGolSofridoOrigemChange(idx, e.target.value)}
+                  style={{ maxWidth: '240px' }}
+                >
+                  <option value="Situação de jogo">Situação de jogo</option>
+                  <option value="7 metros">7 metros</option>
+                  <option value="Falta">Falta</option>
+                </select>
+              </div>
+            ))}
+          </div>
         )}
-      </form>
+      </div>
+
+      {/* 11. SOMENTE EM CASO DE EMPATE (OBRIGATÓRIO) */}
+      {isEmpate && (
+        <div style={{
+          background: 'var(--warning-light)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '18px',
+          border: '1.5px solid var(--warning)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>
+                🤾 Desempate por 7 Metros <span style={{ color: 'var(--error)' }}>*</span>
+              </h6>
+              <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                Registre os atletas que arremessaram os 7m e o resultado de cada cobrança.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddDesempateSeteMetros}
+              className="btn btn-sm btn-primary"
+              style={{ fontSize: '0.75rem', padding: '4px 12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              <Plus size={14} /> Adicionar Cobrança de 7m
+            </button>
+          </div>
+          
+          <div className="row g-3 mb-3">
+            <div className="col-12 col-sm-6">
+              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem' }}>
+                Total de Acertos (Gols de 7m):
+              </label>
+              <div>
+                <NumberStepper
+                  value={dados.desempateSeteMetrosAcertos || 0}
+                  onChange={(v) => updateDados({ desempateSeteMetrosAcertos: v })}
+                  min={0}
+                  ariaLabel="Acertos de 7 metros"
+                />
+              </div>
+            </div>
+
+            <div className="col-12 col-sm-6">
+              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem' }}>
+                Total de Erros (Perdidos de 7m):
+              </label>
+              <div>
+                <NumberStepper
+                  value={dados.desempateSeteMetrosErros || 0}
+                  onChange={(v) => updateDados({ desempateSeteMetrosErros: v })}
+                  min={0}
+                  ariaLabel="Erros de 7 metros"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+              Atletas que cobraram 7m ({desempateSeteMetrosLista.length}):
+            </span>
+            {desempateSeteMetrosLista.length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--error)', margin: 0, fontWeight: 600 }}>
+                ⚠️ Em caso de empate, clique no botão acima para adicionar as cobranças de 7 metros.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {desempateSeteMetrosLista.map((cob, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, minWidth: '80px' }}>
+                      {idx + 1}ª Cobrança:
+                    </span>
+                    <select
+                      className="form-select form-select-sm"
+                      value={cob.atletaId || ''}
+                      onChange={(e) => handleDesempateSeteMetrosChange(idx, 'atletaId', e.target.value)}
+                      style={{ flex: '1', minWidth: '160px' }}
+                      required
+                    >
+                      <option value="">Selecione o atleta arremessador *</option>
+                      {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+                    </select>
+                    <select
+                      className="form-select form-select-sm"
+                      value={cob.resultado || 'Acertou'}
+                      onChange={(e) => handleDesempateSeteMetrosChange(idx, 'resultado', e.target.value)}
+                      style={{ width: '120px', fontWeight: 600, color: cob.resultado === 'Acertou' ? 'var(--success)' : 'var(--error)' }}
+                    >
+                      <option value="Acertou">🤾 Converteu</option>
+                      <option value="Errou">❌ Perdeu</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDesempateSeteMetros(idx)}
+                      className="btn btn-sm text-danger"
+                      style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
+                      title="Remover cobrança"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

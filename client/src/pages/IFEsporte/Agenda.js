@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { CalendarRange, Plus, Calendar as CalendarIcon, ListOrdered } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon } from 'lucide-react';
 import Layout from '../../components/Layout';
-import CalendarSidebar from './components/CalendarSidebar';
 import MainCalendar from './components/MainCalendar';
 import EventModal from './components/EventModal';
 import { addNotification } from '../../utils/notifications';
@@ -25,32 +23,16 @@ const Agenda = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [mobileTab, setMobileTab] = useState('calendar'); // 'calendar' | 'sidebar'
   
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [searchParams] = useSearchParams();
 
   const userType = localStorage.getItem('tipo');
+  const isStudent = (userType || '').toLowerCase() === 'estudante';
 
   useEffect(() => {
     fetchEvents();
   }, []);
-
-  useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab === 'tarefas' || tab === 'metas') {
-      setTimeout(() => {
-        const el = document.getElementById('metas-gerais-section');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.style.transition = 'all 0.5s ease';
-          el.style.outline = '2px solid var(--primary)';
-          setTimeout(() => { el.style.outline = 'none'; }, 2500);
-        }
-      }, 400);
-    }
-  }, [searchParams]);
 
   const parseEventForCalendar = (ev) => {
     const dateStr = ev.data ? (typeof ev.data === 'string' ? ev.data.split('T')[0] : new Date(ev.data).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
@@ -73,6 +55,7 @@ const Agenda = () => {
 
   const fetchEvents = async () => {
     try {
+      setLoading(true);
       const response = await fetch(apiUrl('/api/events'), {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -82,7 +65,7 @@ const Agenda = () => {
         setEvents(formatted);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao buscar eventos da agenda:', error);
     } finally {
       setLoading(false);
     }
@@ -93,7 +76,7 @@ const Agenda = () => {
   };
 
   const handleSelectSlot = ({ start, end }) => {
-    if (userType === 'estudante') return;
+    if (isStudent) return;
     
     setSelectedEvent({
       start,
@@ -111,7 +94,7 @@ const Agenda = () => {
   };
 
   const handleEventDrop = async ({ event, start, end }) => {
-    if (userType === 'estudante' || event.isPhysicalEducation) return;
+    if (isStudent || event.isPhysicalEducation) return;
     
     const updatedEvent = {
       ...event,
@@ -127,7 +110,7 @@ const Agenda = () => {
   };
 
   const handleEventResize = async ({ event, start, end }) => {
-    if (userType === 'estudante' || event.isPhysicalEducation) return;
+    if (isStudent || event.isPhysicalEducation) return;
 
     const updatedEvent = {
       ...event,
@@ -143,6 +126,8 @@ const Agenda = () => {
   };
 
   const saveEventToApi = async (eventData) => {
+    if (isStudent) return;
+
     const isNew = !eventData._id;
     const url = isNew ? apiUrl('/api/events') : apiUrl(`/api/events/${eventData._id}`);
     const method = isNew ? 'POST' : 'PUT';
@@ -150,7 +135,7 @@ const Agenda = () => {
     const payload = {
       ...eventData,
       titulo: eventData.titulo || eventData.title,
-      cor: categoriesColors[eventData.tipo] || categoriesColors.Outros
+      cor: categoriesColors[eventData.tipo] || categoriesColors.Outro
     };
 
     try {
@@ -163,11 +148,11 @@ const Agenda = () => {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        addNotification(isNew ? 'Novo Evento Criado' : 'Evento Atualizado', `Evento "${payload.titulo}" agendado na Agenda.`);
+        addNotification(isNew ? 'Novo Evento Criado' : 'Evento Atualizado', `Evento "${payload.titulo}" salvo na Agenda.`);
         fetchEvents();
       }
     } catch (err) {
-      console.error(err);
+      console.error('Erro ao salvar evento:', err);
       fetchEvents();
     }
   };
@@ -179,139 +164,124 @@ const Agenda = () => {
   };
 
   const handleDelete = async (id) => {
-    if(!window.confirm("Deseja realmente excluir este evento?")) return;
+    if (isStudent) return;
+    if (!window.confirm("Deseja realmente excluir este evento?")) return;
     try {
       await fetch(apiUrl(`/api/events/${id}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      addNotification('Evento Excluído', 'Um compromisso foi removido da Agenda.');
+      addNotification('Evento Excluído', 'O compromisso foi removido da Agenda.');
       fetchEvents();
       setShowModal(false);
       setSelectedEvent(null);
     } catch(err) {
-      console.error(err);
+      console.error('Erro ao excluir evento:', err);
     }
   };
 
   return (
     <Layout>
-      <div style={{
-        height: 'calc(100vh - 132px)',
-        minHeight: '620px',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-light)',
-        boxShadow: 'var(--shadow-md)',
-        background: 'var(--bg-card)',
-        overflow: 'hidden'
-      }}>
+      <div style={{ width: '100%', maxWidth: 'var(--content-max-width)', margin: '0 auto', paddingBottom: '32px' }}>
         
-        {/* Agenda Top Header */}
+        {/* ── Header da Página: Fora do Calendário com Ícone e Descrição ── */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '12px 20px',
-          borderBottom: '1px solid var(--border-light)',
-          background: 'var(--bg-card)',
-          flexShrink: 0
+          marginBottom: '24px',
+          flexWrap: 'wrap',
+          gap: '16px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.0625rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarRange size={18} style={{ color: 'var(--primary)' }} /> 
-              <span>Agenda</span>
-            </h4>
-            <button 
-              className="btn btn-secondary btn-sm" 
-              onClick={() => setCurrentDate(new Date())} 
-              style={{ borderRadius: 'var(--radius-xs)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}
-            >
-              Hoje
-            </button>
-
-            {/* Mobile View Toggle Buttons */}
-            <div className="d-flex d-lg-none" style={{ gap: '4px', marginLeft: '8px' }}>
-              <button 
-                onClick={() => setMobileTab('calendar')}
-                className={`btn btn-sm ${mobileTab === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '4px 8px', fontSize: '0.6875rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <CalendarIcon size={14} /> Calendário
-              </button>
-              <button 
-                onClick={() => setMobileTab('sidebar')}
-                className={`btn btn-sm ${mobileTab === 'sidebar' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '4px 8px', fontSize: '0.6875rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <ListOrdered size={14} /> Painel Lateral
-              </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <CalendarIcon size={24} />
+            </div>
+            <div>
+              <h1 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.5rem', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                Agenda
+              </h1>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>
+                Organize e acompanhe seus compromissos, treinos, jogos e eventos.
+              </p>
             </div>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-             {userType !== 'estudante' && (
+            {!isStudent && (
               <button 
                 className="btn btn-primary"
-                style={{ padding: '6px 16px', fontSize: '0.8125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', borderRadius: 'var(--radius-sm)' }}
+                style={{
+                  padding: '10px 22px',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-sm)'
+                }}
                 onClick={() => {
                   setSelectedEvent(null);
                   setShowModal(true);
                 }}
               >
-                <Plus size={16} /> <span>Criar Evento</span>
+                <Plus size={18} /> <span>Novo Evento</span>
               </button>
-             )}
-          </div>
-        </div>
-
-        {/* Content Panel */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          
-          {/* Calendar Sidebar */}
-          <div 
-            className={`calendar-sidebar ${mobileTab === 'sidebar' ? 'd-block' : 'd-none d-lg-block'}`} 
-            style={{ width: '310px', flexShrink: 0, borderRight: '1px solid var(--border-light)', height: '100%', overflow: 'hidden' }}
-          >
-            <CalendarSidebar 
-              currentDate={currentDate} 
-              onDateChange={handleDateChange} 
-              events={events}
-              categoriesColors={categoriesColors}
-            />
-          </div>
-
-          {/* Main Calendar Panel */}
-          <div 
-            style={{ flex: 1, overflow: 'hidden', background: 'var(--bg-card)', height: '100%', minHeight: 0 }} 
-            className={`main-calendar-container ${mobileTab === 'calendar' ? 'd-flex' : 'd-none d-lg-flex'}`}
-          >
-            {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}>
-                <div className="spinner-border" style={{ color: 'var(--primary)' }}></div>
-              </div>
-            ) : (
-              <MainCalendar 
-                events={events}
-                currentDate={currentDate}
-                onNavigate={handleDateChange}
-                onSelectEvent={handleSelectEvent}
-                onSelectSlot={handleSelectSlot}
-                onEventDrop={handleEventDrop}
-                onEventResize={handleEventResize}
-                categoriesColors={categoriesColors}
-              />
             )}
           </div>
-
         </div>
 
-        {/* Create/Edit Modal */}
+        {/* ── Calendário Principal (Elemento Central e Amplo) ── */}
+        <div style={{
+          height: 'calc(100dvh - 210px)',
+          minHeight: '580px',
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--border-light)',
+          boxShadow: 'var(--shadow-sm)',
+          background: 'var(--bg-card)',
+          overflow: 'hidden',
+          width: '100%',
+          position: 'relative'
+        }}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}>
+              <div className="spinner-border" style={{ color: 'var(--primary)' }}></div>
+            </div>
+          ) : (
+            <MainCalendar 
+              events={events}
+              currentDate={currentDate}
+              onNavigate={handleDateChange}
+              onSelectEvent={handleSelectEvent}
+              onSelectSlot={handleSelectSlot}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              categoriesColors={categoriesColors}
+            />
+          )}
+        </div>
+
+        {/* ── Modal de Criação / Edição / Visualização de Eventos ── */}
         <EventModal 
           show={showModal} 
           eventData={selectedEvent} 
-          onClose={() => setShowModal(false)}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedEvent(null);
+          }}
           onSave={handleSaveModal}
           onDelete={handleDelete}
           userType={userType}

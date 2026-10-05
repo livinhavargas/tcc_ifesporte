@@ -376,7 +376,7 @@ export default function EducacaoFisica() {
 
   return (
     <Layout>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+      <div style={{ width: '100%', maxWidth: 'var(--content-max-width)', margin: '0 auto' }}>
         
         {/* MENSAGEM GLOBAL DE FEEDBACK */}
         {message && (
@@ -404,31 +404,32 @@ export default function EducacaoFisica() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '32px',
+              marginBottom: '24px',
               flexWrap: 'wrap',
               gap: '16px'
             }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                  <div style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--primary-light)',
-                    color: 'var(--primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <GraduationCap size={22} />
-                  </div>
-                  <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <GraduationCap size={24} />
+                </div>
+                <div>
+                  <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>
                     Educação Física
                   </h2>
+                  <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>
+                    Organização escolar das aulas de Educação Física, turmas e registros de conteúdo trabalhado.
+                  </p>
                 </div>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0 }}>
-                  Organização escolar das aulas de Educação Física, turmas e registros de conteúdo trabalhado.
-                </p>
               </div>
             </div>
 
@@ -1461,7 +1462,7 @@ export default function EducacaoFisica() {
               <form onSubmit={handleSaveReport} style={{ padding: '24px' }}>
                 <div className="row g-3">
                   <div className="col-md-4">
-                    <label className="form-label text-muted small fw-bold">Data da Aula *</label>
+                    <label className="form-label text-muted small fw-bold">Data da Aula <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input
                       type="date"
                       value={reportForm.data}
@@ -1472,7 +1473,7 @@ export default function EducacaoFisica() {
                   </div>
 
                   <div className="col-md-4">
-                    <label className="form-label text-muted small fw-bold">Horário *</label>
+                    <label className="form-label text-muted small fw-bold">Horário <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <input
                       type="time"
                       value={reportForm.horario}
@@ -1494,7 +1495,7 @@ export default function EducacaoFisica() {
                   </div>
 
                   <div className="col-12">
-                    <label className="form-label text-muted small fw-bold">Conteúdo Trabalhado *</label>
+                    <label className="form-label text-muted small fw-bold">Conteúdo Trabalhado <span style={{ color: 'var(--error, #ef4444)' }}>*</span></label>
                     <textarea
                       rows="4"
                       placeholder="Descreva o que foi desenvolvido nesta aula (ex: Fundamentos do voleibol, circuito de agilidade, regras e dinâmicas)..."
@@ -1506,7 +1507,7 @@ export default function EducacaoFisica() {
                   </div>
 
                   <div className="col-12">
-                    <label className="form-label text-muted small fw-bold">Observações Pedagógicas (Opcional)</label>
+                    <label className="form-label text-muted small fw-bold">Observações Pedagógicas</label>
                     <textarea
                       rows="2"
                       placeholder="Anotações sobre participação, adaptações ou observações para a próxima aula..."

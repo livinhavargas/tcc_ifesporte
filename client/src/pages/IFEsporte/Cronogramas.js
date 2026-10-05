@@ -263,9 +263,16 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
     setView('view');
   };
 
-  const filtered = cronogramas.filter(c => 
-    c.titulo.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = cronogramas.filter(c => {
+    const matchesSearch = (c.titulo || '').toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (categoria && categoria !== 'Geral' && categoria !== 'Todas') {
+      const cCat = (c.categoria || '').toLowerCase().trim();
+      const sCat = categoria.toLowerCase().trim();
+      if (cCat && cCat !== 'geral' && cCat !== 'todas' && cCat !== sCat) return false;
+    }
+    return true;
+  });
 
   const inputStyle = {
     width: '100%',

@@ -10,6 +10,7 @@
 }
 
 .calendar-sidebar {
+  width: 310px;
   border-right: 1px solid var(--border-light);
   background: var(--bg-card);
 }
@@ -200,6 +201,7 @@
   border-radius: var(--radius-sm);
   overflow: hidden;
   box-shadow: var(--shadow-xs);
+  flex-wrap: wrap;
 }
 
 .rbc-toolbar button {
@@ -245,6 +247,40 @@
 
 .rbc-toolbar button:focus {
   outline: none;
+}
+
+@media (max-width: 767.98px) {
+  .rbc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .rbc-toolbar-label {
+    order: -1;
+    font-size: 0.9375rem;
+    padding: 2px 0;
+  }
+
+  .rbc-toolbar .rbc-btn-group {
+    display: flex;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .rbc-toolbar .rbc-btn-group > button {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .calendar-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-right: none !important;
+  }
 }
 
 /* Header & Day names */

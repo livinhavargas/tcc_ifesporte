@@ -109,7 +109,7 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
       backdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1050,
-      padding: '24px'
+      padding: 'clamp(10px, 3vw, 24px)'
     }} onClick={onClose}>
       <div style={{
         background: 'var(--bg-card)',
@@ -117,14 +117,14 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
         boxShadow: 'var(--shadow-lg)',
         width: '100%',
         maxWidth: '640px',
-        maxHeight: '90vh',
+        maxHeight: 'min(92dvh, 720px)',
         overflow: 'auto',
         animation: 'fadeIn 0.2s ease'
       }} onClick={e => e.stopPropagation()}>
         
         {/* Header */}
         <div style={{
-          padding: '20px 24px',
+          padding: 'clamp(14px, 3vw, 20px) clamp(16px, 4vw, 24px)',
           borderBottom: '1px solid var(--border-light)',
           display: 'flex',
           justifyContent: 'space-between',
@@ -144,7 +144,7 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
         </div>
         
         {/* Body */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: 'clamp(14px, 4vw, 24px)' }}>
           {eventData?.isPhysicalEducation && (
             <div style={{
               background: 'var(--primary-light)',
@@ -206,15 +206,17 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
               </div>
               <div className="col-md-4">
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: '6px' }}>
-                  <i className="bi bi-calendar-event me-1"></i> Data
+                  <i className="bi bi-calendar-event me-1"></i> Data <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
                 </label>
                 <input type="date" name="data" value={formData.data} onChange={handleChange} required readOnly={isReadOnly} style={fieldStyle} />
               </div>
-              <div className="col-md-2">
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: '6px' }}>Início</label>
+              <div className="col-6 col-md-2">
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: '6px' }}>
+                  Início <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+                </label>
                 <input type="time" name="horaInicial" value={formData.horaInicial} onChange={handleChange} required readOnly={isReadOnly} style={fieldStyle} />
               </div>
-              <div className="col-md-2">
+              <div className="col-6 col-md-2">
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', marginBottom: '6px' }}>Fim</label>
                 <input type="time" name="horaFinal" value={formData.horaFinal} onChange={handleChange} readOnly={isReadOnly} style={fieldStyle} />
               </div>
@@ -229,14 +231,14 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
                 </div>
               </div>
               <div className="col-md-6">
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <select name="modalidade" value={formData.modalidade} onChange={handleChange} disabled={isReadOnly} style={{ ...fieldStyle, flex: 1 }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <select name="modalidade" value={formData.modalidade} onChange={handleChange} disabled={isReadOnly} style={{ ...fieldStyle, flex: '1 1 140px' }}>
                     <option value="">Modalidade</option>
                     {esportes.map(esp => (
                       <option key={esp._id} value={esp.nome}>{esp.nome}</option>
                     ))}
                   </select>
-                  <select name="categoria" value={formData.categoria} onChange={handleChange} disabled={isReadOnly} style={{ ...fieldStyle, width: '130px', flex: 'none' }}>
+                  <select name="categoria" value={formData.categoria} onChange={handleChange} disabled={isReadOnly} style={{ ...fieldStyle, flex: '1 1 110px' }}>
                     <option value="">Categoria</option>
                     <option value="Feminino">Feminino</option>
                     <option value="Masculino">Masculino</option>

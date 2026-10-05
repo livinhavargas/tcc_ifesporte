@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Venus, Mars } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import Layout from '../../components/Layout';
 import SportIcon from '../../components/SportIcon';
 import { apiUrl } from '../../services/api';
 
 const Esportes = () => {
-  const [genero, setGenero] = useState('Feminino');
   const [students, setStudents] = useState([]);
 
   useEffect(() => {
@@ -68,7 +67,6 @@ const Esportes = () => {
 
   const getCount = (nome) => {
     return students.filter(student => {
-      if (student.sexo !== genero) return false;
       const arr = student.modalidades?.length > 0 ? student.modalidades : (student.esportes || []);
       return arr.some(esp => checkMatch(esp, nome));
     }).length;
@@ -77,7 +75,7 @@ const Esportes = () => {
   const SportCard = ({ mod }) => {
     const count = getCount(mod.nome);
     return (
-      <Link to={`/esportes/${mod.id}?genero=${genero}`} style={{ textDecoration: 'none' }}>
+      <Link to={`/esportes/${mod.id}`} style={{ textDecoration: 'none' }}>
         <div style={{
           background: 'var(--bg-card)',
           borderRadius: 'var(--radius-lg)',
@@ -116,41 +114,27 @@ const Esportes = () => {
 
   return (
     <Layout>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        {/* Gender Toggle */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
-          <div style={{
-            display: 'flex',
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-full)',
-            padding: '4px',
-            border: '1px solid var(--border-light)',
-            boxShadow: 'var(--shadow-xs)'
-          }}>
-            {['Feminino', 'Masculino'].map(g => (
-              <button
-                key={g}
-                onClick={() => setGenero(g)}
-                style={{
-                  padding: '10px 28px',
-                  borderRadius: 'var(--radius-full)',
-                  border: 'none',
-                  fontFamily: 'var(--font)',
-                  fontWeight: 600,
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-base)',
-                  background: genero === g ? 'var(--primary-light)' : 'transparent',
-                  color: genero === g ? 'var(--primary)' : 'var(--text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                {g === 'Feminino' ? <Venus size={18} /> : <Mars size={18} />}
-                <span>{g}</span>
-              </button>
-            ))}
+      <div style={{ width: '100%', maxWidth: 'var(--content-max-width)', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Trophy size={24} />
+            </div>
+            <div>
+              <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>Esportes</h2>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Gerencie os participantes por modalidade.</p>
+            </div>
           </div>
         </div>
 
@@ -160,7 +144,7 @@ const Esportes = () => {
             <div style={{ width: '4px', height: '20px', borderRadius: '2px', background: 'var(--accent)' }}></div>
             <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem' }}>Modalidades Individuais</h4>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))', gap: '16px' }}>
             {modalidadesIndividuais.map(mod => (
               <SportCard key={mod.id} mod={mod} />
             ))}
@@ -173,7 +157,7 @@ const Esportes = () => {
             <div style={{ width: '4px', height: '20px', borderRadius: '2px', background: 'var(--accent)' }}></div>
             <h4 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem' }}>Modalidades em Equipe</h4>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))', gap: '16px' }}>
             {modalidadesEquipe.map(mod => (
               <SportCard key={mod.id} mod={mod} />
             ))}
