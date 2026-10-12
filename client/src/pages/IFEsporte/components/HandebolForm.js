@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import NumberStepper from '../../../components/NumberStepper';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -19,136 +19,481 @@ const HandebolForm = ({
     }));
   };
 
-  // Gols marcados
-  const golsMarcados = Array.isArray(dados.golsMarcados) ? dados.golsMarcados : [];
-  const handleAddGol = () => {
-    updateDados({ golsMarcados: [...golsMarcados, { atletaId: '', atletaNome: '' }] });
-  };
-  const handleRemoveGol = (idx) => {
-    updateDados({ golsMarcados: golsMarcados.filter((_, i) => i !== idx) });
-  };
-  const handleGolAtletaChange = (idx, atletaId) => {
-    const at = students.find(s => s._id === atletaId);
-    const updated = [...golsMarcados];
-    updated[idx] = { atletaId, atletaNome: at ? at.nome : '' };
-    updateDados({ golsMarcados: updated });
+  const placarObj = typeof formData.placar === 'object' && formData.placar !== null 
+    ? formData.placar 
+    : (typeof formData.placar === 'string' && formData.placar.includes('x') 
+        ? { nos: parseInt(formData.placar.split('x')[0], 10) || 0, adv: parseInt(formData.placar.split('x')[1], 10) || 0 }
+        : { nos: 0, adv: 0 });
+
+  // 1. Placares 1º e 2º Tempo
+  const placar1T = (dados.placar1Tempo && typeof dados.placar1Tempo === 'object')
+    ? dados.placar1Tempo
+    : { nos: placarObj.nos || 0, adv: placarObj.adv || 0 };
+
+  const placar2T = (dados.placar2Tempo && typeof dados.placar2Tempo === 'object')
+    ? dados.placar2Tempo
+    : { nos: 0, adv: 0 };
+
+  useEffect(() => {
+    if (!dados.placar1Tempo || !dados.placar2Tempo) {
+      updateDados({
+        placar1Tempo: dados.placar1Tempo || { nos: placarObj.nos || 0, adv: placarObj.adv || 0 },
+        placar2Tempo: dados.placar2Tempo || { nos: 0, adv: 0 }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePlacarTempoChange = (tempo, team, val) => {
+    const nextVal = Math.max(0, val);
+    const updated1 = tempo === 1 ? { ...placar1T, [team]: nextVal } : placar1T;
+    const updated2 = tempo === 2 ? { ...placar2T, [team]: nextVal } : placar2T;
+    const totalNos = (updated1.nos || 0) + (updated2.nos || 0);
+    const totalAdv = (updated1.adv || 0) + (updated2.adv || 0);
+
+    setFormData(prev => ({
+      ...prev,
+      placar: { nos: totalNos, adv: totalAdv },
+      dadosEspecificos: {
+        ...(prev.dadosEspecificos || {}),
+        placar1Tempo: updated1,
+        placar2Tempo: updated2
+      }
+    }));
   };
 
-  // 7 metros da nossa equipe
-  const seteMetrosNossaEquipeLista = Array.isArray(dados.seteMetrosNossaEquipeLista) ? dados.seteMetrosNossaEquipeLista : [];
-  const handleSeteMetrosNossaQtdChange = (qtd) => {
-    const current = [...seteMetrosNossaEquipeLista];
-    if (qtd > current.length) {
-      while (current.length < qtd) {
-        current.push({ atletaId: '', resultouGol: false });
+  const handleResultadoChange = (novoResultado) => {
+    setFormData(prev => ({
+      ...prev,
+      resultado: novoResultado
+    }));
+    if (novoResultado === 'Empate') {
+      updateDados({ foiParaPenaltis: true });
+    }
+  };
+
+  // Desempate / Pênaltis (Cobranças de 7 Metros)
+  const foiParaPenaltis = dados.foiParaPenaltis !== undefined
+    ? Boolean(dados.foiParaPenaltis)
+    : Boolean(
+        formData.resultado === 'Empate' ||
+        dados.penaltisAcertos > 0 ||
+        dados.penaltisErros > 0 ||
+        dados.desempateSeteMetrosAcertos > 0 ||
+        dados.desempateSeteMetrosErros > 0 ||
+        (Array.isArray(dados.penaltisParticipantes) && dados.penaltisParticipantes.length > 0) ||
+        (Array.isArray(dados.desempateSeteMetrosLista) && dados.desempateSeteMetrosLista.length > 0)
+      );
+
+  const handleFoiParaPenaltisChange = (checked) => {
+    updateDados({ foiParaPenaltis: checked });
+  };
+
+  // Filtro de atletas conforme gênero da categoria
+  const categoriaLower = (formData.categoria || '').toLowerCase();
+  const eligibleStudents = students.filter(s => {
+    if (categoriaLower === 'feminino') {
+      return (s.sexo || '').toLowerCase() === 'feminino';
+    }
+    if (categoriaLower === 'masculino') {
+      return (s.sexo || '').toLowerCase() === 'masculino';
+    }
+    return true;
+  });
+
+  const selectedShootoutAthletes = Array.isArray(dados.penaltisParticipantes)
+    ? dados.penaltisParticipantes
+    : (Array.isArray(dados.desempateSeteMetrosLista) 
+        ? dados.desempateSeteMetrosLista.map(c => c.atletaId).filter(Boolean) 
+        : []);
+
+  const toggleShootoutAthlete = (atletaId) => {
+    const isSelected = selectedShootoutAthletes.includes(atletaId);
+    const updated = isSelected 
+      ? selectedShootoutAthletes.filter(id => id !== atletaId)
+      : [...selectedShootoutAthletes, atletaId];
+
+    const cobrancas = updated.map(id => {
+      const at = eligibleStudents.find(s => s._id === id) || students.find(s => s._id === id);
+      return {
+        atletaId: id,
+        atletaNome: at ? at.nome : '',
+        resultado: 'Acertou'
+      };
+    });
+
+    updateDados({
+      penaltisParticipantes: updated,
+      penaltisCobrancas: cobrancas,
+      desempateSeteMetrosLista: cobrancas
+    });
+  };
+
+  // 2. Gols de 7 Metros (Fusão da contagem com a seleção do jogador marcador)
+  const getGolsList = (list, qtd) => {
+    const arr = Array.isArray(list) ? list.map(item => ({ ...item })) : [];
+    if (typeof qtd === 'number' && qtd > arr.length) {
+      while (arr.length < qtd) {
+        arr.push({ atletaId: '', atletaNome: '' });
+      }
+    }
+    return arr;
+  };
+
+  const rawGols1T = Array.isArray(dados.gols7m1T) 
+    ? dados.gols7m1T 
+    : (Array.isArray(dados.autoresGols7m1T) ? dados.autoresGols7m1T : []);
+
+  const rawGols2T = Array.isArray(dados.gols7m2T) 
+    ? dados.gols7m2T 
+    : (Array.isArray(dados.autoresGols7m2T) ? dados.autoresGols7m2T : []);
+
+  const gols7m1T = getGolsList(rawGols1T, dados.gols7mMarcados1T);
+  const gols7m2T = getGolsList(rawGols2T, dados.gols7mMarcados2T);
+
+  const handleGols7mMarcadosQtdChange = (tempo, qtd) => {
+    const targetQtd = Math.max(0, qtd);
+    const currentList = tempo === 1 ? [...gols7m1T] : [...gols7m2T];
+    
+    if (targetQtd > currentList.length) {
+      while (currentList.length < targetQtd) {
+        currentList.push({ atletaId: '', atletaNome: '' });
       }
     } else {
-      current.splice(qtd);
+      currentList.splice(targetQtd);
     }
-    updateDados({
-      seteMetrosNossaEquipeQtd: qtd,
-      seteMetrosNossaEquipeLista: current
-    });
-  };
-  const handleSeteMetrosNossaItemChange = (idx, field, val) => {
-    const updated = [...seteMetrosNossaEquipeLista];
-    updated[idx] = { ...updated[idx], [field]: val };
-    updateDados({ seteMetrosNossaEquipeLista: updated });
-  };
 
-  // 7 metros do outro time (quem causou)
-  const seteMetrosOutroTimeCausadores = Array.isArray(dados.seteMetrosOutroTimeCausadores) ? dados.seteMetrosOutroTimeCausadores : [];
-  const handleAddSeteMetrosCausador = () => {
-    updateDados({ seteMetrosOutroTimeCausadores: [...seteMetrosOutroTimeCausadores, ''] });
-  };
-  const handleRemoveSeteMetrosCausador = (idx) => {
-    updateDados({ seteMetrosOutroTimeCausadores: seteMetrosOutroTimeCausadores.filter((_, i) => i !== idx) });
-  };
-  const handleSeteMetrosCausadorChange = (idx, val) => {
-    const updated = [...seteMetrosOutroTimeCausadores];
-    updated[idx] = val;
-    updateDados({ seteMetrosOutroTimeCausadores: updated });
-  };
-
-  // Dois minutos
-  const doisMinutosLista = Array.isArray(dados.doisMinutosLista) ? dados.doisMinutosLista : [];
-  const handleAddDoisMinutos = () => {
-    updateDados({ doisMinutosLista: [...doisMinutosLista, ''] });
-  };
-  const handleRemoveDoisMinutos = (idx) => {
-    updateDados({ doisMinutosLista: doisMinutosLista.filter((_, i) => i !== idx) });
-  };
-  const handleDoisMinutosChange = (idx, val) => {
-    const updated = [...doisMinutosLista];
-    updated[idx] = val;
-    updateDados({ doisMinutosLista: updated });
-  };
-
-  // Gols sofridos
-  const golsSofridosOrigens = Array.isArray(dados.golsSofridosOrigens) ? dados.golsSofridosOrigens : [];
-  const handleGolsSofridosQtdChange = (qtd) => {
-    const current = [...golsSofridosOrigens];
-    if (qtd > current.length) {
-      while (current.length < qtd) current.push('Situação de jogo');
+    if (tempo === 1) {
+      updateDados({
+        gols7m1T: currentList,
+        gols7mMarcados1T: targetQtd,
+        autoresGols7m1T: currentList
+      });
     } else {
-      current.splice(qtd);
+      updateDados({
+        gols7m2T: currentList,
+        gols7mMarcados2T: targetQtd,
+        autoresGols7m2T: currentList
+      });
     }
-    updateDados({
-      golsSofridosQtd: qtd,
-      golsSofridosOrigens: current
-    });
-  };
-  const handleGolSofridoOrigemChange = (idx, origem) => {
-    const updated = [...golsSofridosOrigens];
-    updated[idx] = origem;
-    updateDados({ golsSofridosOrigens: updated });
   };
 
-  // Desempate (7 Metros em caso de Empate)
-  const desempateSeteMetrosLista = Array.isArray(dados.desempateSeteMetrosLista) ? dados.desempateSeteMetrosLista : [];
-  const handleAddDesempateSeteMetros = () => {
-    const updated = [...desempateSeteMetrosLista, { atletaId: '', atletaNome: '', resultado: 'Acertou' }];
-    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
-    const erros = updated.filter(p => p.resultado === 'Errou').length;
+  const handleGol7mJogadorChange = (tempo, idx, atletaId) => {
+    const at = students.find(s => s._id === atletaId);
+    const item = { atletaId, atletaNome: at ? at.nome : '' };
+    if (tempo === 1) {
+      const updated = [...gols7m1T];
+      updated[idx] = item;
+      updateDados({
+        gols7m1T: updated,
+        autoresGols7m1T: updated
+      });
+    } else {
+      const updated = [...gols7m2T];
+      updated[idx] = item;
+      updateDados({
+        gols7m2T: updated,
+        autoresGols7m2T: updated
+      });
+    }
+  };
+
+
+  // 3. Cartões (Estrutura e estilo visual do Futsal com suporte a Nossa Equipe e Adversário)
+  const cartoes1T = Array.isArray(dados.cartoes1T)
+    ? dados.cartoes1T
+    : (Array.isArray(dados.cartoes) ? dados.cartoes.filter(c => c.tempo === '1º Tempo' || !c.tempo) : []);
+
+  const cartoes2T = Array.isArray(dados.cartoes2T)
+    ? dados.cartoes2T
+    : (Array.isArray(dados.cartoes) ? dados.cartoes.filter(c => c.tempo === '2º Tempo') : []);
+
+  const syncCartoes = (new1T, new2T) => {
+    const unified = [
+      ...new1T.map(c => ({ ...c, tempo: '1º Tempo' })),
+      ...new2T.map(c => ({ ...c, tempo: '2º Tempo' }))
+    ];
     updateDados({
-      desempateSeteMetrosLista: updated,
-      desempateSeteMetrosAcertos: acertos,
-      desempateSeteMetrosErros: erros
+      cartoes1T: new1T,
+      cartoes2T: new2T,
+      cartoes: unified
     });
   };
-  const handleRemoveDesempateSeteMetros = (idx) => {
-    const updated = desempateSeteMetrosLista.filter((_, i) => i !== idx);
-    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
-    const erros = updated.filter(p => p.resultado === 'Errou').length;
-    updateDados({
-      desempateSeteMetrosLista: updated,
-      desempateSeteMetrosAcertos: acertos,
-      desempateSeteMetrosErros: erros
-    });
+
+  const handleAddCartao = (tempo) => {
+    const novo = { equipe: 'Nossa Equipe', atletaId: '', atletaNome: '', tipo: 'Amarelo' };
+    if (tempo === 1) {
+      syncCartoes([...cartoes1T, novo], cartoes2T);
+    } else {
+      syncCartoes(cartoes1T, [...cartoes2T, novo]);
+    }
   };
-  const handleDesempateSeteMetrosChange = (idx, field, val) => {
-    const updated = [...desempateSeteMetrosLista];
-    if (field === 'atletaId') {
+
+  const handleRemoveCartao = (tempo, idx) => {
+    if (tempo === 1) {
+      syncCartoes(cartoes1T.filter((_, i) => i !== idx), cartoes2T);
+    } else {
+      syncCartoes(cartoes1T, cartoes2T.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handleCartaoChange = (tempo, idx, field, val) => {
+    const targetList = tempo === 1 ? [...cartoes1T] : [...cartoes2T];
+    const currentItem = { ...targetList[idx] };
+
+    if (field === 'equipe') {
+      currentItem.equipe = val;
+      if (val === 'Adversário') {
+        currentItem.atletaId = '';
+        currentItem.atletaNome = currentItem.atletaNome && currentItem.atletaNome !== '' ? currentItem.atletaNome : 'Adversário';
+      } else {
+        const at = students.find(s => s._id === currentItem.atletaId);
+        currentItem.atletaNome = at ? at.nome : '';
+      }
+    } else if (field === 'atletaId') {
       const at = students.find(s => s._id === val);
-      updated[idx] = { ...updated[idx], atletaId: val, atletaNome: at ? at.nome : '' };
-    } else {
-      updated[idx] = { ...updated[idx], [field]: val };
+      currentItem.atletaId = val;
+      currentItem.atletaNome = at ? at.nome : '';
+    } else if (field === 'atletaNome') {
+      currentItem.atletaNome = val;
+    } else if (field === 'tipo') {
+      currentItem.tipo = val;
     }
-    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
-    const erros = updated.filter(p => p.resultado === 'Errou').length;
-    updateDados({
-      desempateSeteMetrosLista: updated,
-      desempateSeteMetrosAcertos: acertos,
-      desempateSeteMetrosErros: erros
-    });
+
+    targetList[idx] = currentItem;
+    if (tempo === 1) {
+      syncCartoes(targetList, cartoes2T);
+    } else {
+      syncCartoes(cartoes1T, targetList);
+    }
   };
 
-  const isEmpate = formData.resultado === 'Empate';
+  const totalPartidaNos = (placar1T.nos || 0) + (placar2T.nos || 0);
+  const totalPartidaAdv = (placar1T.adv || 0) + (placar2T.adv || 0);
+
+  const renderPainelCartoes = (tempo, cartoesList) => (
+    <div style={{
+      background: 'var(--bg)',
+      borderRadius: 'var(--radius-md)',
+      padding: '16px',
+      border: '1px solid var(--border-light)',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Cabeçalho do tempo e ação de adicionar */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '14px',
+        gap: '8px'
+      }}>
+        <span style={{
+          fontSize: '0.8125rem',
+          fontWeight: 700,
+          color: 'var(--text-secondary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
+          {tempo === 1 ? '1º Tempo' : '2º Tempo'}
+        </span>
+        <button
+          type="button"
+          onClick={() => handleAddCartao(tempo)}
+          className="btn btn-sm btn-secondary"
+          style={{
+            fontSize: '0.75rem',
+            padding: '4px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <Plus size={13} /> Adicionar Cartão
+        </button>
+      </div>
+
+      {/* Lista de cartões ou mensagem informativa */}
+      {cartoesList.length === 0 ? (
+        <div style={{
+          padding: '18px 14px',
+          textAlign: 'center',
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px dashed var(--border-light)',
+          marginTop: '2px'
+        }}>
+          <p style={{
+            fontSize: '0.8125rem',
+            color: 'var(--text-tertiary)',
+            margin: 0
+          }}>
+            Nenhum cartão no {tempo === 1 ? '1º' : '2º'} Tempo.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {cartoesList.map((c, idx) => (
+            <div
+              key={idx}
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px 16px'
+              }}
+            >
+              {/* Campo Equipe */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexShrink: 0
+              }}>
+                <label style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  margin: 0,
+                  whiteSpace: 'nowrap'
+                }}>
+                  Equipe:
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  value={c.equipe || 'Nossa Equipe'}
+                  onChange={(e) => handleCartaoChange(tempo, idx, 'equipe', e.target.value)}
+                  style={{
+                    width: '150px',
+                    fontWeight: 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="Nossa Equipe">Nossa Equipe</option>
+                  <option value="Adversário">Adversário</option>
+                </select>
+              </div>
+
+              {/* Campo Atleta */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flex: '1 1 240px',
+                minWidth: '200px'
+              }}>
+                <label style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  margin: 0,
+                  whiteSpace: 'nowrap'
+                }}>
+                  Atleta:
+                </label>
+                {c.equipe === 'Adversário' ? (
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Jogador adversário (opcional)"
+                    value={c.atletaNome && c.atletaNome !== 'Adversário' ? c.atletaNome : ''}
+                    onChange={(e) => handleCartaoChange(tempo, idx, 'atletaNome', e.target.value || 'Adversário')}
+                    style={{
+                      flex: 1,
+                      minWidth: 0
+                    }}
+                  />
+                ) : (
+                  <select
+                    className="form-select form-select-sm"
+                    value={c.atletaId || ''}
+                    onChange={(e) => handleCartaoChange(tempo, idx, 'atletaId', e.target.value)}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      textOverflow: 'ellipsis',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">Selecione o atleta</option>
+                    {eligibleStudents.map(s => (
+                      <option key={s._id} value={s._id}>
+                        {s.nome} {s.turma ? `(${s.turma})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Campo Tipo de cartão */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexShrink: 0
+              }}>
+                <label style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  margin: 0,
+                  whiteSpace: 'nowrap'
+                }}>
+                  Tipo de cartão:
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  value={c.tipo || 'Amarelo'}
+                  onChange={(e) => handleCartaoChange(tempo, idx, 'tipo', e.target.value)}
+                  style={{
+                    width: '145px',
+                    fontWeight: 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="Amarelo">🟨 Amarelo</option>
+                  <option value="Vermelho">🟥 Vermelho</option>
+                </select>
+              </div>
+
+              {/* Botão Excluir */}
+              <button
+                type="button"
+                onClick={() => handleRemoveCartao(tempo, idx)}
+                className="btn btn-sm text-danger"
+                style={{
+                  padding: '4px 8px',
+                  background: 'transparent',
+                  border: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  borderRadius: 'var(--radius-sm)',
+                  flexShrink: 0,
+                  marginLeft: 'auto'
+                }}
+                title="Remover cartão"
+                aria-label="Remover cartão"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* 1. Equipe Adversária & 2. Resultado */}
+      {/* 1. Equipe Adversária & 2. Resultado Final */}
       <div className="row g-3">
         <div className="col-12 col-md-6">
           <label className="form-label" style={{ fontWeight: 700 }}>
@@ -166,422 +511,592 @@ const HandebolForm = ({
 
         <div className="col-12 col-md-6">
           <label className="form-label" style={{ fontWeight: 700 }}>
-            Resultado <span style={{ color: 'var(--error)' }}>*</span>
+            Resultado Final <span style={{ color: 'var(--error)' }}>*</span>
           </label>
-          <select
-            className="form-select"
-            value={formData.resultado || ''}
-            onChange={(e) => setFormData({ ...formData, resultado: e.target.value })}
-            required
-          >
-            <option value="">Selecione o resultado</option>
-            <option value="Vitória">Vitória</option>
-            <option value="Derrota">Derrota</option>
-            <option value="Empate">Empate</option>
-          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <select
+              className="form-select"
+              value={formData.resultado || ''}
+              onChange={(e) => handleResultadoChange(e.target.value)}
+              style={{ flex: '1 1 180px' }}
+              required
+            >
+              <option value="">Selecione o resultado</option>
+              <option value="Vitória">Vitória</option>
+              <option value="Empate">Empate</option>
+              <option value="Derrota">Derrota</option>
+            </select>
+
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: foiParaPenaltis ? 'var(--text)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              userSelect: 'none',
+              padding: '6px 0'
+            }}>
+              <input
+                type="checkbox"
+                checked={Boolean(foiParaPenaltis)}
+                onChange={(e) => handleFoiParaPenaltisChange(e.target.checked)}
+                style={{
+                  width: '17px',
+                  height: '17px',
+                  accentColor: 'var(--primary)',
+                  cursor: 'pointer'
+                }}
+              />
+              Foi para o desempate
+            </label>
+          </div>
         </div>
       </div>
 
-      {/* 3. Placar (Campo para DIGITAR) */}
+      {/* 2. Placares da partida (1º e 2º Tempo em um único card — Estilo Futsal) */}
       <div style={{
         background: 'var(--bg)',
         borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
+        padding: '20px 16px',
+        border: '1px solid var(--border-light)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center'
       }}>
-        <label className="form-label" style={{ fontWeight: 700 }}>
-          Placar <span style={{ color: 'var(--error)' }}>*</span>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '16px', display: 'block', textAlign: 'center' }}>
+          Placares da partida <span style={{ color: 'var(--error)' }}>*</span>
         </label>
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Digite o placar (ex: 28 x 24)"
-          value={typeof formData.placar === 'string' ? formData.placar : (formData.placar ? `${formData.placar.nos || 0} x ${formData.placar.adv || 0}` : '')}
-          onChange={(e) => setFormData({ ...formData, placar: e.target.value })}
-          required
-        />
-      </div>
 
-      {/* 4. Gols Marcados (Opcional) */}
-      <div style={{
-        background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-            Gols Marcados
-          </label>
-          <button
-            type="button"
-            onClick={handleAddGol}
-            className="btn btn-sm btn-secondary"
-            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-          >
-            <Plus size={14} /> Adicionar Autor do Gol
-          </button>
-        </div>
-
-        {golsMarcados.length === 0 ? (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0 }}>
-            Nenhum gol registrado individualmente.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {golsMarcados.map((gol, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '45px' }}>
-                  Gol {idx + 1}:
-                </span>
-                <select
-                  className="form-select form-select-sm"
-                  value={gol.atletaId || ''}
-                  onChange={(e) => handleGolAtletaChange(idx, e.target.value)}
-                  style={{ flex: 1 }}
-                >
-                  <option value="">Selecione o atleta</option>
-                  {students.map(s => (
-                    <option key={s._id} value={s._id}>{s.nome}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveGol(idx)}
-                  className="btn btn-sm text-danger"
-                  style={{ padding: '4px 8px', background: 'transparent', border: 'none' }}
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 5. 7 Metros do Outro Time & 6. 7 Metros da Nossa Equipe */}
-      <div className="row g-3">
-        {/* 5. 7 metros do outro time */}
-        <div className="col-12 col-md-6">
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
-            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-              7 Metros do Outro Time
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
+        {/* 1º Tempo */}
+        <div style={{ marginBottom: '16px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            1º Tempo
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nossa Equipe:</span>
               <NumberStepper
-                value={dados.seteMetrosOutroTimeQtd || 0}
-                onChange={(v) => updateDados({ seteMetrosOutroTimeQtd: v })}
+                value={placar1T.nos || 0}
+                onChange={(v) => handlePlacarTempoChange(1, 'nos', v)}
                 min={0}
-                ariaLabel="7 metros do outro time"
+                ariaLabel="Gols nossa equipe 1º tempo"
               />
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Quem causou:</span>
-              <button
-                type="button"
-                onClick={handleAddSeteMetrosCausador}
-                className="btn btn-sm btn-secondary"
-                style={{ fontSize: '0.6875rem', padding: '2px 8px' }}
-              >
-                <Plus size={12} /> Atleta
-              </button>
+            <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <NumberStepper
+                value={placar1T.adv || 0}
+                onChange={(v) => handlePlacarTempoChange(1, 'adv', v)}
+                min={0}
+                ariaLabel="Gols adversário 1º tempo"
+              />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Adversário</span>
             </div>
-            {seteMetrosOutroTimeCausadores.map((atletaId, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <select
-                  className="form-select form-select-sm"
-                  value={atletaId}
-                  onChange={(e) => handleSeteMetrosCausadorChange(idx, e.target.value)}
-                >
-                  <option value="">Selecione quem causou</option>
-                  {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSeteMetrosCausador(idx)}
-                  className="btn btn-sm text-danger"
-                  style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
           </div>
         </div>
 
-        {/* 6. 7 metros da nossa equipe */}
-        <div className="col-12 col-md-6">
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
-            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-              7 Metros da Nossa Equipe
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
+        {/* Linha divisória sutil entre tempos */}
+        <div style={{ width: '80%', height: '1px', background: 'var(--border-light)', margin: '4px 0 16px' }} />
+
+        {/* 2º Tempo */}
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            2º Tempo
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nossa Equipe:</span>
               <NumberStepper
-                value={dados.seteMetrosNossaEquipeQtd || 0}
-                onChange={handleSeteMetrosNossaQtdChange}
+                value={placar2T.nos || 0}
+                onChange={(v) => handlePlacarTempoChange(2, 'nos', v)}
                 min={0}
-                ariaLabel="7 metros da nossa equipe"
+                ariaLabel="Gols nossa equipe 2º tempo"
               />
             </div>
-
-            {seteMetrosNossaEquipeLista.map((item, idx) => (
-              <div key={idx} style={{
-                background: 'var(--bg)',
-                padding: '8px 10px',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: '8px',
-                border: '1px solid var(--border-light)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Arremesso {idx + 1}:</span>
-                  <select
-                    className="form-select form-select-sm"
-                    value={item.atletaId || ''}
-                    onChange={(e) => handleSeteMetrosNossaItemChange(idx, 'atletaId', e.target.value)}
-                    style={{ flex: 1 }}
-                  >
-                    <option value="">Quem arremessou?</option>
-                    {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
-                  </select>
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(item.resultouGol)}
-                    onChange={(e) => handleSeteMetrosNossaItemChange(idx, 'resultouGol', e.target.checked)}
-                  />
-                  Resultou em gol?
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 7. Dois Minutos & 9. Defesas */}
-      <div className="row g-3">
-        {/* 7. Dois minutos */}
-        <div className="col-12 col-md-6">
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-                Dois Minutos
-              </label>
-              <button
-                type="button"
-                onClick={handleAddDoisMinutos}
-                className="btn btn-sm btn-secondary"
-                style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-              >
-                <Plus size={14} /> Atleta
-              </button>
-            </div>
-
-            {doisMinutosLista.length === 0 ? (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0 }}>
-                Nenhum atleta tomou dois minutos.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {doisMinutosLista.map((atletaId, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <select
-                      className="form-select form-select-sm"
-                      value={atletaId}
-                      onChange={(e) => handleDoisMinutosChange(idx, e.target.value)}
-                    >
-                      <option value="">Selecione quem tomou</option>
-                      {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDoisMinutos(idx)}
-                      className="btn btn-sm text-danger"
-                      style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 9. Defesas */}
-        <div className="col-12 col-md-6">
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
-            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-              Defesas
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade de Defesas:</span>
+            <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <NumberStepper
-                value={dados.defesasQtd || 0}
-                onChange={(v) => updateDados({ defesasQtd: v })}
+                value={placar2T.adv || 0}
+                onChange={(v) => handlePlacarTempoChange(2, 'adv', v)}
                 min={0}
-                ariaLabel="Defesas"
+                ariaLabel="Gols adversário 2º tempo"
               />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Adversário</span>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 8. Gols Sofridos */}
-      <div style={{
-        background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-            Gols Sofridos
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
-            <NumberStepper
-              value={dados.golsSofridosQtd || 0}
-              onChange={handleGolsSofridosQtdChange}
-              min={0}
-              ariaLabel="Gols sofridos"
-            />
-          </div>
+        {/* Total acumulado da partida */}
+        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px dashed var(--border-light)', fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
+          Total acumulado da partida: <strong style={{ color: 'var(--text)', fontSize: '0.9375rem' }}>{totalPartidaNos} x {totalPartidaAdv}</strong>
         </div>
-
-        {golsSofridosOrigens.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {golsSofridosOrigens.map((origem, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', minWidth: '90px' }}>
-                  Gol sofrido {idx + 1}:
-                </span>
-                <select
-                  className="form-select form-select-sm"
-                  value={origem}
-                  onChange={(e) => handleGolSofridoOrigemChange(idx, e.target.value)}
-                  style={{ maxWidth: '240px' }}
-                >
-                  <option value="Situação de jogo">Situação de jogo</option>
-                  <option value="7 metros">7 metros</option>
-                  <option value="Falta">Falta</option>
-                </select>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* 11. SOMENTE EM CASO DE EMPATE (OBRIGATÓRIO) */}
-      {isEmpate && (
+      {/* 3. Placar de desempate — Cobranças de 7 Metros (Estilo Futsal) */}
+      {foiParaPenaltis && (
         <div style={{
-          background: 'var(--warning-light)',
+          background: 'var(--bg)',
           borderRadius: 'var(--radius-lg)',
-          padding: '18px',
-          border: '1.5px solid var(--warning)'
+          padding: '20px',
+          border: '1.5px solid #fb923c',
+          boxShadow: '0 0 0 2px rgba(251, 146, 60, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-            <div>
-              <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>
-                🤾 Desempate por 7 Metros <span style={{ color: 'var(--error)' }}>*</span>
-              </h6>
-              <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Registre os atletas que arremessaram os 7m e o resultado de cada cobrança.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddDesempateSeteMetros}
-              className="btn btn-sm btn-primary"
-              style={{ fontSize: '0.75rem', padding: '4px 12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <Plus size={14} /> Adicionar Cobrança de 7m
-            </button>
-          </div>
-          
-          <div className="row g-3 mb-3">
-            <div className="col-12 col-sm-6">
-              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem' }}>
-                Total de Acertos (Gols de 7m):
-              </label>
-              <div>
-                <NumberStepper
-                  value={dados.desempateSeteMetrosAcertos || 0}
-                  onChange={(v) => updateDados({ desempateSeteMetrosAcertos: v })}
-                  min={0}
-                  ariaLabel="Acertos de 7 metros"
-                />
-              </div>
-            </div>
+          <h6 style={{
+            fontWeight: 700,
+            color: 'var(--text)',
+            marginBottom: '16px',
+            fontSize: '0.9375rem',
+            textAlign: 'center',
+            width: '100%'
+          }}>
+            Placar de desempate - Cobranças de 7 Metros
+          </h6>
 
-            <div className="col-12 col-sm-6">
-              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem' }}>
-                Total de Erros (Perdidos de 7m):
-              </label>
-              <div>
-                <NumberStepper
-                  value={dados.desempateSeteMetrosErros || 0}
-                  onChange={(v) => updateDados({ desempateSeteMetrosErros: v })}
-                  min={0}
-                  ariaLabel="Erros de 7 metros"
-                />
-              </div>
+          {/* Formato: Nossa equipe [Number Stepper] X [Number Stepper] Adversário */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Nossa equipe
+              </span>
+              <NumberStepper
+                value={dados.penaltisAcertos ?? dados.desempateSeteMetrosAcertos ?? 0}
+                onChange={(v) => updateDados({ penaltisAcertos: v, desempateSeteMetrosAcertos: v })}
+                min={0}
+                ariaLabel="Nossa equipe"
+              />
+            </div>
+            <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <NumberStepper
+                value={dados.penaltisErros ?? dados.desempateSeteMetrosErros ?? 0}
+                onChange={(v) => updateDados({ penaltisErros: v, desempateSeteMetrosErros: v })}
+                min={0}
+                ariaLabel="Adversário"
+              />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Adversário
+              </span>
             </div>
           </div>
 
-          <div>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
-              Atletas que cobraram 7m ({desempateSeteMetrosLista.length}):
-            </span>
-            {desempateSeteMetrosLista.length === 0 ? (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--error)', margin: 0, fontWeight: 600 }}>
-                ⚠️ Em caso de empate, clique no botão acima para adicionar as cobranças de 7 metros.
+          {/* Divisor */}
+          <div style={{ width: '100%', height: '1px', background: 'rgba(251, 146, 60, 0.25)', margin: '4px 0 16px' }} />
+
+          {/* Jogadores que participaram da cobrança */}
+          <div style={{ width: '100%', textAlign: 'left' }}>
+            <h6 style={{
+              fontWeight: 700,
+              color: 'var(--text)',
+              fontSize: '0.875rem',
+              marginBottom: '12px',
+              textAlign: 'center'
+            }}>
+              Jogadores que participaram da cobrança
+            </h6>
+
+            {eligibleStudents.length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', textAlign: 'center', margin: 0 }}>
+                Nenhum jogador encontrado para a categoria selecionada.
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {desempateSeteMetrosLista.map((cob, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, minWidth: '80px' }}>
-                      {idx + 1}ª Cobrança:
-                    </span>
-                    <select
-                      className="form-select form-select-sm"
-                      value={cob.atletaId || ''}
-                      onChange={(e) => handleDesempateSeteMetrosChange(idx, 'atletaId', e.target.value)}
-                      style={{ flex: '1', minWidth: '160px' }}
-                      required
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '8px',
+                width: '100%'
+              }}>
+                {eligibleStudents.map((st) => {
+                  const isSelected = selectedShootoutAthletes.includes(st._id);
+                  return (
+                    <label
+                      key={st._id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        background: isSelected ? 'rgba(251, 146, 60, 0.08)' : 'var(--bg-card)',
+                        border: isSelected ? '1px solid #fb923c' : '1px solid var(--border-light)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        userSelect: 'none'
+                      }}
                     >
-                      <option value="">Selecione o atleta arremessador *</option>
-                      {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
-                    </select>
-                    <select
-                      className="form-select form-select-sm"
-                      value={cob.resultado || 'Acertou'}
-                      onChange={(e) => handleDesempateSeteMetrosChange(idx, 'resultado', e.target.value)}
-                      style={{ width: '120px', fontWeight: 600, color: cob.resultado === 'Acertou' ? 'var(--success)' : 'var(--error)' }}
-                    >
-                      <option value="Acertou">🤾 Converteu</option>
-                      <option value="Errou">❌ Perdeu</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDesempateSeteMetros(idx)}
-                      className="btn btn-sm text-danger"
-                      style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
-                      title="Remover cobrança"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                ))}
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleShootoutAthlete(st._id)}
+                        style={{
+                          accentColor: '#f97316',
+                          width: '16px',
+                          height: '16px',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <span style={{
+                          fontSize: '0.8125rem',
+                          fontWeight: isSelected ? 700 : 500,
+                          color: 'var(--text)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {st.nome}
+                        </span>
+                        {st.turma && (
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>
+                            {st.turma}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
       )}
+
+      {/* 4. Card de Gols de 7 Metros */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '14px', display: 'block' }}>
+          Gols de 7 Metros
+        </label>
+
+        <div className="row g-3">
+          {/* 1º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px',
+              border: '1px solid var(--border-light)',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px'
+            }}>
+              <span style={{
+                fontSize: '0.8125rem',
+                fontWeight: 700,
+                color: 'var(--text-secondary)',
+                display: 'block',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                1º Tempo
+              </span>
+
+              {/* Gols Sofridos */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                  Gols Sofridos
+                </span>
+                <NumberStepper
+                  value={dados.gols7mSofridos1T || 0}
+                  onChange={(v) => updateDados({ gols7mSofridos1T: Math.max(0, v) })}
+                  min={0}
+                  ariaLabel="Gols sofridos 1º tempo"
+                />
+              </div>
+
+              {/* Separador visual discreto */}
+              <div style={{ height: '1px', background: 'var(--border-light)', margin: '2px 0' }} />
+
+              {/* Gols Marcados */}
+              <div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                    Gols Marcados
+                  </span>
+                  <NumberStepper
+                    value={gols7m1T.length}
+                    onChange={(v) => handleGols7mMarcadosQtdChange(1, v)}
+                    min={0}
+                    ariaLabel="Gols marcados 1º tempo"
+                  />
+                </div>
+
+                {/* Seletores de jogadores (quando quantidade > 0) */}
+                {gols7m1T.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    marginTop: '12px',
+                    paddingTop: '12px',
+                    borderTop: '1px dashed var(--border-light)'
+                  }}>
+                    {gols7m1T.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)',
+                          minWidth: '45px',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          Gol {idx + 1}:
+                        </span>
+                        <select
+                          className="form-select form-select-sm"
+                          value={item.atletaId || ''}
+                          onChange={(e) => handleGol7mJogadorChange(1, idx, e.target.value)}
+                          style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                        >
+                          <option value="">Selecionar Jogador</option>
+                          {eligibleStudents.map(s => (
+                            <option key={s._id} value={s._id}>
+                              {s.nome} {s.turma ? `(${s.turma})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 2º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px',
+              border: '1px solid var(--border-light)',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px'
+            }}>
+              <span style={{
+                fontSize: '0.8125rem',
+                fontWeight: 700,
+                color: 'var(--text-secondary)',
+                display: 'block',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                2º Tempo
+              </span>
+
+              {/* Gols Sofridos */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                  Gols Sofridos
+                </span>
+                <NumberStepper
+                  value={dados.gols7mSofridos2T || 0}
+                  onChange={(v) => updateDados({ gols7mSofridos2T: Math.max(0, v) })}
+                  min={0}
+                  ariaLabel="Gols sofridos 2º tempo"
+                />
+              </div>
+
+              {/* Separador visual discreto */}
+              <div style={{ height: '1px', background: 'var(--border-light)', margin: '2px 0' }} />
+
+              {/* Gols Marcados */}
+              <div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                    Gols Marcados
+                  </span>
+                  <NumberStepper
+                    value={gols7m2T.length}
+                    onChange={(v) => handleGols7mMarcadosQtdChange(2, v)}
+                    min={0}
+                    ariaLabel="Gols marcados 2º tempo"
+                  />
+                </div>
+
+                {/* Seletores de jogadores (quando quantidade > 0) */}
+                {gols7m2T.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    marginTop: '12px',
+                    paddingTop: '12px',
+                    borderTop: '1px dashed var(--border-light)'
+                  }}>
+                    {gols7m2T.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)',
+                          minWidth: '45px',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          Gol {idx + 1}:
+                        </span>
+                        <select
+                          className="form-select form-select-sm"
+                          value={item.atletaId || ''}
+                          onChange={(e) => handleGol7mJogadorChange(2, idx, e.target.value)}
+                          style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                        >
+                          <option value="">Selecionar Jogador</option>
+                          {eligibleStudents.map(s => (
+                            <option key={s._id} value={s._id}>
+                              {s.nome} {s.turma ? `(${s.turma})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Card de Cartões */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '14px', display: 'block' }}>
+          Cartões
+        </label>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* 1º Tempo */}
+          {renderPainelCartoes(1, cartoes1T)}
+
+          {/* 2º Tempo */}
+          {renderPainelCartoes(2, cartoes2T)}
+        </div>
+      </div>
+
+      {/* 6. Card de Punições — Dois Minutos (Parte 4: Título e labels simplificadas) */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '14px', display: 'block' }}>
+          Punições - Dois Minutos
+        </label>
+
+        <div className="row g-3">
+          {/* 1º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                1º Tempo
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Nossa Equipe:</span>
+                  <NumberStepper
+                    value={dados.doisMinutosNos1T || 0}
+                    onChange={(v) => updateDados({ doisMinutosNos1T: Math.max(0, v) })}
+                    min={0}
+                    ariaLabel="Dois minutos nossa equipe 1º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Adversário:</span>
+                  <NumberStepper
+                    value={dados.doisMinutosAdv1T || 0}
+                    onChange={(v) => updateDados({ doisMinutosAdv1T: Math.max(0, v) })}
+                    min={0}
+                    ariaLabel="Dois minutos adversário 1º tempo"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                2º Tempo
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Nossa Equipe:</span>
+                  <NumberStepper
+                    value={dados.doisMinutosNos2T || 0}
+                    onChange={(v) => updateDados({ doisMinutosNos2T: Math.max(0, v) })}
+                    min={0}
+                    ariaLabel="Dois minutos nossa equipe 2º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Adversário:</span>
+                  <NumberStepper
+                    value={dados.doisMinutosAdv2T || 0}
+                    onChange={(v) => updateDados({ doisMinutosAdv2T: Math.max(0, v) })}
+                    min={0}
+                    ariaLabel="Dois minutos adversário 2º tempo"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
     </div>
   );

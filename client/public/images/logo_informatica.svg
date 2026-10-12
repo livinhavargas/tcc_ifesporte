@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320" width="100%" height="100%">
+  <!-- Dome Background -->
+  <path d="M 38 310 C 12 278 8 234 8 200 C 8 92 92 10 200 10 C 308 10 392 92 392 200 C 392 234 388 278 362 310 L 38 310 Z" fill="#009f7a" />
+  <!-- Computer Monitor Frame -->
+  <rect x="92" y="108" width="216" height="130" rx="14" fill="#009f7a" stroke="#ffffff" stroke-width="11" />
+  <!-- Monitor Stand -->
+  <path d="M 200 240 L 200 272" stroke="#ffffff" stroke-width="12" stroke-linecap="round" />
+  <path d="M 170 272 L 230 272" stroke="#ffffff" stroke-width="12" stroke-linecap="round" />
+  <!-- Tablet (in front, offset left) -->
+  <rect x="131" y="76" width="88" height="116" rx="12" fill="#009f7a" stroke="#ffffff" stroke-width="10" />
+  <circle cx="175" cy="176" r="4.5" fill="#ffffff" />
+  <!-- Smartphone (in front, offset right) -->
+  <rect x="229" y="102" width="44" height="78" rx="8" fill="#009f7a" stroke="#ffffff" stroke-width="8" />
+</svg>

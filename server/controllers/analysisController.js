@@ -10,7 +10,21 @@ const getAllAnalyses = async (req, res) => {
       filter.modalidade = new RegExp(`^${modalidade.trim()}$`, 'i');
     }
     if (categoria && categoria !== 'Todas') {
-      filter.categoria = categoria;
+      const normCat = categoria.toLowerCase().trim();
+      if (normCat.startsWith('fem')) {
+        filter.categoria = new RegExp('^fem', 'i');
+      } else if (normCat.startsWith('masc')) {
+        filter.categoria = new RegExp('^masc', 'i');
+      } else if (normCat.startsWith('geral')) {
+        filter.$or = [
+          { categoria: new RegExp('^geral', 'i') },
+          { categoria: null },
+          { categoria: '' },
+          { categoria: { $exists: false } }
+        ];
+      } else {
+        filter.categoria = categoria;
+      }
     }
     if (alunoId) {
       filter.$or = [
@@ -98,11 +112,8 @@ const validateAnalysisFields = (data) => {
     return 'O placar da partida é obrigatório.';
   }
 
-  // Modalidades baseadas em sets
+  // Modalidades baseadas em sets (Badminton e Tênis de Mesa)
   if (
-    modLower.includes('voleibol') ||
-    modLower.includes('vôlei') ||
-    modLower.includes('volei') ||
     modLower.includes('badminton') ||
     modLower.includes('tênis de mesa') ||
     modLower.includes('tenis de mesa')
@@ -200,7 +211,7 @@ const updateAnalysis = async (req, res) => {
 
     const updatePayload = {
       modalidade: modalidade.trim(),
-      categoria: categoria.trim(),
+      categoria: (categoria || 'Geral').trim(),
       subtipoProva: subtipoProva ? subtipoProva.trim() : undefined,
       data: data || new Date(),
       equipeAdversaria: equipeAdversaria ? equipeAdversaria.trim() : undefined,

@@ -4,6 +4,7 @@ import {
   Layers, Calendar, Activity
 } from 'lucide-react';
 import { calculateAge } from '../utils/proespCalculator';
+import { renderIMCBadgeHtml } from './IMCBadge';
 
 // Regras de direção para testes motores
 export const TEST_DIRECTION_RULES = {
@@ -337,7 +338,21 @@ const PhysicalAssessmentPDFExport = ({
           <!-- CABEÇALHO OFICIAL -->
           <div class="header-brand">
             <div>
-              <h1 class="brand-title">IFesporte</h1>
+              <div style="margin-bottom: 4px;">
+                <svg viewBox="0 -10 520 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 28px; width: auto; display: inline-block; vertical-align: middle;">
+                  <circle cx="10" cy="10" r="10" fill="#1E5EFF"/>
+                  <rect x="0" y="24" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="0" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="0" y="72" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="24" y="0" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="24" y="24" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="24" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="24" y="72" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="48" y="0" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <rect x="48" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+                  <text x="80" y="80" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="92px" letter-spacing="-2px" fill="#FF8A00">esporte</text>
+                </svg>
+              </div>
               <div class="brand-subtitle">Ficha de Aptidão Física — Bateria PROESP-Br 2021</div>
             </div>
             <div class="emission-meta">
@@ -431,8 +446,8 @@ const PhysicalAssessmentPDFExport = ({
         htmlContent += `
           <tr>
             <td><strong>${m.label}</strong></td>
-            <td>${m.val1 != null ? `${m.val1} ${m.unit}` : '—'} ${m.class1 ? `<br>${renderProespBadgeHtml(m.class1)}` : ''}</td>
-            <td>${m.val2 != null ? `${m.val2} ${m.unit}` : '—'} ${m.class2 ? `<br>${renderProespBadgeHtml(m.class2)}` : ''}</td>
+            <td>${m.val1 != null ? `${m.val1} ${m.unit}` : '—'} ${m.class1 ? `<br>${m.key === 'imc' ? renderIMCBadgeHtml(m.class1) : renderProespBadgeHtml(m.class1)}` : ''}</td>
+            <td>${m.val2 != null ? `${m.val2} ${m.unit}` : '—'} ${m.class2 ? `<br>${m.key === 'imc' ? renderIMCBadgeHtml(m.class2) : renderProespBadgeHtml(m.class2)}` : ''}</td>
             <td><strong>${deltaFormatted}</strong></td>
             <td>${badgeHtml}</td>
           </tr>
@@ -543,7 +558,7 @@ const PhysicalAssessmentPDFExport = ({
               <td><strong>Índice de Massa Corporal (IMC)</strong></td>
               <td><strong>${a.calculos?.imc != null ? `${a.calculos.imc} kg/m²` : '—'}</strong></td>
               <td>Massa / (Estatura em m)²</td>
-              <td>${renderProespBadgeHtml(a.classificacoes?.saude?.imc)}</td>
+              <td>${renderIMCBadgeHtml(a.classificacoes?.saude?.imc)}</td>
             </tr>
             <tr>
               <td><strong>Razão Cintura-Estatura (RCE)</strong></td>

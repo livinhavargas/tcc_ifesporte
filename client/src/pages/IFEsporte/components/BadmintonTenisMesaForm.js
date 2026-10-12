@@ -96,14 +96,19 @@ const BadmintonTenisMesaForm = ({
         background: 'var(--bg)',
         borderRadius: 'var(--radius-lg)',
         padding: '16px',
-        border: '1px solid var(--border-light)'
+        border: '1px solid var(--border-light)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center'
       }}>
-        <label className="form-label" style={{ fontWeight: 700, marginBottom: '10px', display: 'block' }}>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '12px', display: 'block', textAlign: 'center' }}>
           Placar em Sets <span style={{ color: 'var(--error)' }}>*</span>
         </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nossa Pontuação:</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nossa Equipe:</span>
             <NumberStepper
               value={placarObj.nos || 0}
               onChange={(v) => handlePlacarChange('nos', v)}
@@ -113,13 +118,13 @@ const BadmintonTenisMesaForm = ({
           </div>
           <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Adversário:</span>
             <NumberStepper
               value={placarObj.adv || 0}
               onChange={(v) => handlePlacarChange('adv', v)}
               min={0}
               ariaLabel="Sets adversário"
             />
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Adversário</span>
           </div>
         </div>
       </div>

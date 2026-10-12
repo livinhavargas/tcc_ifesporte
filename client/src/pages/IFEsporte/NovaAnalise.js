@@ -82,9 +82,16 @@ const NovaAnalise = () => {
         });
         if (resAnalysis.ok) {
           const analysisData = await resAnalysis.json();
+          const existingCat = analysisData.categoria || paramGenero;
+          const normalizedCat = (existingCat || '').toLowerCase().startsWith('fem')
+            ? 'Feminino'
+            : (existingCat || '').toLowerCase().startsWith('masc')
+            ? 'Masculino'
+            : 'Geral';
+
           setFormData({
             modalidade: analysisData.modalidade || parsedModalidade,
-            categoria: analysisData.categoria || paramGenero,
+            categoria: normalizedCat,
             subtipoProva: analysisData.subtipoProva || parsedSubtipo,
             data: analysisData.data ? analysisData.data.split('T')[0] : new Date().toISOString().split('T')[0],
             equipeAdversaria: analysisData.equipeAdversaria || '',
@@ -208,8 +215,19 @@ const NovaAnalise = () => {
       return null;
     }
 
-    // 2. MODALIDADES DE SETS: Voleibol, Vôlei de Praia, Tênis de Mesa, Badminton
-    if (mod.includes('volei') || mod.includes('vôlei') || mod.includes('badminton') || mod.includes('tenis de mesa') || mod.includes('tênis de mesa')) {
+    // 2. VOLEIBOL E VÔLEI DE PRAIA
+    if (mod.includes('volei') || mod.includes('vôlei')) {
+      if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
+        return 'Informe o nome da equipe adversária.';
+      }
+      if (!formData.resultado) {
+        return 'Selecione o resultado da partida (Vitória ou Derrota).';
+      }
+      return null;
+    }
+
+    // 2.1 OUTRAS MODALIDADES DE SETS: Badminton, Tênis de Mesa
+    if (mod.includes('badminton') || mod.includes('tenis de mesa') || mod.includes('tênis de mesa')) {
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
         return 'Informe o nome da equipe/atleta adversário.';
       }
@@ -236,10 +254,12 @@ const NovaAnalise = () => {
       if (!formData.resultado) {
         return 'Selecione o resultado da partida.';
       }
-      if (formData.resultado === 'Empate') {
-        const cobrancas = Array.isArray(dados.penaltisCobrancas) ? dados.penaltisCobrancas : [];
-        if (cobrancas.length === 0 || cobrancas.some(c => !c.atletaId)) {
-          return 'Em caso de empate no futebol/futsal, é obrigatório registrar as cobranças de pênaltis e selecionar os atletas que bateram.';
+      if (dados.foiParaPenaltis) {
+        const participantes = Array.isArray(dados.penaltisParticipantes) && dados.penaltisParticipantes.length > 0
+          ? dados.penaltisParticipantes
+          : (Array.isArray(dados.penaltisCobrancas) ? dados.penaltisCobrancas.filter(c => c && c.atletaId) : []);
+        if (participantes.length === 0) {
+          return 'Quando a partida foi para os pênaltis, selecione os jogadores que participaram da cobrança.';
         }
       }
       return null;
@@ -252,12 +272,6 @@ const NovaAnalise = () => {
       }
       if (!formData.resultado) {
         return 'Selecione o resultado da partida.';
-      }
-      if (formData.resultado === 'Empate') {
-        const lances = Array.isArray(dados.desempateLancesLivres) ? dados.desempateLancesLivres : [];
-        if (lances.length === 0 || lances.some(l => !l.atletaId)) {
-          return 'Em caso de empate no basquete, é obrigatório registrar quem arremessou os lances livres de desempate.';
-        }
       }
       return null;
     }
@@ -377,7 +391,10 @@ const NovaAnalise = () => {
     );
   };
 
-  const isAtletismo = (formData.modalidade || '').toLowerCase().includes('atletismo');
+  const normMod = (formData.modalidade || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const isAtletismo = normMod.includes('atletismo');
+  const isEquipe = normMod.includes('futebol') || normMod.includes('futsal') || normMod.includes('basquete') || normMod.includes('handebol') || normMod.includes('volei') || normMod.includes('voleibol');
+  const isIndividualSport = !isEquipe && !isAtletismo;
 
   if (loading) {
     return (
@@ -411,15 +428,12 @@ const NovaAnalise = () => {
         {/* Header da Tela */}
         <div style={{
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '28px',
-          flexWrap: 'wrap',
-          gap: '16px'
+          marginBottom: '28px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button 
-              type="button"
+              type="button" 
               className="btn btn-secondary rounded-circle" 
               style={{ width: '42px', height: '42px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
               onClick={() => navigate(getBackUrl())}
@@ -427,37 +441,29 @@ const NovaAnalise = () => {
             >
               <ArrowLeft size={18} />
             </button>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h1 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>
-                  {isEditing ? 'Editar Análise Esportiva' : `Nova Análise — ${formData.modalidade}`}
-                </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--primary-light)',
+                color: 'var(--primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <SportIcon sport={formData.modalidade} size={22} />
               </div>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>
-                Preencha as informações técnicas e o resultado oficial para {formData.modalidade} ({formData.categoria}).
-              </p>
+              <div>
+                <h1 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>
+                  {isEditing ? `Editar Análise — ${formData.modalidade}` : `Nova Análise — ${formData.modalidade}`}
+                </h1>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>
+                  Preencha as informações técnicas e o resultado oficial para {formData.modalidade} ({formData.categoria}).
+                </p>
+              </div>
             </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              type="button" 
-              className="btn btn-secondary"
-              onClick={() => navigate(getBackUrl())}
-              style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-            >
-              Cancelar
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-primary"
-              onClick={handleSubmit}
-              disabled={saving}
-              style={{ padding: '8px 24px', fontWeight: 700, borderRadius: 'var(--radius-md)', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-            >
-              <Save size={16} />
-              {saving ? 'Salvando...' : isEditing ? 'Atualizar Análise' : 'Salvar Análise'}
-            </button>
           </div>
         </div>
 
@@ -496,28 +502,28 @@ const NovaAnalise = () => {
             </h5>
 
             <div className="row g-3">
-              <div className="col-md-4">
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                  Modalidade Esportiva
-                </label>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  background: 'var(--bg)',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-light)',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  color: 'var(--text)'
-                }}>
-                  <SportIcon sport={formData.modalidade} size={20} />
-                  <span>{formData.modalidade}</span>
+              {isIndividualSport && (
+                <div className="col-12 col-md-4">
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Atleta / Jogador Avaliado
+                  </label>
+                  <select
+                    className="form-select"
+                    value={formData.aluno || ''}
+                    onChange={(e) => handleInputChange('aluno', e.target.value)}
+                    style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+                  >
+                    <option value="">Selecione o atleta (opcional)</option>
+                    {filteredStudents.map(st => (
+                      <option key={st._id} value={st._id}>
+                        {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
+              )}
 
-              <div className="col-md-4">
+              <div className={isIndividualSport ? "col-12 col-md-4" : "col-12 col-md-6"}>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
                   Categoria / Gênero
                 </label>
@@ -534,9 +540,9 @@ const NovaAnalise = () => {
                 </select>
               </div>
 
-              <div className="col-md-4">
+              <div className={isIndividualSport ? "col-12 col-md-4" : "col-12 col-md-6"}>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                  Data da Partida / Prova <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+                  {isAtletismo ? 'Data da Prova' : 'Data da Partida'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
                 </label>
                 <input
                   type="date"
@@ -547,28 +553,6 @@ const NovaAnalise = () => {
                   required
                 />
               </div>
-
-              {/* Atleta(s) Selecionados para esportes com atleta vinculado */}
-              {!isAtletismo && (
-                <div className="col-md-12">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                    Atleta em Destaque / Avaliado Individualmente
-                  </label>
-                  <select
-                    className="form-select"
-                    value={formData.aluno || ''}
-                    onChange={(e) => handleInputChange('aluno', e.target.value)}
-                    style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-                  >
-                    <option value="">Equipe Geral / Coletivo</option>
-                    {filteredStudents.map(st => (
-                      <option key={st._id} value={st._id}>
-                        {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
           </div>
 
@@ -613,20 +597,11 @@ const NovaAnalise = () => {
           {/* Footer de Ações */}
           <div style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
             paddingTop: '16px',
             borderTop: '1px solid var(--border-light)'
           }}>
-            <button 
-              type="button" 
-              className="btn btn-outline-secondary"
-              onClick={() => navigate(getBackUrl())}
-              style={{ padding: '10px 24px', fontWeight: 600, borderRadius: 'var(--radius-md)' }}
-            >
-              ← Cancelar e Voltar
-            </button>
-
             <button 
               type="submit" 
               className="btn btn-primary"

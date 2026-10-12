@@ -599,8 +599,7 @@ p { color: var(--text-secondary); font-size: 1rem; line-height: 1.65; }
 }
 
 /* ── Form Controls ── */
-.form-control,
-.form-select {
+.form-control {
   font-family: var(--font);
   font-size: 0.9375rem;
   border-radius: var(--radius-md);
@@ -613,6 +612,29 @@ p { color: var(--text-secondary); font-size: 1rem; line-height: 1.65; }
   transition: all var(--transition-fast);
   max-width: 100%;
   width: 100%;
+}
+
+.form-select {
+  font-family: var(--font);
+  font-size: 0.9375rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  padding: 12px 38px 12px 16px;
+  height: auto;
+  min-height: 48px;
+  color: var(--text);
+  background-color: var(--bg-input);
+  background-position: right 14px center;
+  transition: all var(--transition-fast);
+  max-width: 100%;
+  width: 100%;
+}
+
+.form-select-sm {
+  min-height: 38px;
+  padding: 8px 34px 8px 12px;
+  font-size: 0.875rem;
+  background-position: right 10px center;
 }
 
 /* Mobile-First Input Rule: 16px on mobile prevents iOS Safari auto-zoom on focus */

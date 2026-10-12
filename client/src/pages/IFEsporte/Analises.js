@@ -7,7 +7,7 @@ import { apiUrl } from '../../services/api';
 import { 
   Plus, Search, Trophy, Calendar, Edit2, Trash2, 
   CheckCircle2, XCircle, MinusCircle, Medal, Timer, ArrowLeft,
-  Users, Activity, ArrowRight, ChevronRight, BarChart3
+  Activity, ArrowRight, ChevronRight, BarChart3
 } from 'lucide-react';
 
 const MODALIDADES_INDIVIDUAIS = [
@@ -34,6 +34,13 @@ const normalize = (str) => {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
+};
+
+const getCategoryGroup = (str) => {
+  const norm = normalize(str);
+  if (norm.startsWith('fem')) return 'Feminino';
+  if (norm.startsWith('masc')) return 'Masculino';
+  return 'Geral';
 };
 
 const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero = null, embebed = false }) => {
@@ -150,11 +157,11 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
       }
     }
 
-    // Filter by gender if selected and not "Geral" or "Todas"
-    if (selectedGenero && selectedGenero !== 'Geral' && selectedGenero !== 'Todas') {
-      const normCat = normalize(a.categoria);
-      const normSelGen = normalize(selectedGenero);
-      if (normCat && normCat !== 'geral' && normCat !== normSelGen) {
+    // Filter by gender tab (Geral, Feminino, Masculino)
+    if (selectedGenero && selectedGenero !== 'Todas') {
+      const categoryGroup = getCategoryGroup(a.categoria);
+      const selectedGroup = getCategoryGroup(selectedGenero);
+      if (categoryGroup !== selectedGroup) {
         return false;
       }
     }
@@ -172,13 +179,6 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
   });
 
   const vitoriasCount = filteredAnalyses.filter(a => a.resultado === 'Vitória').length;
-  const uniqueAthletes = new Set();
-  filteredAnalyses.forEach(a => {
-    if (a.aluno?._id || a.aluno?.nome) uniqueAthletes.add(a.aluno?._id || a.aluno?.nome);
-    if (Array.isArray(a.atletas)) {
-      a.atletas.forEach(at => uniqueAthletes.add(at?._id || at?.nome || at));
-    }
-  });
 
   // Get total analysis count for each modality in hub
   const getAnalysisCountForSport = (sportName) => {
@@ -242,6 +242,20 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
           const placarText = typeof placar === 'object' && placar !== null 
             ? `${placar.nos || 0} x ${placar.adv || 0}`
             : (placar || '-');
+
+          const isEmpate = analysis.resultado === 'Empate' || (
+            typeof placar === 'object' && placar !== null && placar.nos !== undefined && placar.nos === placar.adv
+          );
+          const tieNos = analysis.dadosEspecificos?.penaltisAcertos ?? analysis.dadosEspecificos?.desempateSeteMetrosAcertos;
+          const tieAdv = analysis.dadosEspecificos?.penaltisErros ?? analysis.dadosEspecificos?.desempateSeteMetrosErros;
+          const hasTiebreaker = Boolean(
+            isEmpate &&
+            tieNos !== undefined &&
+            tieNos !== null &&
+            tieAdv !== undefined &&
+            tieAdv !== null &&
+            (analysis.dadosEspecificos?.foiParaPenaltis || (tieNos > 0 || tieAdv > 0) || analysis.dadosEspecificos?.desempateSeteMetrosAcertos !== undefined)
+          );
 
           return (
             <div key={analysis._id} className="col-12 col-md-6 col-lg-4">
@@ -324,6 +338,11 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
                           marginTop: '2px'
                         }}>
                           Placar: {placarText}
+                          {hasTiebreaker && (
+                            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)', marginLeft: '8px' }}>
+                              (Desempate: {tieNos} x {tieAdv})
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -648,7 +667,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
         </div>
 
         {/* Resumo / KPI Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: !isAtletismo ? 'repeat(auto-fit, minmax(240px, 1fr))' : '1fr', gap: '16px', marginBottom: '24px' }}>
           <div style={{
             background: 'var(--bg-card)',
             borderRadius: 'var(--radius-lg)',
@@ -672,33 +691,6 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)' }}>
                 {filteredAnalyses.length}
-              </div>
-            </div>
-          </div>
-
-          <div style={{
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px solid var(--border-light)',
-            padding: '20px',
-            boxShadow: 'var(--shadow-xs)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px'
-          }}>
-            <div style={{
-              width: '44px', height: '44px', borderRadius: 'var(--radius-md)',
-              background: 'var(--accent-light)', color: 'var(--accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Users size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Atletas Analisados
-              </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)' }}>
-                {uniqueAthletes.size}
               </div>
             </div>
           </div>
@@ -747,7 +739,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
             <input
               type="text"
               className="form-control"
-              placeholder={`Buscar análises de ${selectedModalidade} por adversário, prova ou atleta...`}
+              placeholder={`Buscar análises de ${selectedModalidade} por adversário ou prova...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '38px', borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
@@ -890,7 +882,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
         </div>
 
         {/* Resumo / KPI Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: !isAtletismo ? 'repeat(auto-fit, minmax(240px, 1fr))' : '1fr', gap: '16px', marginBottom: '24px' }}>
           <div style={{
             background: 'var(--bg-card)',
             borderRadius: 'var(--radius-lg)',
@@ -914,33 +906,6 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)' }}>
                 {filteredAnalyses.length}
-              </div>
-            </div>
-          </div>
-
-          <div style={{
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px solid var(--border-light)',
-            padding: '20px',
-            boxShadow: 'var(--shadow-xs)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px'
-          }}>
-            <div style={{
-              width: '44px', height: '44px', borderRadius: 'var(--radius-md)',
-              background: 'var(--accent-light)', color: 'var(--accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Users size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Atletas Analisados
-              </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)' }}>
-                {uniqueAthletes.size}
               </div>
             </div>
           </div>
@@ -989,7 +954,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
             <input
               type="text"
               className="form-control"
-              placeholder={`Buscar análises de ${selectedModalidade} por adversário, prova ou atleta...`}
+              placeholder={`Buscar análises de ${selectedModalidade} por adversário ou prova...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '38px', borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import Layout from '../../components/Layout';
 import ModalidadesSelector from '../../components/ModalidadesSelector';
 import ModalidadePosicaoSelector from '../../components/ModalidadePosicaoSelector';
 import SportIcon from '../../components/SportIcon';
 import { getStudentPositionForSport } from '../../utils/sportPositions';
 import { calculateIMC } from '../../components/IMCCard';
+import IMCBadge, { renderIMCBadgeHtml } from '../../components/IMCBadge';
 import PhysicalAssessmentTab from '../../components/PhysicalAssessmentTab';
 import { apiUrl } from '../../services/api';
 
@@ -345,7 +346,21 @@ const StudentProfile = () => {
       <body>
         <div class="header">
           <div>
-            <div class="brand-title">IFEsporte</div>
+            <div style="margin-bottom: 4px;">
+              <svg viewBox="0 -10 520 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 28px; width: auto; display: inline-block; vertical-align: middle;">
+                <circle cx="10" cy="10" r="10" fill="#1E5EFF"/>
+                <rect x="0" y="24" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="0" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="0" y="72" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="24" y="0" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="24" y="24" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="24" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="24" y="72" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="48" y="0" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <rect x="48" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+                <text x="80" y="80" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="92px" letter-spacing="-2px" fill="#FF8A00">esporte</text>
+              </svg>
+            </div>
             <div class="brand-subtitle">Ficha Cadastral do Atleta</div>
           </div>
           <div class="photo-box">
@@ -424,7 +439,7 @@ const StudentProfile = () => {
             </div>
             <div class="field">
               <span class="field-label">IMC</span>
-              <div class="field-value">${imc ? `${imc.formatted} (${imc.classification})` : '-'}</div>
+              <div class="field-value">${imc ? `${imc.formatted} &nbsp; ${renderIMCBadgeHtml(imc.classification)}` : '-'}</div>
             </div>
           </div>
         </div>
@@ -574,12 +589,6 @@ const StudentProfile = () => {
             </h2>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            {activeTab === 'perfil' && (
-              <button className="btn btn-outline-secondary" onClick={handleExportPDF} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
-                <i className="bi bi-printer-fill"></i>
-                <span>Exportar Ficha (PDF)</span>
-              </button>
-            )}
             {userType !== 'estudante' && (
               <button className="btn btn-outline-danger" onClick={handleDelete}>
                 Excluir Atleta
@@ -734,11 +743,22 @@ const StudentProfile = () => {
                      <h5 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.125rem' }}>Ficha Completa do Atleta</h5>
                      <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '2px 0 0' }}>Dados cadastrais, acadêmicos, físicos, esportivos e médicos.</p>
                    </div>
-                   {userType !== 'estudante' && !isEditing && (
-                     <button type="button" className="btn btn-outline-primary" onClick={() => setIsEditing(true)} style={{ padding: '8px 20px', fontSize: '0.8125rem', fontWeight: 600, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                       <i className="bi bi-pencil-fill"></i> Editar Dados
+                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                     <button 
+                       type="button" 
+                       className="btn btn-outline-secondary" 
+                       onClick={handleExportPDF} 
+                       style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600, padding: '8px 16px', borderRadius: 'var(--radius-md)' }}
+                       title="Exportar Ficha Completa em PDF"
+                     >
+                       <Printer size={16} /> Exportar PDF
                      </button>
-                   )}
+                     {userType !== 'estudante' && !isEditing && (
+                       <button type="button" className="btn btn-outline-primary" onClick={() => setIsEditing(true)} style={{ padding: '8px 16px', fontSize: '0.875rem', fontWeight: 600, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                         <i className="bi bi-pencil-fill"></i> Editar Dados
+                       </button>
+                     )}
+                   </div>
                 </div>
 
                 <div className="row g-3">
@@ -908,21 +928,7 @@ const StudentProfile = () => {
                           <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--text)' }}>
                             {imcData.formatted}
                           </span>
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '2px 10px',
-                            borderRadius: '9999px',
-                            background: imcData.badgeBg,
-                            color: imcData.color,
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            border: `1px solid ${imcData.color}40`
-                          }}>
-                            <span>{imcData.dotSymbol}</span>
-                            <span>{imcData.classification}</span>
-                          </span>
+                          <IMCBadge classification={imcData.classification} />
                         </>
                       ) : (
                         <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontStyle: 'italic' }}>

@@ -1,12 +1,13 @@
 import React from 'react';
+import IMCBadge, { getIMCVisualConfig } from './IMCBadge';
 
 /**
  * Calcula o IMC e sua classificação com base no peso (kg) e altura (m ou cm).
  * 
  * Regras de Classificação:
- * - Saudável (🟢): 18.5 até 24.9
- * - Atenção (🟡): 16.0 até 18.4 OU 25.0 até 29.9
- * - Necessita Atenção (🔴): abaixo de 16.0 OU a partir de 30.0
+ * - Saudável: 18.5 até 24.9
+ * - Atenção: 16.0 até 18.4 OU 25.0 até 29.9
+ * - Necessita Atenção: abaixo de 16.0 OU a partir de 30.0
  */
 export const calculateIMC = (peso, altura) => {
   if (peso === undefined || peso === null || peso === '' || 
@@ -35,34 +36,25 @@ export const calculateIMC = (peso, altura) => {
   const roundedIMC = Math.round(imcVal * 10) / 10;
 
   let classification = '';
-  let color = ''; 
-  let badgeBg = '';
-  let dotSymbol = '';
 
   if (roundedIMC < 16.0 || roundedIMC >= 30.0) {
     classification = 'Necessita Atenção';
-    color = '#ef4444'; // Vermelho
-    badgeBg = 'rgba(239, 68, 68, 0.12)';
-    dotSymbol = '🔴';
   } else if ((roundedIMC >= 16.0 && roundedIMC < 18.5) || (roundedIMC >= 25.0 && roundedIMC < 30.0)) {
     classification = 'Atenção';
-    color = '#eab308'; // Amarelo
-    badgeBg = 'rgba(234, 179, 8, 0.12)';
-    dotSymbol = '🟡';
   } else {
     classification = 'Saudável';
-    color = '#22c55e'; // Verde
-    badgeBg = 'rgba(34, 197, 94, 0.12)';
-    dotSymbol = '🟢';
   }
+
+  const visualCfg = getIMCVisualConfig(classification);
 
   return {
     val: roundedIMC,
     formatted: roundedIMC.toFixed(1).replace('.', ','),
     classification,
-    color,
-    badgeBg,
-    dotSymbol
+    color: visualCfg.color,
+    badgeBg: visualCfg.bg,
+    border: visualCfg.border,
+    dotSymbol: '●'
   };
 };
 
@@ -125,28 +117,10 @@ const IMCCard = ({ peso, altura, title = "IMC" }) => {
           </span>
         </div>
 
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 16px',
-          borderRadius: '9999px',
-          background: result.badgeBg,
-          color: result.color,
-          fontWeight: 700,
-          fontSize: '0.9375rem',
-          border: `1.5px solid ${result.color}44`
-        }}>
-          <span style={{
-            display: 'inline-block',
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: result.color,
-            boxShadow: `0 0 8px ${result.color}88`
-          }}></span>
-          <span>{result.classification}</span>
-        </div>
+        <IMCBadge 
+          classification={result.classification} 
+          style={{ fontSize: '0.875rem', padding: '6px 14px' }}
+        />
       </div>
     </div>
   );

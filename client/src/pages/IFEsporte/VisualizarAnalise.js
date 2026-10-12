@@ -386,11 +386,107 @@ const VisualizarAnalise = () => {
               </h5>
 
               {Object.keys(dadosEspecificos).length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
                   {Object.entries(dadosEspecificos).map(([key, val]) => {
                     if (val === '' || val === null || val === undefined) return null;
-                    const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-                    const formatted = Array.isArray(val) ? val.join(', ') : typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+                    if (key === 'penaltisCobrancas' && dadosEspecificos.penaltisParticipantes) return null;
+                    if (key === 'cartoes' && (dadosEspecificos.cartoes1T || dadosEspecificos.cartoes2T)) return null;
+
+                    const LABELS_MAP = {
+                      placar1Tempo: 'Placar 1º Tempo',
+                      placar2Tempo: 'Placar 2º Tempo',
+                      penaltisAcertos: 'Gols por Pênalti',
+                      penaltisErros: 'Pênaltis Perdidos',
+                      penaltisParticipantes: 'Jogadores na Disputa de Pênaltis',
+                      penaltisSofridos1T: 'Pênaltis Sofridos (1º Tempo)',
+                      penaltisCometidos1T: 'Pênaltis Cometidos (1º Tempo)',
+                      penaltisErrados1T: 'Pênaltis Errados (1º Tempo)',
+                      penaltisDefendidos1T: 'Pênaltis Defendidos (1º Tempo)',
+                      penaltisSofridos2T: 'Pênaltis Sofridos (2º Tempo)',
+                      penaltisCometidos2T: 'Pênaltis Cometidos (2º Tempo)',
+                      penaltisErrados2T: 'Pênaltis Errados (2º Tempo)',
+                      penaltisDefendidos2T: 'Pênaltis Defendidos (2º Tempo)',
+                      faltasSofridas1T: 'Faltas Sofridas (1º Tempo)',
+                      faltasCometidas1T: 'Faltas Cometidas (1º Tempo)',
+                      faltasSofridas2T: 'Faltas Sofridas (2º Tempo)',
+                      faltasCometidas2T: 'Faltas Cometidas (2º Tempo)',
+                      cartoes1T: 'Cartões (1º Tempo)',
+                      cartoes2T: 'Cartões (2º Tempo)',
+                      cartoes: 'Cartões Registrados',
+                      foiParaPenaltis: 'Disputa de Pênaltis',
+                      // Basquete - Cestas de 2 Pontos
+                      cestas2PontosFeitas1T: 'Cestas de 2 Pontos Feitas (1º Tempo)',
+                      cestas2PontosSofridas1T: 'Cestas de 2 Pontos Sofridas (1º Tempo)',
+                      cestas2PontosFeitas2T: 'Cestas de 2 Pontos Feitas (2º Tempo)',
+                      cestas2PontosSofridas2T: 'Cestas de 2 Pontos Sofridas (2º Tempo)',
+                      // Basquete - Cestas de 3 Pontos
+                      cestas3PontosFeitas1T: 'Cestas de 3 Pontos Feitas (1º Tempo)',
+                      cestas3PontosSofridas1T: 'Cestas de 3 Pontos Sofridas (1º Tempo)',
+                      cestas3PontosFeitas2T: 'Cestas de 3 Pontos Feitas (2º Tempo)',
+                      cestas3PontosSofridas2T: 'Cestas de 3 Pontos Sofridas (2º Tempo)',
+                      // Basquete - Lances Livres
+                      lancesLivresFeitos1T: 'Lances Livres Feitos (1º Tempo)',
+                      lancesLivresSofridos1T: 'Lances Livres Sofridos (1º Tempo)',
+                      lancesLivresFeitos2T: 'Lances Livres Feitos (2º Tempo)',
+                      lancesLivresSofridos2T: 'Lances Livres Sofridos (2º Tempo)',
+                      lancesLivresAFavorQtd: 'Lances Livres a Favor',
+                      lancesLivresContraQtd: 'Lances Livres Contra',
+                      // Voleibol e Vôlei de Praia
+                      pontosCadaSet: 'Pontos de Cada Set (Histórico)',
+                      placarSet1: 'Placar 1º Set',
+                      placarSet2: 'Placar 2º Set',
+                      placarSet3: 'Placar 3º Set',
+                      placarSet4: 'Placar 4º Set',
+                      placarSet5: 'Placar 5º Set',
+                      acesFavorSet1: 'Aces a favor (1º Set)',
+                      acesContraSet1: 'Aces contra (1º Set)',
+                      acesFavorSet2: 'Aces a favor (2º Set)',
+                      acesContraSet2: 'Aces contra (2º Set)',
+                      acesFavorSet3: 'Aces a favor (3º Set)',
+                      acesContraSet3: 'Aces contra (3º Set)',
+                      acesFavorSet4: 'Aces a favor (4º Set)',
+                      acesContraSet4: 'Aces contra (4º Set)',
+                      acesFavorSet5: 'Aces a favor (5º Set)',
+                      acesContraSet5: 'Aces contra (5º Set)',
+                      qualidadeSaque: 'Qualidade do Saque',
+                      qualidadePasse: 'Qualidade do Passe',
+                      qualidadeAtaque: 'Qualidade do Ataque',
+                      levantamentosZona: 'Levantamentos (Zona)',
+                      qualidadeLevantamento: 'Qualidade do Levantamento',
+                      qualidadeBloqueio: 'Qualidade do Bloqueio'
+                    };
+
+                    const label = LABELS_MAP[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+                    let formatted = val;
+
+                    if (key === 'foiParaPenaltis') {
+                      formatted = val ? 'Sim, decidida nos pênaltis' : 'Não';
+                    } else if (key === 'placar1Tempo' || key === 'placar2Tempo' || key.startsWith('placarSet')) {
+                      formatted = typeof val === 'object' && val !== null ? `${val.nos || 0} x ${val.adv || 0}` : String(val);
+                    } else if (key === 'cartoes1T' || key === 'cartoes2T' || key === 'cartoes') {
+                      if (Array.isArray(val)) {
+                        formatted = val.length > 0 
+                          ? val.map(c => `${c.tipo === 'Vermelho' ? '🟥 Vermelho' : '🟨 Amarelo'}: ${c.atletaNome || 'Atleta'}`).join('; ')
+                          : 'Nenhum';
+                      }
+                    } else if (key === 'penaltisParticipantes') {
+                      if (Array.isArray(val)) {
+                        const cobrancas = Array.isArray(dadosEspecificos.penaltisCobrancas) ? dadosEspecificos.penaltisCobrancas : [];
+                        const nomes = val.map(id => {
+                          const c = cobrancas.find(x => x.atletaId === id);
+                          if (c && c.atletaNome) return c.atletaNome;
+                          const a = (Array.isArray(atletas) ? atletas : []).find(x => (x._id || x) === id);
+                          return a ? (a.nome || a) : id;
+                        });
+                        formatted = nomes.join(', ') || `${val.length} atletas`;
+                      }
+                    } else if (Array.isArray(val)) {
+                      formatted = val.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');
+                    } else if (typeof val === 'object') {
+                      formatted = JSON.stringify(val, null, 2);
+                    } else {
+                      formatted = String(val);
+                    }
 
                     return (
                       <div key={key} style={{
@@ -446,17 +542,6 @@ const VisualizarAnalise = () => {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Bottom Back Button */}
-        <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-start' }} className="d-none-print">
-          <button 
-            className="btn btn-secondary" 
-            onClick={() => navigate(getBackUrl())}
-            style={{ borderRadius: 'var(--radius-md)', padding: '8px 20px', fontWeight: 600, fontSize: '0.875rem' }}
-          >
-            ← Voltar para {modalidade} ({categoria || 'Geral'})
-          </button>
         </div>
       </div>
     </Layout>

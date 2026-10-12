@@ -3,13 +3,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   GraduationCap, Users, Calendar, Clock, BookOpen, Plus, 
   ChevronRight, ArrowLeft, Pencil, Trash2, CheckCircle2, 
-  Building, Laptop, School,
   X, Search, FileText, CalendarCheck, User, Phone, Mail, 
   ExternalLink, Award
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../services/api';
 import SportIcon from '../../components/SportIcon';
+import CourseLogo from '../../components/CourseLogo';
+import { calculateIMC } from '../../components/IMCCard';
+import IMCBadge from '../../components/IMCBadge';
 
 const DIAS_SEMANA = [
   'Segunda-feira',
@@ -464,16 +466,16 @@ export default function EducacaoFisica() {
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                             <div style={{
-                              width: '56px',
-                              height: '56px',
+                              width: '60px',
+                              height: '60px',
                               borderRadius: 'var(--radius-lg)',
-                              background: isInfo ? 'rgba(59, 130, 246, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                              color: isInfo ? '#2563eb' : '#d97706',
+                              background: isInfo ? 'rgba(0, 159, 122, 0.12)' : 'rgba(2, 143, 199, 0.12)',
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'center'
+                              justifyContent: 'center',
+                              padding: '6px'
                             }}>
-                              {isInfo ? <Laptop size={28} /> : <Building size={28} />}
+                              <CourseLogo course={c.slug} size={42} />
                             </div>
 
                             <span className="badge" style={{
@@ -572,8 +574,8 @@ export default function EducacaoFisica() {
                   </span>
                 </div>
 
-                <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <School size={20} style={{ color: 'var(--primary)' }} />
+                <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <CourseLogo course={currentCourseData?.curso || selectedCourseSlug} size={28} />
                   <span>Turmas de {currentCourseData?.curso}</span>
                 </h3>
               </div>
@@ -759,8 +761,8 @@ export default function EducacaoFisica() {
                   </span>
                 </div>
 
-                <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <School size={20} style={{ color: 'var(--primary)' }} />
+                <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <CourseLogo course={currentClassData.curso} size={28} />
                   <span>{currentClassData.turma} — {currentClassData.curso}</span>
                 </h3>
               </div>
@@ -1327,6 +1329,43 @@ export default function EducacaoFisica() {
                         </div>
                       </div>
                     </div>
+                  )}
+
+                  {(selectedStudentForModal.peso || selectedStudentForModal.altura) && (
+                    <>
+                      <div className="col-sm-4">
+                        <div style={{ background: 'var(--bg)', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                          <span className="text-muted d-block small" style={{ fontSize: '0.75rem' }}>Peso:</span>
+                          <strong style={{ color: 'var(--text)', fontSize: '0.875rem' }}>
+                            {selectedStudentForModal.peso ? `${selectedStudentForModal.peso} kg` : '-'}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-sm-4">
+                        <div style={{ background: 'var(--bg)', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                          <span className="text-muted d-block small" style={{ fontSize: '0.75rem' }}>Altura:</span>
+                          <strong style={{ color: 'var(--text)', fontSize: '0.875rem' }}>
+                            {selectedStudentForModal.altura ? `${selectedStudentForModal.altura} m` : '-'}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-sm-4">
+                        <div style={{ background: 'var(--bg)', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                          <span className="text-muted d-block small" style={{ fontSize: '0.75rem' }}>IMC:</span>
+                          {(() => {
+                            const imcData = calculateIMC(selectedStudentForModal.peso, selectedStudentForModal.altura);
+                            return imcData ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                <strong style={{ color: 'var(--text)', fontSize: '0.875rem' }}>{imcData.formatted}</strong>
+                                <IMCBadge classification={imcData.classification} />
+                              </div>
+                            ) : (
+                              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>-</span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
 

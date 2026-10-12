@@ -389,6 +389,20 @@ const StudentAnalises = () => {
                             ? `${placar.nos || 0} x ${placar.adv || 0}`
                             : (placar || null);
 
+                          const isEmpate = analysis.resultado === 'Empate' || (
+                            typeof placar === 'object' && placar !== null && placar.nos !== undefined && placar.nos === placar.adv
+                          );
+                          const tieNos = analysis.dadosEspecificos?.penaltisAcertos ?? analysis.dadosEspecificos?.desempateSeteMetrosAcertos;
+                          const tieAdv = analysis.dadosEspecificos?.penaltisErros ?? analysis.dadosEspecificos?.desempateSeteMetrosErros;
+                          const hasTiebreaker = Boolean(
+                            isEmpate &&
+                            tieNos !== undefined &&
+                            tieNos !== null &&
+                            tieAdv !== undefined &&
+                            tieAdv !== null &&
+                            (analysis.dadosEspecificos?.foiParaPenaltis || (tieNos > 0 || tieAdv > 0) || analysis.dadosEspecificos?.desempateSeteMetrosAcertos !== undefined)
+                          );
+
                           return (
                             <div key={analysis._id} className="col-12 col-md-6 col-lg-4">
                               <div style={{
@@ -473,6 +487,11 @@ const StudentAnalises = () => {
                                           border: '1px solid var(--border-light)'
                                         }}>
                                           Placar: {placarText}
+                                          {hasTiebreaker && (
+                                            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', marginLeft: '6px' }}>
+                                              (Desempate: {tieNos} x {tieAdv})
+                                            </span>
+                                          )}
                                         </div>
                                       )}
                                     </div>

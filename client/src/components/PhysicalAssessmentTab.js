@@ -13,6 +13,7 @@ import {
   classifyPROESP 
 } from '../utils/proespCalculator';
 import SportIcon from './SportIcon';
+import IMCBadge, { renderIMCBadgeHtml } from './IMCBadge';
 import { 
   evaluateMetricEvolution, 
   TEST_DIRECTION_RULES 
@@ -350,7 +351,21 @@ export const exportAssessmentToPDF = (assessment, student) => {
     <body>
       <div class="header">
         <div>
-          <div class="brand-title">IFEsporte</div>
+          <div style="margin-bottom: 4px;">
+            <svg viewBox="0 -10 520 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 28px; width: auto; display: inline-block; vertical-align: middle;">
+              <circle cx="10" cy="10" r="10" fill="#1E5EFF"/>
+              <rect x="0" y="24" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="0" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="0" y="72" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="24" y="0" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="24" y="24" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="24" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="24" y="72" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="48" y="0" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <rect x="48" y="48" width="20" height="20" rx="4" fill="#FF8A00"/>
+              <text x="80" y="80" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="92px" letter-spacing="-2px" fill="#FF8A00">esporte</text>
+            </svg>
+          </div>
           <div class="brand-subtitle">Ficha de Aptidão Física — PROESP-Br 2021</div>
         </div>
         <div class="header-meta">
@@ -451,7 +466,7 @@ export const exportAssessmentToPDF = (assessment, student) => {
               <td><strong>Índice de Massa Corporal (IMC)</strong></td>
               <td><strong>${imcVal}</strong></td>
               <td>Massa / (Estatura em m)²</td>
-              <td><span class="badge-pill ${imcClass === 'Zona saudável' ? 'badge-saudavel' : imcClass === 'Zona de risco à saúde' ? 'badge-risco' : 'badge-neutral'}">${imcClass}</span></td>
+              <td>${renderIMCBadgeHtml(imcClass)}</td>
             </tr>
             <tr>
               <td><strong>Razão Cintura-Estatura (RCE)</strong></td>
@@ -1314,24 +1329,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           </strong>
                         </div>
                         <div>
-                          {(() => {
-                            const badge = getHealthBadge(liveCalculations.classificacoes.saude.imc);
-                            return (
-                              <span style={{
-                                background: badge.bg,
-                                color: badge.color,
-                                border: `1px solid ${badge.border}`,
-                                padding: '4px 10px',
-                                borderRadius: 'var(--radius-full)',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center'
-                              }}>
-                                {badge.icon} {badge.label}
-                              </span>
-                            );
-                          })()}
+                          <IMCBadge classification={liveCalculations.classificacoes.saude.imc} />
                         </div>
                       </div>
                     </div>
@@ -1858,12 +1856,13 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               {/* ÚNICO BOTÃO EXPORTAR PDF */}
               <button 
-                className="btn btn-outline-primary btn-sm" 
+                type="button"
+                className="btn btn-outline-secondary" 
                 onClick={() => exportAssessmentToPDF(selectedAssessment, student)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600, padding: '8px 16px', borderRadius: 'var(--radius-md)' }}
                 title="Exportar Ficha de Aptidão Física em PDF"
               >
-                <Printer size={15} /> Exportar PDF
+                <Printer size={16} /> Exportar PDF
               </button>
 
               {!isReadOnly && (
@@ -1987,24 +1986,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           </strong>
                         </div>
                         <div>
-                          {(() => {
-                            const badge = getHealthBadge(selectedAssessment.classificacoes?.saude?.imc);
-                            return (
-                              <span style={{
-                                background: badge.bg,
-                                color: badge.color,
-                                border: `1px solid ${badge.border}`,
-                                padding: '4px 10px',
-                                borderRadius: 'var(--radius-full)',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center'
-                              }}>
-                                {badge.icon} {badge.label}
-                              </span>
-                            );
-                          })()}
+                          <IMCBadge classification={selectedAssessment.classificacoes?.saude?.imc} />
                         </div>
                       </div>
                     </div>
@@ -2279,25 +2261,29 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
             </div>
 
             {/* AÇÕES CENTRALIZADAS (BOTÃO ÚNICO NOVO + BOTÃO ÚNICO EXPORTAR PDF) */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {assessments.length > 0 && (
-                <button 
-                  type="button" 
-                  className="btn btn-outline-secondary"
-                  onClick={() => exportAssessmentToPDF(assessments[0], student)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600 }}
-                  title="Exportar Ficha de Aptidão Física em PDF"
-                >
-                  <Printer size={16} /> Exportar PDF
-                </button>
-              )}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button 
+                type="button" 
+                className="btn btn-outline-secondary"
+                onClick={() => {
+                  if (assessments.length > 0) {
+                    exportAssessmentToPDF(assessments[0], student);
+                  } else {
+                    alert('Nenhuma avaliação física cadastrada para este atleta.');
+                  }
+                }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600, padding: '8px 16px', borderRadius: 'var(--radius-md)' }}
+                title="Exportar Ficha de Aptidão Física em PDF"
+              >
+                <Printer size={16} /> Exportar PDF
+              </button>
 
               {!isReadOnly && (
                 <button 
                   type="button" 
                   className="btn btn-primary" 
                   onClick={handleStartNew}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600, padding: '8px 16px', borderRadius: 'var(--radius-md)' }}
                 >
                   <Plus size={16} /> Nova Avaliação
                 </button>

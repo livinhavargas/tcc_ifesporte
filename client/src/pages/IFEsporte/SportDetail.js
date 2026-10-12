@@ -107,6 +107,19 @@ const SportDetail = () => {
     return nome;
   };
 
+  const getPageSubtitle = () => {
+    if (activeTab === 'analises') {
+      return 'Acompanhe e gerencie as análises esportivas desta modalidade.';
+    }
+    if (activeTab === 'cronogramas') {
+      return 'Consulte e organize os cronogramas desta modalidade.';
+    }
+    if (selectedCategory) {
+      return `${nome} · ${selectedCategory.cat}`;
+    }
+    return 'Participantes desta modalidade.';
+  };
+
   const fetchStudents = async () => {
     try {
       const res = await fetch(apiUrl('/api/students'), {
@@ -515,7 +528,7 @@ const SportDetail = () => {
             <div>
               <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>{getPageTitle()}</h2>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>
-                {selectedCategory ? `${nome} · ${selectedCategory.cat}` : 'Participantes desta modalidade.'}
+                {getPageSubtitle()}
               </p>
             </div>
           </div>

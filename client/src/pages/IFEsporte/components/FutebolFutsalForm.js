@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import NumberStepper from '../../../components/NumberStepper';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -23,149 +23,213 @@ const FutebolFutsalForm = ({
     ? formData.placar 
     : { nos: 0, adv: 0 };
 
-  const handlePlacarChange = (team, val) => {
-    const updatedPlacar = { ...placarObj, [team]: val };
+  // 1. Placares 1º e 2º Tempo
+  const placar1T = (dados.placar1Tempo && typeof dados.placar1Tempo === 'object')
+    ? dados.placar1Tempo
+    : { nos: placarObj.nos || 0, adv: placarObj.adv || 0 };
+
+  const placar2T = (dados.placar2Tempo && typeof dados.placar2Tempo === 'object')
+    ? dados.placar2Tempo
+    : { nos: 0, adv: 0 };
+
+  // Inicializar placares no estado se ainda não configurados
+  useEffect(() => {
+    if (!dados.placar1Tempo || !dados.placar2Tempo) {
+      updateDados({
+        placar1Tempo: dados.placar1Tempo || { nos: placarObj.nos || 0, adv: placarObj.adv || 0 },
+        placar2Tempo: dados.placar2Tempo || { nos: 0, adv: 0 }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePlacarTempoChange = (tempo, team, val) => {
+    const nextVal = Math.max(0, val);
+    const updated1 = tempo === 1 ? { ...placar1T, [team]: nextVal } : placar1T;
+    const updated2 = tempo === 2 ? { ...placar2T, [team]: nextVal } : placar2T;
+    const totalNos = (updated1.nos || 0) + (updated2.nos || 0);
+    const totalAdv = (updated1.adv || 0) + (updated2.adv || 0);
+
     setFormData(prev => ({
       ...prev,
-      placar: updatedPlacar
+      placar: { nos: totalNos, adv: totalAdv },
+      dadosEspecificos: {
+        ...(prev.dadosEspecificos || {}),
+        placar1Tempo: updated1,
+        placar2Tempo: updated2
+      }
     }));
   };
 
-  // Gols marcados
-  const golsMarcados = Array.isArray(dados.golsMarcados) ? dados.golsMarcados : [];
-  const handleAddGol = () => {
-    updateDados({ golsMarcados: [...golsMarcados, { atletaId: '', atletaNome: '' }] });
+  const handleResultadoChange = (novoResultado) => {
+    setFormData(prev => ({
+      ...prev,
+      resultado: novoResultado
+    }));
   };
-  const handleRemoveGol = (idx) => {
-    updateDados({ golsMarcados: golsMarcados.filter((_, i) => i !== idx) });
+
+  const foiParaPenaltis = dados.foiParaPenaltis !== undefined
+    ? Boolean(dados.foiParaPenaltis)
+    : Boolean(
+        dados.penaltisAcertos > 0 ||
+        dados.penaltisErros > 0 ||
+        (Array.isArray(dados.penaltisParticipantes) && dados.penaltisParticipantes.length > 0) ||
+        (Array.isArray(dados.penaltisCobrancas) && dados.penaltisCobrancas.length > 0)
+      );
+
+  const handleFoiParaPenaltisChange = (checked) => {
+    updateDados({ foiParaPenaltis: checked });
   };
-  const handleGolAtletaChange = (idx, atletaId) => {
-    const at = students.find(s => s._id === atletaId);
-    const updated = [...golsMarcados];
-    updated[idx] = { atletaId, atletaNome: at ? at.nome : '' };
-    updateDados({ golsMarcados: updated });
+
+  // Filtro de atletas elegíveis conforme gênero da modalidade
+  const categoriaLower = (formData.categoria || '').toLowerCase();
+  const eligibleStudents = students.filter(s => {
+    if (categoriaLower === 'feminino') {
+      return (s.sexo || '').toLowerCase() === 'feminino';
+    }
+    if (categoriaLower === 'masculino') {
+      return (s.sexo || '').toLowerCase() === 'masculino';
+    }
+    return true; // Geral / Misto
+  });
+
+  // Atletas selecionados no desempate
+  const selectedShootoutAthletes = Array.isArray(dados.penaltisParticipantes)
+    ? dados.penaltisParticipantes
+    : (Array.isArray(dados.penaltisCobrancas) ? dados.penaltisCobrancas.map(c => c.atletaId).filter(Boolean) : []);
+
+  const toggleShootoutAthlete = (atletaId) => {
+    const isSelected = selectedShootoutAthletes.includes(atletaId);
+    const updated = isSelected 
+      ? selectedShootoutAthletes.filter(id => id !== atletaId)
+      : [...selectedShootoutAthletes, atletaId];
+
+    const cobrancas = updated.map(id => {
+      const at = eligibleStudents.find(s => s._id === id) || students.find(s => s._id === id);
+      return {
+        atletaId: id,
+        atletaNome: at ? at.nome : '',
+        resultado: 'Participou'
+      };
+    });
+
+    updateDados({
+      penaltisParticipantes: updated,
+      penaltisCobrancas: cobrancas
+    });
+  };
+
+  // Pênaltis no Tempo Regulamentar
+  const handlePenaltisRegulamentarChange = (field, val) => {
+    const nextVal = Math.max(0, val);
+    const updates = { [field]: nextVal };
+
+    if (field.startsWith('penaltisSofridos')) {
+      const t1 = field === 'penaltisSofridos1T' ? nextVal : (dados.penaltisSofridos1T || 0);
+      const t2 = field === 'penaltisSofridos2T' ? nextVal : (dados.penaltisSofridos2T || 0);
+      updates.penaltisSofridosQtd = t1 + t2;
+    } else if (field.startsWith('penaltisCometidos')) {
+      const t1 = field === 'penaltisCometidos1T' ? nextVal : (dados.penaltisCometidos1T || 0);
+      const t2 = field === 'penaltisCometidos2T' ? nextVal : (dados.penaltisCometidos2T || 0);
+      updates.penaltisCometidosQtd = t1 + t2;
+    } else if (field.startsWith('penaltisErrados')) {
+      const t1 = field === 'penaltisErrados1T' ? nextVal : (dados.penaltisErrados1T || 0);
+      const t2 = field === 'penaltisErrados2T' ? nextVal : (dados.penaltisErrados2T || 0);
+      updates.penaltisErradosQtd = t1 + t2;
+    } else if (field.startsWith('penaltisDefendidos')) {
+      const t1 = field === 'penaltisDefendidos1T' ? nextVal : (dados.penaltisDefendidos1T || 0);
+      const t2 = field === 'penaltisDefendidos2T' ? nextVal : (dados.penaltisDefendidos2T || 0);
+      updates.penaltisDefendidosQtd = t1 + t2;
+    }
+
+    updateDados(updates);
+  };
+
+  // Faltas
+  const handleFaltasChange = (field, val) => {
+    const nextVal = Math.max(0, val);
+    const updates = { [field]: nextVal };
+
+    if (field.startsWith('faltasSofridas')) {
+      const t1 = field === 'faltasSofridas1T' ? nextVal : (dados.faltasSofridas1T || 0);
+      const t2 = field === 'faltasSofridas2T' ? nextVal : (dados.faltasSofridas2T || 0);
+      updates.faltasSofridasQtd = t1 + t2;
+    } else if (field.startsWith('faltasCometidas')) {
+      const t1 = field === 'faltasCometidas1T' ? nextVal : (dados.faltasCometidas1T || 0);
+      const t2 = field === 'faltasCometidas2T' ? nextVal : (dados.faltasCometidas2T || 0);
+      updates.faltasCometidasQtd = t1 + t2;
+    }
+
+    updateDados(updates);
   };
 
   // Cartões
-  const cartoes = Array.isArray(dados.cartoes) ? dados.cartoes : [];
-  const handleAddCartao = () => {
-    updateDados({ cartoes: [...cartoes, { atletaId: '', atletaNome: '', tipo: 'Amarelo' }] });
-  };
-  const handleRemoveCartao = (idx) => {
-    updateDados({ cartoes: cartoes.filter((_, i) => i !== idx) });
-  };
-  const handleCartaoChange = (idx, field, val) => {
-    const updated = [...cartoes];
-    if (field === 'atletaId') {
-      const at = students.find(s => s._id === val);
-      updated[idx] = { ...updated[idx], atletaId: val, atletaNome: at ? at.nome : '' };
-    } else {
-      updated[idx] = { ...updated[idx], [field]: val };
-    }
-    updateDados({ cartoes: updated });
-  };
+  const cartoes1T = Array.isArray(dados.cartoes1T)
+    ? dados.cartoes1T
+    : (Array.isArray(dados.cartoes) ? dados.cartoes.filter(c => c.tempo === '1º Tempo' || !c.tempo) : []);
 
-  // Gols sofridos
-  const golsSofridosOrigens = Array.isArray(dados.golsSofridosOrigens) ? dados.golsSofridosOrigens : [];
-  const handleGolsSofridosQtdChange = (qtd) => {
-    const current = [...golsSofridosOrigens];
-    if (qtd > current.length) {
-      while (current.length < qtd) current.push('Situação de jogo');
-    } else {
-      current.splice(qtd);
-    }
+  const cartoes2T = Array.isArray(dados.cartoes2T)
+    ? dados.cartoes2T
+    : (Array.isArray(dados.cartoes) ? dados.cartoes.filter(c => c.tempo === '2º Tempo') : []);
+
+  const syncCartoes = (new1T, new2T) => {
+    const unified = [
+      ...new1T.map(c => ({ ...c, tempo: '1º Tempo' })),
+      ...new2T.map(c => ({ ...c, tempo: '2º Tempo' }))
+    ];
     updateDados({
-      golsSofridosQtd: qtd,
-      golsSofridosOrigens: current
+      cartoes1T: new1T,
+      cartoes2T: new2T,
+      cartoes: unified
     });
   };
-  const handleGolSofridoOrigemChange = (idx, origem) => {
-    const updated = [...golsSofridosOrigens];
-    updated[idx] = origem;
-    updateDados({ golsSofridosOrigens: updated });
+
+  const handleAddCartao = (tempo) => {
+    const novo = { atletaId: '', atletaNome: '', tipo: 'Amarelo' };
+    if (tempo === 1) {
+      syncCartoes([...cartoes1T, novo], cartoes2T);
+    } else {
+      syncCartoes(cartoes1T, [...cartoes2T, novo]);
+    }
   };
 
-  // Faltas sofridas
-  const faltasSofridasLista = Array.isArray(dados.faltasSofridasLista) ? dados.faltasSofridasLista : [];
-  const handleFaltasSofridasQtdChange = (qtd) => {
-    const current = [...faltasSofridasLista];
-    if (qtd > current.length) {
-      while (current.length < qtd) {
-        current.push({ sofreuId: '', cobrouId: '', foiPenalti: false, resultouGol: false });
+  const handleRemoveCartao = (tempo, idx) => {
+    if (tempo === 1) {
+      syncCartoes(cartoes1T.filter((_, i) => i !== idx), cartoes2T);
+    } else {
+      syncCartoes(cartoes1T, cartoes2T.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handleCartaoChange = (tempo, idx, field, val) => {
+    if (tempo === 1) {
+      const updated = [...cartoes1T];
+      if (field === 'atletaId') {
+        const at = students.find(s => s._id === val);
+        updated[idx] = { ...updated[idx], atletaId: val, atletaNome: at ? at.nome : '' };
+      } else {
+        updated[idx] = { ...updated[idx], [field]: val };
       }
+      syncCartoes(updated, cartoes2T);
     } else {
-      current.splice(qtd);
+      const updated = [...cartoes2T];
+      if (field === 'atletaId') {
+        const at = students.find(s => s._id === val);
+        updated[idx] = { ...updated[idx], atletaId: val, atletaNome: at ? at.nome : '' };
+      } else {
+        updated[idx] = { ...updated[idx], [field]: val };
+      }
+      syncCartoes(cartoes1T, updated);
     }
-    updateDados({
-      faltasSofridasQtd: qtd,
-      faltasSofridasLista: current
-    });
-  };
-  const handleFaltaSofridaChange = (idx, field, val) => {
-    const updated = [...faltasSofridasLista];
-    updated[idx] = { ...updated[idx], [field]: val };
-    updateDados({ faltasSofridasLista: updated });
   };
 
-  // Faltas cometidas (quem cometeu)
-  const faltasCometidasAtletas = Array.isArray(dados.faltasCometidasAtletas) ? dados.faltasCometidasAtletas : [];
-  const handleAddFaltaCometidaAtleta = () => {
-    updateDados({ faltasCometidasAtletas: [...faltasCometidasAtletas, ''] });
-  };
-  const handleRemoveFaltaCometidaAtleta = (idx) => {
-    updateDados({ faltasCometidasAtletas: faltasCometidasAtletas.filter((_, i) => i !== idx) });
-  };
-  const handleFaltaCometidaAtletaChange = (idx, val) => {
-    const updated = [...faltasCometidasAtletas];
-    updated[idx] = val;
-    updateDados({ faltasCometidasAtletas: updated });
-  };
-
-  // Desempate (Pênaltis em caso de Empate)
-  const penaltisCobrancas = Array.isArray(dados.penaltisCobrancas) ? dados.penaltisCobrancas : [];
-  const handleAddPenaltiCobranca = () => {
-    const updated = [...penaltisCobrancas, { atletaId: '', atletaNome: '', resultado: 'Acertou' }];
-    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
-    const erros = updated.filter(p => p.resultado === 'Errou').length;
-    updateDados({
-      penaltisCobrancas: updated,
-      penaltisAcertos: acertos,
-      penaltisErros: erros
-    });
-  };
-  const handleRemovePenaltiCobranca = (idx) => {
-    const updated = penaltisCobrancas.filter((_, i) => i !== idx);
-    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
-    const erros = updated.filter(p => p.resultado === 'Errou').length;
-    updateDados({
-      penaltisCobrancas: updated,
-      penaltisAcertos: acertos,
-      penaltisErros: erros
-    });
-  };
-  const handlePenaltiCobrancaChange = (idx, field, val) => {
-    const updated = [...penaltisCobrancas];
-    if (field === 'atletaId') {
-      const at = students.find(s => s._id === val);
-      updated[idx] = { ...updated[idx], atletaId: val, atletaNome: at ? at.nome : '' };
-    } else {
-      updated[idx] = { ...updated[idx], [field]: val };
-    }
-    const acertos = updated.filter(p => p.resultado === 'Acertou').length;
-    const erros = updated.filter(p => p.resultado === 'Errou').length;
-    updateDados({
-      penaltisCobrancas: updated,
-      penaltisAcertos: acertos,
-      penaltisErros: erros
-    });
-  };
-
-  const isEmpate = formData.resultado === 'Empate';
+  const totalPartidaNos = (placar1T.nos || 0) + (placar2T.nos || 0);
+  const totalPartidaAdv = (placar1T.adv || 0) + (placar2T.adv || 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* 1. Equipe Adversária & 2. Resultado */}
+      {/* 1. Equipe Adversária & 2. Resultado Final */}
       <div className="row g-3">
         <div className="col-12 col-md-6">
           <label className="form-label" style={{ fontWeight: 700 }}>
@@ -183,478 +247,638 @@ const FutebolFutsalForm = ({
 
         <div className="col-12 col-md-6">
           <label className="form-label" style={{ fontWeight: 700 }}>
-            Resultado <span style={{ color: 'var(--error)' }}>*</span>
+            Resultado Final <span style={{ color: 'var(--error)' }}>*</span>
           </label>
-          <select
-            className="form-select"
-            value={formData.resultado || ''}
-            onChange={(e) => setFormData({ ...formData, resultado: e.target.value })}
-            required
-          >
-            <option value="">Selecione o resultado</option>
-            <option value="Vitória">Vitória</option>
-            <option value="Derrota">Derrota</option>
-            <option value="Empate">Empate</option>
-          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <select
+              className="form-select"
+              value={formData.resultado || ''}
+              onChange={(e) => handleResultadoChange(e.target.value)}
+              style={{ flex: '1 1 180px' }}
+              required
+            >
+              <option value="">Selecione o resultado</option>
+              <option value="Vitória">Vitória</option>
+              <option value="Empate">Empate</option>
+              <option value="Derrota">Derrota</option>
+            </select>
+
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: foiParaPenaltis ? 'var(--text)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              userSelect: 'none',
+              padding: '6px 0'
+            }}>
+              <input
+                type="checkbox"
+                checked={Boolean(foiParaPenaltis)}
+                onChange={(e) => handleFoiParaPenaltisChange(e.target.checked)}
+                style={{
+                  width: '17px',
+                  height: '17px',
+                  accentColor: 'var(--primary)',
+                  cursor: 'pointer'
+                }}
+              />
+              Foi para os pênaltis
+            </label>
+          </div>
         </div>
       </div>
 
-      {/* 3. Placar */}
+      {/* 2. Placares da partida (1º e 2º Tempo em um único card) */}
       <div style={{
         background: 'var(--bg)',
         borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
+        padding: '20px 16px',
+        border: '1px solid var(--border-light)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center'
       }}>
-        <label className="form-label" style={{ fontWeight: 700, marginBottom: '10px', display: 'block' }}>
-          Placar <span style={{ color: 'var(--error)' }}>*</span>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '16px', display: 'block', textAlign: 'center' }}>
+          Placares da partida <span style={{ color: 'var(--error)' }}>*</span>
         </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nossa Equipe:</span>
-            <NumberStepper
-              value={placarObj.nos || 0}
-              onChange={(v) => handlePlacarChange('nos', v)}
-              min={0}
-              ariaLabel="Gols nossa equipe"
-            />
-          </div>
-          <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Adversário:</span>
-            <NumberStepper
-              value={placarObj.adv || 0}
-              onChange={(v) => handlePlacarChange('adv', v)}
-              min={0}
-              ariaLabel="Gols adversário"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* 4. Gols Marcados (Opcional) */}
-      <div style={{
-        background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-            Gols Marcados
-          </label>
-          <button
-            type="button"
-            onClick={handleAddGol}
-            className="btn btn-sm btn-secondary"
-            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-          >
-            <Plus size={14} /> Adicionar Autor do Gol
-          </button>
-        </div>
-
-        {golsMarcados.length === 0 ? (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0 }}>
-            Nenhum gol registrado individualmente.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {golsMarcados.map((gol, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '45px' }}>
-                  Gol {idx + 1}:
-                </span>
-                <select
-                  className="form-select form-select-sm"
-                  value={gol.atletaId || ''}
-                  onChange={(e) => handleGolAtletaChange(idx, e.target.value)}
-                  style={{ flex: 1 }}
-                >
-                  <option value="">Selecione o atleta</option>
-                  {students.map(s => (
-                    <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveGol(idx)}
-                  className="btn btn-sm text-danger"
-                  style={{ padding: '4px 8px', background: 'transparent', border: 'none' }}
-                  title="Remover"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 5. Faltas Cometidas & 9. Defesas */}
-      <div className="row g-3">
-        <div className="col-12 col-md-6">
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
-            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-              Faltas Cometidas
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
+        {/* 1º Tempo */}
+        <div style={{ marginBottom: '16px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            1º Tempo
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nossa Equipe:</span>
               <NumberStepper
-                value={dados.faltasCometidasQtd || 0}
-                onChange={(v) => updateDados({ faltasCometidasQtd: v })}
+                value={placar1T.nos || 0}
+                onChange={(v) => handlePlacarTempoChange(1, 'nos', v)}
                 min={0}
-                ariaLabel="Quantidade de faltas cometidas"
+                ariaLabel="Gols nossa equipe 1º tempo"
               />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Atletas que cometeram faltas:</span>
-              <button
-                type="button"
-                onClick={handleAddFaltaCometidaAtleta}
-                className="btn btn-sm btn-secondary"
-                style={{ fontSize: '0.6875rem', padding: '2px 8px' }}
-              >
-                <Plus size={12} /> Atleta
-              </button>
+            <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <NumberStepper
+                value={placar1T.adv || 0}
+                onChange={(e) => handlePlacarTempoChange(1, 'adv', e)}
+                min={0}
+                ariaLabel="Gols adversário 1º tempo"
+              />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Adversário</span>
             </div>
-            {faltasCometidasAtletas.map((atletaId, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <select
-                  className="form-select form-select-sm"
-                  value={atletaId}
-                  onChange={(e) => handleFaltaCometidaAtletaChange(idx, e.target.value)}
-                >
-                  <option value="">Selecione o atleta</option>
-                  {students.map(s => (
-                    <option key={s._id} value={s._id}>{s.nome}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFaltaCometidaAtleta(idx)}
-                  className="btn btn-sm text-danger"
-                  style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
           </div>
         </div>
 
-        {/* 9. Defesas */}
-        <div className="col-12 col-md-6">
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-light)', height: '100%' }}>
-            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-              Defesas
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade de Defesas:</span>
+        {/* Linha divisória sutil entre tempos */}
+        <div style={{ width: '80%', height: '1px', background: 'var(--border-light)', margin: '4px 0 16px' }} />
+
+        {/* 2º Tempo */}
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            2º Tempo
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nossa Equipe:</span>
               <NumberStepper
-                value={dados.defesasQtd || 0}
-                onChange={(v) => updateDados({ defesasQtd: v })}
+                value={placar2T.nos || 0}
+                onChange={(v) => handlePlacarTempoChange(2, 'nos', v)}
                 min={0}
-                ariaLabel="Quantidade de defesas"
+                ariaLabel="Gols nossa equipe 2º tempo"
               />
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 6. Faltas Sofridas */}
-      <div style={{
-        background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
-          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-            Faltas Sofridas
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Qtd:</span>
-            <NumberStepper
-              value={dados.faltasSofridasQtd || 0}
-              onChange={handleFaltasSofridasQtdChange}
-              min={0}
-              ariaLabel="Faltas sofridas"
-            />
+            <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <NumberStepper
+                value={placar2T.adv || 0}
+                onChange={(e) => handlePlacarTempoChange(2, 'adv', e)}
+                min={0}
+                ariaLabel="Gols adversário 2º tempo"
+              />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Adversário</span>
+            </div>
           </div>
         </div>
 
-        {faltasSofridasLista.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {faltasSofridasLista.map((falta, idx) => (
-              <div key={idx} style={{
-                background: 'var(--bg)',
-                padding: '10px 12px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-light)',
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '8px',
-                alignItems: 'center'
-              }}>
-                <span style={{ fontWeight: 700, fontSize: '0.75rem', minWidth: '55px' }}>Falta {idx + 1}:</span>
-                <select
-                  className="form-select form-select-sm"
-                  style={{ flex: '1 1 140px' }}
-                  value={falta.sofreuId || ''}
-                  onChange={(e) => handleFaltaSofridaChange(idx, 'sofreuId', e.target.value)}
-                >
-                  <option value="">Quem sofreu?</option>
-                  {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
-                </select>
-
-                <select
-                  className="form-select form-select-sm"
-                  style={{ flex: '1 1 140px' }}
-                  value={falta.cobrouId || ''}
-                  onChange={(e) => handleFaltaSofridaChange(idx, 'cobrouId', e.target.value)}
-                >
-                  <option value="">Quem cobrou/bateu?</option>
-                  {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
-                </select>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(falta.foiPenalti)}
-                    onChange={(e) => handleFaltaSofridaChange(idx, 'foiPenalti', e.target.checked)}
-                  />
-                  Foi pênalti?
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(falta.resultouGol)}
-                    onChange={(e) => handleFaltaSofridaChange(idx, 'resultouGol', e.target.checked)}
-                  />
-                  Resultou em gol?
-                </label>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 7. Cartões */}
-      <div style={{
-        background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-            Cartões
-          </label>
-          <button
-            type="button"
-            onClick={handleAddCartao}
-            className="btn btn-sm btn-secondary"
-            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-          >
-            <Plus size={14} /> Adicionar Cartão
-          </button>
+        {/* Total da partida */}
+        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px dashed var(--border-light)', fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
+          Total acumulado da partida: <strong style={{ color: 'var(--text)', fontSize: '0.9375rem' }}>{totalPartidaNos} x {totalPartidaAdv}</strong>
         </div>
-
-        {cartoes.length === 0 ? (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0 }}>
-            Nenhum cartão registrado.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {cartoes.map((c, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <select
-                  className="form-select form-select-sm"
-                  value={c.atletaId || ''}
-                  onChange={(e) => handleCartaoChange(idx, 'atletaId', e.target.value)}
-                  style={{ flex: '1 1 180px' }}
-                >
-                  <option value="">Selecione o atleta</option>
-                  {students.map(s => <option key={s._id} value={s._id}>{s.nome}</option>)}
-                </select>
-
-                <select
-                  className="form-select form-select-sm"
-                  value={c.tipo || 'Amarelo'}
-                  onChange={(e) => handleCartaoChange(idx, 'tipo', e.target.value)}
-                  style={{ width: '130px' }}
-                >
-                  <option value="Amarelo">🟨 Amarelo</option>
-                  <option value="Vermelho">🟥 Vermelho</option>
-                </select>
-
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCartao(idx)}
-                  className="btn btn-sm text-danger"
-                  style={{ padding: '4px 8px', background: 'transparent', border: 'none' }}
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* 8. Gols Sofridos */}
-      <div style={{
-        background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-light)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-            Gols Sofridos
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Quantidade:</span>
-            <NumberStepper
-              value={dados.golsSofridosQtd || 0}
-              onChange={handleGolsSofridosQtdChange}
-              min={0}
-              ariaLabel="Gols sofridos"
-            />
-          </div>
-        </div>
-
-        {golsSofridosOrigens.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {golsSofridosOrigens.map((origem, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', minWidth: '90px' }}>
-                  Gol sofrido {idx + 1}:
-                </span>
-                <select
-                  className="form-select form-select-sm"
-                  value={origem}
-                  onChange={(e) => handleGolSofridoOrigemChange(idx, e.target.value)}
-                  style={{ maxWidth: '240px' }}
-                >
-                  <option value="Situação de jogo">Situação de jogo</option>
-                  <option value="Pênalti">Pênalti</option>
-                  <option value="Falta">Falta</option>
-                </select>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 11. SOMENTE EM CASO DE EMPATE (OBRIGATÓRIO) */}
-      {isEmpate && (
+      {/* 3. Placar de desempate — Disputa de Pênaltis (Exibido quando foi para os pênaltis) */}
+      {foiParaPenaltis && (
         <div style={{
-          background: 'var(--warning-light)',
+          background: 'var(--bg)',
           borderRadius: 'var(--radius-lg)',
-          padding: '18px',
-          border: '1.5px solid var(--warning)'
+          padding: '20px',
+          border: '1.5px solid #fb923c',
+          boxShadow: '0 0 0 2px rgba(251, 146, 60, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-            <div>
-              <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '0.9375rem' }}>
-                ⚽ Desempate por Pênaltis <span style={{ color: 'var(--error)' }}>* (Obrigatório em caso de Empate)</span>
-              </h6>
-              <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Registre os atletas que cobraram pênaltis e o resultado de cada cobrança.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddPenaltiCobranca}
-              className="btn btn-sm btn-primary"
-              style={{ fontSize: '0.75rem', padding: '4px 12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <Plus size={14} /> Adicionar Cobrança
-            </button>
-          </div>
-          
-          <div className="row g-3 mb-3">
-            <div className="col-12 col-sm-6">
-              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem' }}>
-                Total de Acertos (Gols):
-              </label>
-              <div>
-                <NumberStepper
-                  value={dados.penaltisAcertos || 0}
-                  onChange={(v) => updateDados({ penaltisAcertos: v })}
-                  min={0}
-                  ariaLabel="Acertos de pênaltis"
-                />
-              </div>
-            </div>
+          <h6 style={{
+            fontWeight: 700,
+            color: 'var(--text)',
+            marginBottom: '16px',
+            fontSize: '0.9375rem',
+            textAlign: 'center',
+            width: '100%'
+          }}>
+            Placar de desempate - Disputa de Pênaltis
+          </h6>
 
-            <div className="col-12 col-sm-6">
-              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem' }}>
-                Total de Erros (Perdidos):
-              </label>
-              <div>
-                <NumberStepper
-                  value={dados.penaltisErros || 0}
-                  onChange={(v) => updateDados({ penaltisErros: v })}
-                  min={0}
-                  ariaLabel="Erros de pênaltis"
-                />
-              </div>
+          {/* Formato: Nossa equipe [Number Stepper] X [Number Stepper] Adversário */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Nossa equipe
+              </span>
+              <NumberStepper
+                value={dados.penaltisAcertos || 0}
+                onChange={(v) => updateDados({ penaltisAcertos: v })}
+                min={0}
+                ariaLabel="Nossa equipe"
+              />
+            </div>
+            <span style={{ fontWeight: 800, color: 'var(--text-tertiary)' }}>X</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <NumberStepper
+                value={dados.penaltisErros || 0}
+                onChange={(v) => updateDados({ penaltisErros: v })}
+                min={0}
+                ariaLabel="Adversário"
+              />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Adversário
+              </span>
             </div>
           </div>
 
-          <div>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
-              Atletas que participaram das cobranças ({penaltisCobrancas.length}):
-            </span>
-            {penaltisCobrancas.length === 0 ? (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--error)', margin: 0, fontWeight: 600 }}>
-                ⚠️ Em caso de empate, clique no botão acima para adicionar as cobranças de pênaltis.
+          {/* Divisor */}
+          <div style={{ width: '100%', height: '1px', background: 'rgba(251, 146, 60, 0.25)', margin: '4px 0 16px' }} />
+
+          {/* Jogadores que participaram da cobrança */}
+          <div style={{ width: '100%', textAlign: 'left' }}>
+            <h6 style={{
+              fontWeight: 700,
+              color: 'var(--text)',
+              fontSize: '0.875rem',
+              marginBottom: '12px',
+              textAlign: 'center'
+            }}>
+              Jogadores que participaram da cobrança
+            </h6>
+
+            {eligibleStudents.length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', textAlign: 'center', margin: 0 }}>
+                Nenhum jogador encontrado para a categoria selecionada.
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {penaltisCobrancas.map((cob, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, minWidth: '80px' }}>
-                      {idx + 1}ª Cobrança:
-                    </span>
-                    <select
-                      className="form-select form-select-sm"
-                      value={cob.atletaId || ''}
-                      onChange={(e) => handlePenaltiCobrancaChange(idx, 'atletaId', e.target.value)}
-                      style={{ flex: '1', minWidth: '160px' }}
-                      required
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '8px',
+                width: '100%'
+              }}>
+                {eligibleStudents.map((st) => {
+                  const isSelected = selectedShootoutAthletes.includes(st._id);
+                  return (
+                    <label
+                      key={st._id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        background: isSelected ? 'rgba(251, 146, 60, 0.08)' : 'var(--bg-card)',
+                        border: isSelected ? '1px solid #fb923c' : '1px solid var(--border-light)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        userSelect: 'none'
+                      }}
                     >
-                      <option value="">Selecione o atleta batedor *</option>
-                      {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
-                    </select>
-                    <select
-                      className="form-select form-select-sm"
-                      value={cob.resultado || 'Acertou'}
-                      onChange={(e) => handlePenaltiCobrancaChange(idx, 'resultado', e.target.value)}
-                      style={{ width: '120px', fontWeight: 600, color: cob.resultado === 'Acertou' ? 'var(--success)' : 'var(--error)' }}
-                    >
-                      <option value="Acertou">⚽ Converteu</option>
-                      <option value="Errou">❌ Perdeu</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePenaltiCobranca(idx)}
-                      className="btn btn-sm text-danger"
-                      style={{ padding: '2px 6px', background: 'transparent', border: 'none' }}
-                      title="Remover cobrança"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                ))}
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleShootoutAthlete(st._id)}
+                        style={{
+                          accentColor: '#f97316',
+                          width: '16px',
+                          height: '16px',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <span style={{
+                          fontSize: '0.8125rem',
+                          fontWeight: isSelected ? 700 : 500,
+                          color: 'var(--text)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {st.nome}
+                        </span>
+                        {st.turma && (
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>
+                            {st.turma}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
       )}
+
+      {/* 4. Pênaltis no Tempo Regulamentar (Abaixo do placar normal ou do placar de desempate se empate) */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '14px', display: 'block' }}>
+          Pênaltis (Tempo Regulamentar)
+        </label>
+
+        <div className="row g-3">
+          {/* 1º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                1º Tempo
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Sofridos:</span>
+                  <NumberStepper
+                    value={dados.penaltisSofridos1T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisSofridos1T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis sofridos no 1º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Cometidos:</span>
+                  <NumberStepper
+                    value={dados.penaltisCometidos1T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisCometidos1T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis cometidos no 1º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Errados:</span>
+                  <NumberStepper
+                    value={dados.penaltisErrados1T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisErrados1T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis errados no 1º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Defendidos:</span>
+                  <NumberStepper
+                    value={dados.penaltisDefendidos1T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisDefendidos1T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis defendidos no 1º tempo"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                2º Tempo
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Sofridos:</span>
+                  <NumberStepper
+                    value={dados.penaltisSofridos2T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisSofridos2T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis sofridos no 2º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Cometidos:</span>
+                  <NumberStepper
+                    value={dados.penaltisCometidos2T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisCometidos2T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis cometidos no 2º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Errados:</span>
+                  <NumberStepper
+                    value={dados.penaltisErrados2T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisErrados2T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis errados no 2º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Pênaltis Defendidos:</span>
+                  <NumberStepper
+                    value={dados.penaltisDefendidos2T || 0}
+                    onChange={(v) => handlePenaltisRegulamentarChange('penaltisDefendidos2T', v)}
+                    min={0}
+                    ariaLabel="Pênaltis defendidos no 2º tempo"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Faltas (1º e 2º Tempo em um único card) */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '14px', display: 'block' }}>
+          Faltas
+        </label>
+
+        <div className="row g-3">
+          {/* 1º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                1º Tempo
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Faltas Sofridas:</span>
+                  <NumberStepper
+                    value={dados.faltasSofridas1T || 0}
+                    onChange={(v) => handleFaltasChange('faltasSofridas1T', v)}
+                    min={0}
+                    ariaLabel="Faltas sofridas no 1º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Faltas Cometidas:</span>
+                  <NumberStepper
+                    value={dados.faltasCometidas1T || 0}
+                    onChange={(v) => handleFaltasChange('faltasCometidas1T', v)}
+                    min={0}
+                    ariaLabel="Faltas cometidas no 1º tempo"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                2º Tempo
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Faltas Sofridas:</span>
+                  <NumberStepper
+                    value={dados.faltasSofridas2T || 0}
+                    onChange={(v) => handleFaltasChange('faltasSofridas2T', v)}
+                    min={0}
+                    ariaLabel="Faltas sofridas no 2º tempo"
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text)' }}>Faltas Cometidas:</span>
+                  <NumberStepper
+                    value={dados.faltasCometidas2T || 0}
+                    onChange={(v) => handleFaltasChange('faltasCometidas2T', v)}
+                    min={0}
+                    ariaLabel="Faltas cometidas no 2º tempo"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Cartões (1º e 2º Tempo em um único card) */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px',
+        border: '1px solid var(--border-light)'
+      }}>
+        <label className="form-label" style={{ fontWeight: 700, marginBottom: '14px', display: 'block' }}>
+          Cartões
+        </label>
+
+        <div className="row g-3">
+          {/* 1º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  1º Tempo
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleAddCartao(1)}
+                  className="btn btn-sm btn-secondary"
+                  style={{ fontSize: '0.6875rem', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Plus size={12} /> Adicionar Cartão
+                </button>
+              </div>
+
+              {cartoes1T.length === 0 ? (
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '8px 0' }}>
+                  Nenhum cartão no 1º Tempo.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {cartoes1T.map((c, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <select
+                        className="form-select form-select-sm"
+                        value={c.atletaId || ''}
+                        onChange={(e) => handleCartaoChange(1, idx, 'atletaId', e.target.value)}
+                        style={{
+                          flex: '1 1 180px',
+                          minWidth: '150px',
+                          textOverflow: 'ellipsis',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="">Selecione o atleta</option>
+                        {eligibleStudents.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+                      </select>
+
+                      <select
+                        className="form-select form-select-sm"
+                        value={c.tipo || 'Amarelo'}
+                        onChange={(e) => handleCartaoChange(1, idx, 'tipo', e.target.value)}
+                        style={{
+                          width: '150px',
+                          minWidth: '145px',
+                          fontWeight: 600,
+                          flexShrink: 0,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="Amarelo">🟨 Amarelo</option>
+                        <option value="Vermelho">🟥 Vermelho</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCartao(1, idx)}
+                        className="btn btn-sm text-danger"
+                        style={{ padding: '4px 6px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                        title="Remover cartão"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2º Tempo */}
+          <div className="col-12 col-md-6">
+            <div style={{
+              background: 'var(--bg)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px',
+              border: '1px solid var(--border-light)',
+              height: '100%'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  2º Tempo
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleAddCartao(2)}
+                  className="btn btn-sm btn-secondary"
+                  style={{ fontSize: '0.6875rem', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Plus size={12} /> Adicionar Cartão
+                </button>
+              </div>
+
+              {cartoes2T.length === 0 ? (
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '8px 0' }}>
+                  Nenhum cartão no 2º Tempo.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {cartoes2T.map((c, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <select
+                        className="form-select form-select-sm"
+                        value={c.atletaId || ''}
+                        onChange={(e) => handleCartaoChange(2, idx, 'atletaId', e.target.value)}
+                        style={{
+                          flex: '1 1 180px',
+                          minWidth: '150px',
+                          textOverflow: 'ellipsis',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="">Selecione o atleta</option>
+                        {eligibleStudents.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+                      </select>
+
+                      <select
+                        className="form-select form-select-sm"
+                        value={c.tipo || 'Amarelo'}
+                        onChange={(e) => handleCartaoChange(2, idx, 'tipo', e.target.value)}
+                        style={{
+                          width: '150px',
+                          minWidth: '145px',
+                          fontWeight: 600,
+                          flexShrink: 0,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="Amarelo">🟨 Amarelo</option>
+                        <option value="Vermelho">🟥 Vermelho</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCartao(2, idx)}
+                        className="btn btn-sm text-danger"
+                        style={{ padding: '4px 6px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                        title="Remover cartão"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
     </div>
   );
