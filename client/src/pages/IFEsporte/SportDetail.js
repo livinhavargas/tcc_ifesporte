@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, ChevronRight, Users, BarChart3, CalendarClock, Calendar, Search } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Users, BarChart3, CalendarClock, Calendar, Search } from 'lucide-react';
 import Layout from '../../components/Layout';
 import SportIcon from '../../components/SportIcon';
 import Analises from './Analises';
@@ -10,13 +10,99 @@ import { isSportScheduleSupported } from '../../utils/sportScheduleRules';
 import { getStudentPositionForSport, isSportWithPositions } from '../../utils/sportPositions';
 import { apiUrl } from '../../services/api';
 
+const ATLETISMO_CATEGORIAS = [
+  {
+    id: 'cat1',
+    titulo: 'Provas de Velocidade',
+    provas: [
+      { nome: '100m Rasos', key: '100m' },
+      { nome: '200m Rasos', key: '200m' },
+      { nome: '400m Rasos', key: '400m' }
+    ]
+  },
+  {
+    id: 'cat2',
+    titulo: 'Provas com Obstáculos',
+    provas: [
+      { nome: '100m com Barreiras', key: '100m_barreiras', generoExclusivo: 'Feminino' },
+      { nome: '110m com Barreiras', key: '110m_barreiras', generoExclusivo: 'Masculino' },
+      { nome: '400m com Barreiras', key: '400m_barreiras' }
+    ]
+  },
+  {
+    id: 'cat3',
+    titulo: 'Provas de Meio Fundo',
+    provas: [
+      { nome: '800m Rasos', key: '800m' },
+      { nome: '1.500m Rasos', key: '1500m' }
+    ]
+  },
+  {
+    id: 'cat4',
+    titulo: 'Provas de Fundo',
+    provas: [
+      { nome: '3.000m Rasos', key: '3000m' },
+      { nome: '5.000m Rasos', key: '5000m' },
+      { nome: '10.000m Rasos', key: '10000m' }
+    ]
+  },
+  {
+    id: 'cat5',
+    titulo: 'Provas de Revezamento',
+    provas: [
+      { nome: '4x100m', key: '4x100' },
+      { nome: '4x400m', key: '4x400' }
+    ]
+  },
+  {
+    id: 'cat6',
+    titulo: 'Provas de Saltos Verticais',
+    provas: [
+      { nome: 'Salto em Altura', key: 'altura' },
+      { nome: 'Salto com Vara', key: 'vara' }
+    ]
+  },
+  {
+    id: 'cat7',
+    titulo: 'Provas de Saltos Horizontais',
+    provas: [
+      { nome: 'Salto em Distância', key: 'distancia' },
+      { nome: 'Salto Triplo', key: 'triplo' }
+    ]
+  },
+  {
+    id: 'cat8',
+    titulo: 'Provas de Arremessos e Lançamentos',
+    provas: [
+      { nome: 'Arremesso de Martelo', key: 'martelo' },
+      { nome: 'Arremesso de Peso', key: 'peso' },
+      { nome: 'Lançamento de Dardo', key: 'dardo' },
+      { nome: 'Lançamento de Disco', key: 'disco' }
+    ]
+  },
+  {
+    id: 'cat9',
+    titulo: 'Prova Combinada',
+    provas: [
+      { nome: 'Pentatlo', key: 'pentatlo' }
+    ]
+  }
+];
+
+const is100mBarreiras = (str) => {
+  const s = (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s\-_().]/g, '');
+  return s.includes('100m') && s.includes('barreira');
+};
+
+const is110mBarreiras = (str) => {
+  const s = (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s\-_().]/g, '');
+  return s.includes('110m') && s.includes('barreira');
+};
+
 const SportDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
-  const [generoFilter, setGeneroFilter] = useState('Geral');
-  const [students, setStudents] = useState([]);
   
   const nameMap = {
     'atletismo': 'Atletismo',
@@ -40,16 +126,36 @@ const SportDetail = () => {
   const subParam = searchParams.get('sub');
   const cronogramaIdParam = searchParams.get('cronogramaId');
 
+  const [generoFilter, setGeneroFilter] = useState(() => {
+    const sub = subParam || '';
+    if (is100mBarreiras(sub)) return 'Feminino';
+    if (is110mBarreiras(sub)) return 'Masculino';
+    return 'Geral';
+  });
+  const [students, setStudents] = useState([]);
+
   const [view, setView] = useState(() => {
     // If category params or tab params are provided, skip the hierarchy picker
-    if (catParam || tabParam) return 'subcategory_detail';
+    if (catParam || subParam || tabParam) return 'subcategory_detail';
     return 'categories';
   });
+
   const [selectedCategory, setSelectedCategory] = useState(() => {
-    if (catParam) return { cat: catParam, sub: subParam || null };
+    if (catParam || subParam) {
+      let matchedCat = catParam;
+      if (!matchedCat && subParam) {
+        for (const cat of ATLETISMO_CATEGORIAS) {
+          if (cat.provas.some(p => p.nome.toLowerCase() === subParam.toLowerCase() || p.key === subParam)) {
+            matchedCat = cat.titulo;
+            break;
+          }
+        }
+      }
+      return { cat: matchedCat || 'Atletismo', sub: subParam || null };
+    }
     return null;
   });
-  const [expandedCategory, setExpandedCategory] = useState(null);
+
   const [activeTab, setActiveTab] = useState(tabParam || 'alunos');
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +165,15 @@ const SportDetail = () => {
 
   const showAnalysesTab = isSportAnalysisSupported(nome);
   const showScheduleTab = isSportScheduleSupported(nome);
+
+  useEffect(() => {
+    const sub = selectedCategory?.sub || subParam || '';
+    if (is100mBarreiras(sub)) {
+      if (generoFilter !== 'Feminino') setGeneroFilter('Feminino');
+    } else if (is110mBarreiras(sub)) {
+      if (generoFilter !== 'Masculino') setGeneroFilter('Masculino');
+    }
+  }, [selectedCategory, subParam, generoFilter]);
 
   useEffect(() => {
     if (!showAnalysesTab && activeTab === 'analises') {
@@ -97,7 +212,9 @@ const SportDetail = () => {
   }, [nome, selectedCategory]);
 
   const getCurrentModalidade = () => {
-    return selectedCategory ? (selectedCategory.sub ? `${nome} - ${selectedCategory.cat} - ${selectedCategory.sub}` : `${nome} - ${selectedCategory.cat}`) : nome;
+    if (!selectedCategory) return nome;
+    if (selectedCategory.sub) return `${nome} - ${selectedCategory.sub}`;
+    return `${nome} - ${selectedCategory.cat}`;
   };
 
   const getPageTitle = () => {
@@ -109,10 +226,10 @@ const SportDetail = () => {
 
   const getPageSubtitle = () => {
     if (activeTab === 'analises') {
-      return 'Acompanhe e gerencie as análises esportivas desta modalidade.';
+      return 'Acompanhe e gerencie as análises esportivas desta prova.';
     }
     if (activeTab === 'cronogramas') {
-      return 'Consulte e organize os cronogramas desta modalidade.';
+      return 'Consulte e organize os cronogramas desta prova.';
     }
     if (selectedCategory) {
       return `${nome} · ${selectedCategory.cat}`;
@@ -134,41 +251,18 @@ const SportDetail = () => {
     }
   };
 
-  const hierarchy = {
-    'Atletismo': {
-      'Corridas': [
-        '100m', 
-        '200m', 
-        '400m', 
-        '800m', 
-        '1500m', 
-        '3000m', 
-        '5000m', 
-        'Revezamento 4x100', 
-        'Revezamento 4x400', 
-        'Pentatlo', 
-        '100m com Barreiras', 
-        '110m com Barreiras'
-      ],
-      'Saltos': [
-        'Salto em distância', 
-        'Salto em altura', 
-        'Salto triplo'
-      ],
-      'Arremessos e Lançamentos': [
-        'Arremesso de peso', 
-        'Lançamento de disco', 
-        'Lançamento de dardo'
-      ]
-    }
-  };
+  const hasHierarchy = nome === 'Atletismo';
 
-  const hasHierarchy = hierarchy[nome] !== undefined;
-
-  const handleCategorySelect = (cat, sub) => {
-    setSelectedCategory({ cat, sub });
+  const handleCategorySelect = (catTitulo, subNome) => {
+    setSelectedCategory({ cat: catTitulo, sub: subNome });
     setView('subcategory_detail');
-    setGeneroFilter('Geral');
+    if (is100mBarreiras(subNome)) {
+      setGeneroFilter('Feminino');
+    } else if (is110mBarreiras(subNome)) {
+      setGeneroFilter('Masculino');
+    } else {
+      setGeneroFilter('Geral');
+    }
     setActiveTab('alunos');
   };
 
@@ -176,7 +270,6 @@ const SportDetail = () => {
     setView('categories');
     setSelectedCategory(null);
     setGeneroFilter('Geral');
-    setExpandedCategory(null);
   };
 
   const checkMatch = (esp, keyword) => {
@@ -184,35 +277,72 @@ const SportDetail = () => {
       return (str || '')
         .toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[\s-()]/g, '');
+        .replace(/[\s\-_().]/g, '');
     };
     const e = normalize(esp);
     const k = normalize(keyword);
     if (!e || !k) return false;
-    if (e.includes(k) || k.includes(e)) return true;
+    if (e === k || e.includes(k) || k.includes(e)) return true;
 
-    // Fallbacks para compatibilidade entre os formatos legados e novos
+    // Fallbacks para compatibilidade entre os formatos legados e novos de outros esportes
     if (k.includes('tenisdemesamisto') && e.includes('tenisdemesadupla')) return true;
     if (k.includes('tenisdemesadupla') && e.includes('tenisdemesamisto')) return true;
-    
+
     // Se a busca é genérica por Atletismo
-    const termosAtletismo = ['atletismo', 'corrida', 'salto', 'arremesso', 'lancamento', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'distancia', 'altura', 'triplo', 'vara', 'peso', 'disco', 'dardo', 'martelo', 'pentatlo', 'barreiras'];
+    const termosAtletismo = [
+      'atletismo', 'corrida', 'salto', 'arremesso', 'lancamento', 
+      '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', '10000m', 
+      'revezamento', 'distancia', 'altura', 'triplo', 'vara', 
+      'peso', 'disco', 'dardo', 'martelo', 'pentatlo', 'barreira'
+    ];
     if (k === 'atletismo') {
       return termosAtletismo.some(t => e.includes(t));
     }
 
-    // Se é a categoria inteira:
-    // 1. Corridas
-    if (k === 'atletismo-corridas' || k === 'corridas' || (k.includes('atletismo') && k.includes('corrida') && !k.includes('100m') && !k.includes('200m') && !k.includes('400m') && !k.includes('800m') && !k.includes('1500m') && !k.includes('3000m') && !k.includes('5000m') && !k.includes('revezamento') && !k.includes('pentatlo') && !k.includes('barreiras'))) {
-      const termos = ['corrida', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', 'revezamento', 'pentatlo', 'barreiras'];
+    // Se é uma categoria inteira de Atletismo (novas ou legadas)
+    if (k.includes('velocidade')) {
+      return (e.includes('100m') && !e.includes('barreira') && !e.includes('4x100') && !e.includes('10000m')) ||
+             e.includes('200m') ||
+             (e.includes('400m') && !e.includes('barreira') && !e.includes('4x400'));
+    }
+    if (k.includes('obstaculo')) {
+      return (e.includes('100m') && e.includes('barreira')) ||
+             (e.includes('110m') && e.includes('barreira')) ||
+             (e.includes('400m') && e.includes('barreira'));
+    }
+    if (k.includes('meiofundo')) {
+      return e.includes('800m') || e.includes('1500m');
+    }
+    if (k.includes('fundo') && !k.includes('meiofundo')) {
+      return e.includes('3000m') || e.includes('5000m') || e.includes('10000m');
+    }
+    if (k.includes('revezamento')) {
+      if (!k.includes('4x100') && !k.includes('4x400')) {
+        return e.includes('4x100') || e.includes('4x400') || e.includes('revezamento');
+      }
+    }
+    if (k.includes('saltosverticais')) {
+      return e.includes('altura') || e.includes('vara');
+    }
+    if (k.includes('saltoshorizontais')) {
+      return e.includes('distancia') || e.includes('triplo');
+    }
+    if (k.includes('arremessoselancamentos')) {
+      return e.includes('peso') || e.includes('dardo') || e.includes('disco') || e.includes('martelo');
+    }
+    if (k.includes('provacombinada')) {
+      return e.includes('pentatlo');
+    }
+
+    // Categorias legadas
+    if (k === 'atletismo-corridas' || k === 'corridas') {
+      const termos = ['corrida', '100m', '200m', '400m', '800m', '1500m', '3000m', '5000m', '10000m', 'revezamento', 'pentatlo', 'barreira'];
       return termos.some(t => e.includes(t));
     }
-    // 2. Saltos
-    if (k === 'atletismo-saltos' || k === 'saltos' || (k.includes('atletismo') && k.includes('salto') && !k.includes('distancia') && !k.includes('altura') && !k.includes('triplo') && !k.includes('vara'))) {
+    if (k === 'atletismo-saltos' || k === 'saltos') {
       const termos = ['salto', 'distancia', 'altura', 'triplo', 'vara'];
       return termos.some(t => e.includes(t));
     }
-    // 3. Arremessos e Lançamentos / Lançamentos
     if (k.includes('lancamento') || k.includes('arremesso')) {
       if (!k.includes('peso') && !k.includes('disco') && !k.includes('dardo') && !k.includes('martelo')) {
         const termos = ['lancamento', 'arremesso', 'peso', 'disco', 'dardo', 'martelo'];
@@ -220,15 +350,21 @@ const SportDetail = () => {
       }
     }
 
-    // Submodalidades específicas de Corridas
-    if (k.includes('100mcombarreiras') || k.includes('100mbarreiras')) return e.includes('100mcombarreiras') || e.includes('100mbarreiras');
-    if (k.includes('110mcombarreiras') || k.includes('110mbarreiras')) return e.includes('110mcombarreiras') || e.includes('110mbarreiras');
-    if (k.includes('revezamento4x100') || k.includes('4x100')) return e.includes('4x100') || e.includes('revezamento100m');
-    if (k.includes('revezamento4x400') || k.includes('4x400')) return e.includes('4x400') || e.includes('revezamento400m');
+    // Submodalidades específicas de Corridas e Barreiras
+    if (k.includes('10000m')) return e.includes('10000m');
+    if (k.includes('100m') && k.includes('barreira')) return e.includes('100m') && e.includes('barreira');
+    if (k.includes('110m') && k.includes('barreira')) return e.includes('110m') && e.includes('barreira');
+    if (k.includes('400m') && k.includes('barreira')) return e.includes('400m') && e.includes('barreira');
+    if (k.includes('4x100') || (k.includes('revezamento') && k.includes('100m'))) return e.includes('4x100') || (e.includes('revezamento') && e.includes('100m'));
+    if (k.includes('4x400') || (k.includes('revezamento') && k.includes('400m'))) return e.includes('4x400') || (e.includes('revezamento') && e.includes('400m'));
     if (k.includes('pentatlo')) return e.includes('pentatlo');
-    if (k.includes('100m') && !k.includes('barreiras') && !k.includes('4x100')) return e.includes('100m') && !e.includes('barreiras') && !e.includes('4x100');
+    if (k.includes('100m') && !k.includes('10000m') && !k.includes('barreira') && !k.includes('4x100')) {
+      return e.includes('100m') && !e.includes('10000m') && !e.includes('barreira') && !e.includes('4x100');
+    }
     if (k.includes('200m')) return e.includes('200m');
-    if (k.includes('400m') && !k.includes('4x400')) return e.includes('400m') && !e.includes('4x400');
+    if (k.includes('400m') && !k.includes('barreira') && !k.includes('4x400')) {
+      return e.includes('400m') && !e.includes('barreira') && !e.includes('4x400');
+    }
     if (k.includes('800m')) return e.includes('800m');
     if (k.includes('1500m')) return e.includes('1500m');
     if (k.includes('3000m')) return e.includes('3000m');
@@ -251,6 +387,8 @@ const SportDetail = () => {
 
   const countForNode = (keyword) => {
     return students.filter(s => {
+      if (is100mBarreiras(keyword) && s.sexo !== 'Feminino') return false;
+      if (is110mBarreiras(keyword) && s.sexo !== 'Masculino') return false;
       const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
       return arr.some(esp => checkMatch(esp, keyword));
     }).length;
@@ -258,12 +396,18 @@ const SportDetail = () => {
 
   const getFilteredStudents = () => {
     let keyword = nome;
+    const subName = selectedCategory?.sub || '';
     if (selectedCategory) {
-      keyword = `${nome} - ${selectedCategory.cat}`;
-      if (selectedCategory.sub) keyword += ` - ${selectedCategory.sub}`;
+      keyword = selectedCategory.sub ? `${nome} - ${selectedCategory.sub}` : `${nome} - ${selectedCategory.cat}`;
     }
     let filtered = students.filter(s => {
-      if (generoFilter !== 'Geral' && s.sexo !== generoFilter) return false;
+      if (is100mBarreiras(subName)) {
+        if (s.sexo !== 'Feminino') return false;
+      } else if (is110mBarreiras(subName)) {
+        if (s.sexo !== 'Masculino') return false;
+      } else if (generoFilter !== 'Geral' && s.sexo !== generoFilter) {
+        return false;
+      }
       const arr = s.modalidades?.length > 0 ? s.modalidades : (s.esportes || []);
       return arr.some(esp => checkMatch(esp, keyword));
     });
@@ -334,6 +478,15 @@ const SportDetail = () => {
     minHeight: '38px'
   };
 
+  const currentSub = selectedCategory?.sub || '';
+  const isOnlyFeminino = is100mBarreiras(currentSub);
+  const isOnlyMasculino = is110mBarreiras(currentSub);
+  const genderOptions = isOnlyFeminino 
+    ? ['Feminino'] 
+    : isOnlyMasculino 
+      ? ['Masculino'] 
+      : ['Geral', 'Feminino', 'Masculino'];
+
   if (hasHierarchy && view === 'categories') {
     return (
       <Layout>
@@ -375,7 +528,7 @@ const SportDetail = () => {
             color: 'var(--primary)',
             fontWeight: 600,
             fontSize: '0.8125rem',
-            marginBottom: '24px',
+            marginBottom: '28px',
             border: '1px solid rgba(30, 94, 255, 0.12)',
             boxShadow: 'var(--shadow-xs)'
           }}>
@@ -384,127 +537,43 @@ const SportDetail = () => {
           </div>
 
           {/* Categorias do Atletismo */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {Object.keys(hierarchy[nome]).map(cat => {
-              const subList = hierarchy[nome][cat];
-              const hasSub = subList.length > 0;
-              const isExpanded = expandedCategory === cat;
-              const catCount = countForNode(`${nome} - ${cat}`);
-              
-              return (
-                <div 
-                  key={cat} 
-                  style={{
-                    background: 'var(--bg-card)',
-                    borderRadius: 'var(--radius-lg)',
-                    border: isExpanded ? '1.5px solid var(--primary)' : '1.5px solid var(--border-light)',
-                    boxShadow: isExpanded ? 'var(--shadow-md)' : 'var(--shadow-xs)',
-                    overflow: 'hidden',
-                    transition: 'all var(--transition-base)'
-                  }}
-                >
-                  <div 
-                    className="atletismo-category-card"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '18px 24px',
-                      cursor: 'pointer',
-                      background: isExpanded ? 'var(--primary-lighter)' : 'transparent',
-                      transition: 'all var(--transition-fast)'
-                    }}
-                    onClick={() => {
-                      if (hasSub) {
-                        setExpandedCategory(isExpanded ? null : cat);
-                      } else {
-                        handleCategorySelect(cat, null);
-                      }
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <h3 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1rem', letterSpacing: '-0.2px' }}>
-                        {cat}
-                      </h3>
-                      <span 
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '2px 9px',
-                          borderRadius: '9999px',
-                          background: isExpanded ? 'var(--primary-light)' : 'var(--bg)',
-                          border: '1px solid var(--border-light)',
-                          color: isExpanded ? 'var(--primary)' : 'var(--text-secondary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          minWidth: '24px'
-                        }}
-                      >
-                        {catCount}
-                      </span>
-                    </div>
-                    
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: 'var(--radius-sm)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: isExpanded ? 'var(--primary-light)' : 'transparent',
-                      color: isExpanded ? 'var(--primary)' : 'var(--text-secondary)',
-                      transition: 'all var(--transition-fast)'
-                    }}>
-                      {hasSub ? (
-                        isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} className="chevron-indicator" />
-                      ) : (
-                        <ChevronRight size={18} className="chevron-indicator" />
-                      )}
-                    </div>
-                  </div>
-                  
-                  {hasSub && isExpanded && (
-                    <div style={{ borderTop: '1px solid var(--border-light)', background: 'var(--bg-card)' }}>
-                      {subList.map((sub, idx) => {
-                        const subCount = countForNode(`${nome} - ${cat} - ${sub}`);
-                        return (
-                          <div 
-                            key={sub} 
-                            style={{
-                              padding: '14px 24px 14px 36px',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              cursor: 'pointer',
-                              borderBottom: idx === subList.length - 1 ? 'none' : '1px solid var(--border-light)',
-                              transition: 'all var(--transition-fast)'
-                            }}
-                            className="atletismo-subitem-row"
-                            onClick={() => handleCategorySelect(cat, sub)}
-                          >
-                            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>{sub}</span>
-                            <span 
-                              style={{
-                                padding: '3px 10px',
-                                borderRadius: '9999px',
-                                background: 'var(--bg)',
-                                border: '1px solid var(--border-light)',
-                                fontSize: '0.6875rem',
-                                fontWeight: 600,
-                                color: 'var(--text-secondary)'
-                              }}
-                            >
-                              {subCount} {subCount === 1 ? 'aluno' : 'alunos'}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {ATLETISMO_CATEGORIAS.map(cat => (
+              <div key={cat.id} className="atletismo-category-card-group">
+                <div className="atletismo-category-card-header">
+                  <h3 className="atletismo-category-title">{cat.titulo}</h3>
                 </div>
-              );
-            })}
+                <div className="atletismo-vertical-list">
+                  {cat.provas.map(prova => (
+                    <div
+                      key={prova.nome}
+                      className="atletismo-subitem-row-item"
+                      onClick={() => handleCategorySelect(cat.titulo, prova.nome)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleCategorySelect(cat.titulo, prova.nome);
+                        }
+                      }}
+                    >
+                      <div className="atletismo-subitem-info">
+                        <span className="atletismo-subitem-name">{prova.nome}</span>
+                        {prova.generoExclusivo && (
+                          <span className={`atletismo-gender-badge ${prova.generoExclusivo.toLowerCase()}`}>
+                            {prova.generoExclusivo}
+                          </span>
+                        )}
+                      </div>
+                      <div className="chevron-box">
+                        <ChevronRight size={18} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </Layout>
@@ -592,7 +661,7 @@ const SportDetail = () => {
             border: '1px solid var(--border-light)',
             boxShadow: 'var(--shadow-xs)'
           }}>
-            {['Geral', 'Feminino', 'Masculino'].map(g => (
+            {genderOptions.map(g => (
               <button
                 key={g}
                 onClick={() => setGeneroFilter(g)}
@@ -603,7 +672,7 @@ const SportDetail = () => {
                   fontFamily: 'var(--font)',
                   fontWeight: generoFilter === g ? 700 : 500,
                   fontSize: '0.875rem',
-                  cursor: 'pointer',
+                  cursor: genderOptions.length === 1 ? 'default' : 'pointer',
                   transition: 'all var(--transition-base)',
                   background: generoFilter === g ? 'var(--primary-light)' : 'transparent',
                   color: generoFilter === g ? 'var(--primary)' : 'var(--text-secondary)'

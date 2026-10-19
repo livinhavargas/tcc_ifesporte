@@ -6,7 +6,17 @@ const getAllCronogramas = async (req, res) => {
   try {
     const { modalidade } = req.query;
     let filter = {};
-    if (modalidade) filter.modalidade = modalidade;
+    if (modalidade) {
+      const parts = modalidade.split(' - ').map(s => s.trim());
+      const specific = parts.length > 1 ? parts[parts.length - 1] : modalidade;
+      const escapedFull = modalidade.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const escapedSpecific = specific.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      filter.$or = [
+        { modalidade: modalidade },
+        { modalidade: new RegExp(`^${escapedFull}$`, 'i') },
+        { modalidade: new RegExp(escapedSpecific, 'i') }
+      ];
+    }
     
     const cronogramas = await Cronograma.find(filter).sort({ dataInicio: 1 });
     res.json(cronogramas);

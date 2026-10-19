@@ -41,7 +41,24 @@ const BasqueteForm = ({
     }));
   };
 
-
+  React.useEffect(() => {
+    if (!dados.placar1Tempo || !dados.placar2Tempo || !formData.placar || formData.placar === '') {
+      const p1 = dados.placar1Tempo || { nos: 0, adv: 0 };
+      const p2 = dados.placar2Tempo || { nos: 0, adv: 0 };
+      setFormData(prev => ({
+        ...prev,
+        placar: (typeof prev.placar === 'object' && prev.placar !== null)
+          ? prev.placar
+          : { nos: (p1.nos || 0) + (p2.nos || 0), adv: (p1.adv || 0) + (p2.adv || 0) },
+        dadosEspecificos: {
+          ...(prev.dadosEspecificos || {}),
+          placar1Tempo: p1,
+          placar2Tempo: p2
+        }
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -64,7 +81,7 @@ const BasqueteForm = ({
 
         <div className="col-12 col-md-6">
           <label className="form-label" style={{ fontWeight: 700 }}>
-            Resultado <span style={{ color: 'var(--error)' }}>*</span>
+            Resultado Final <span style={{ color: 'var(--error)' }}>*</span>
           </label>
           <select
             className="form-select"

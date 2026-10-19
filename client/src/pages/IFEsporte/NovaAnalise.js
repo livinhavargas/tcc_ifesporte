@@ -11,8 +11,9 @@ import BasqueteForm from './components/BasqueteForm';
 import HandebolForm from './components/HandebolForm';
 import VoleiForm from './components/VoleiForm';
 import BadmintonTenisMesaForm from './components/BadmintonTenisMesaForm';
+import TenisMesaForm from './components/TenisMesaForm';
 import XadrezForm from './components/XadrezForm';
-import AtletismoForm from './components/AtletismoForm';
+import AtletismoForm, { isPrimeiroLugar } from './components/AtletismoForm';
 
 const NovaAnalise = () => {
   const navigate = useNavigate();
@@ -40,6 +41,16 @@ const NovaAnalise = () => {
     parsedSubtipo = paramSub;
   }
 
+  let initialGenero = paramGenero;
+  const normSubInit = (parsedSubtipo || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_-]/g, "");
+  if (normSubInit.includes('100m') && normSubInit.includes('barreiras') && !normSubInit.includes('400m')) {
+    initialGenero = 'Feminino';
+  } else if (normSubInit.includes('110m') && normSubInit.includes('barreiras')) {
+    initialGenero = 'Masculino';
+  } else if (parsedModalidade.toLowerCase().includes('atletismo')) {
+    initialGenero = (paramGenero || '').toLowerCase().startsWith('masc') ? 'Masculino' : 'Feminino';
+  }
+
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [students, setStudents] = useState([]);
@@ -47,17 +58,31 @@ const NovaAnalise = () => {
 
   const [formData, setFormData] = useState({
     modalidade: parsedModalidade,
-    categoria: paramGenero,
+    categoria: initialGenero,
     subtipoProva: parsedSubtipo,
     data: new Date().toISOString().split('T')[0],
     equipeAdversaria: '',
-    resultado: 'Vitória',
+    resultado: parsedModalidade.toLowerCase().includes('atletismo') ? null : 'Vitória',
     placar: '',
     aluno: '',
     atletas: [],
     dadosEspecificos: {},
     observacoes: ''
   });
+
+  // Efeito estrito de gênero para provas de barreiras de Atletismo
+  useEffect(() => {
+    const normSub = (formData.subtipoProva || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_-]/g, "");
+    if (normSub.includes('100m') && normSub.includes('barreiras') && !normSub.includes('400m')) {
+      if (formData.categoria !== 'Feminino') {
+        setFormData(prev => ({ ...prev, categoria: 'Feminino' }));
+      }
+    } else if (normSub.includes('110m') && normSub.includes('barreiras')) {
+      if (formData.categoria !== 'Masculino') {
+        setFormData(prev => ({ ...prev, categoria: 'Masculino' }));
+      }
+    }
+  }, [formData.subtipoProva]);
 
   // Carregar lista de atletas e dados da análise se estiver editando
   useEffect(() => {
@@ -82,12 +107,15 @@ const NovaAnalise = () => {
         });
         if (resAnalysis.ok) {
           const analysisData = await resAnalysis.json();
-          const existingCat = analysisData.categoria || paramGenero;
-          const normalizedCat = (existingCat || '').toLowerCase().startsWith('fem')
-            ? 'Feminino'
-            : (existingCat || '').toLowerCase().startsWith('masc')
-            ? 'Masculino'
-            : 'Geral';
+          const isModAtletismo = (analysisData.modalidade || parsedModalidade || '').toLowerCase().includes('atletismo');
+          const existingCat = analysisData.categoria || analysisData.dadosEspecificos?.genero || paramGenero;
+          const normalizedCat = isModAtletismo
+            ? ((existingCat || '').toLowerCase().startsWith('masc') ? 'Masculino' : 'Feminino')
+            : ((existingCat || '').toLowerCase().startsWith('fem')
+                ? 'Feminino'
+                : (existingCat || '').toLowerCase().startsWith('masc')
+                ? 'Masculino'
+                : 'Geral');
 
           setFormData({
             modalidade: analysisData.modalidade || parsedModalidade,
@@ -95,7 +123,7 @@ const NovaAnalise = () => {
             subtipoProva: analysisData.subtipoProva || parsedSubtipo,
             data: analysisData.data ? analysisData.data.split('T')[0] : new Date().toISOString().split('T')[0],
             equipeAdversaria: analysisData.equipeAdversaria || '',
-            resultado: analysisData.resultado || 'Vitória',
+            resultado: analysisData.resultado || (isModAtletismo ? null : 'Vitória'),
             placar: analysisData.placar !== undefined && analysisData.placar !== null ? analysisData.placar : '',
             aluno: analysisData.aluno?._id || analysisData.aluno || '',
             atletas: Array.isArray(analysisData.atletas) ? analysisData.atletas.map(a => a._id || a) : [],
@@ -207,8 +235,11 @@ const NovaAnalise = () => {
         if (dados.quantidadeAdversarios === undefined || dados.quantidadeAdversarios === null || dados.quantidadeAdversarios === '') {
           return 'Informe a quantidade de adversários.';
         }
-        if (!dados.colocacao || !String(dados.colocacao).trim()) {
-          return 'Informe a colocação do atleta.';
+        const colocacaoVal = dados.colocacao || dados.classificacaoFinalPontos;
+        if (!colocacaoVal || !String(colocacaoVal).trim()) {
+          return subtipo.includes('pentatlo')
+            ? 'Informe a classificação final (contagem de pontos).'
+            : 'Informe a colocação do atleta.';
         }
       }
 
@@ -226,8 +257,39 @@ const NovaAnalise = () => {
       return null;
     }
 
-    // 2.1 OUTRAS MODALIDADES DE SETS: Badminton, Tênis de Mesa
-    if (mod.includes('badminton') || mod.includes('tenis de mesa') || mod.includes('tênis de mesa')) {
+    // 2.1 TÊNIS DE MESA
+    if (mod.includes('tenis de mesa') || mod.includes('tênis de mesa')) {
+      const isDupla = dados.formatoPartida === 'Dupla';
+      if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
+        return isDupla ? 'Informe a dupla adversária.' : 'Informe o atleta adversário.';
+      }
+      if (!formData.resultado || !['Vitória', 'Derrota'].includes(formData.resultado)) {
+        return 'Selecione o resultado da partida (Vitória ou Derrota).';
+      }
+      let setsNos = 0;
+      let setsAdv = 0;
+      for (let s = 1; s <= 5; s++) {
+        const p = dados[`placarSet${s}`];
+        if (p && typeof p === 'object') {
+          const pNos = parseInt(p.nos, 10) || 0;
+          const pAdv = parseInt(p.adv, 10) || 0;
+          if (pNos > 0 || pAdv > 0) {
+            if (pNos > pAdv) setsNos++;
+            else if (pAdv > pNos) setsAdv++;
+          }
+        }
+      }
+      if (setsNos > setsAdv && formData.resultado === 'Derrota') {
+        return 'O resultado selecionado (Derrota) é contraditório com os sets vencidos pela sua equipe.';
+      }
+      if (setsAdv > setsNos && formData.resultado === 'Vitória') {
+        return 'O resultado selecionado (Vitória) é contraditório com os sets vencidos pelo adversário.';
+      }
+      return null;
+    }
+
+    // 2.2 BADMINTON
+    if (mod.includes('badminton')) {
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
         return 'Informe o nome da equipe/atleta adversário.';
       }
@@ -298,8 +360,11 @@ const NovaAnalise = () => {
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
         return 'Informe o adversário da partida de xadrez.';
       }
-      if (!formData.resultado) {
-        return 'Selecione o resultado da partida.';
+      if (!dados.cor && !dados.corPecas) {
+        return 'Selecione a cor com a qual o atleta está jogando (Brancas ou Pretas).';
+      }
+      if (!formData.resultado || !['Vitória', 'Empate', 'Derrota'].includes(formData.resultado)) {
+        return 'Selecione o resultado da partida (Vitória, Empate ou Derrota).';
       }
       return null;
     }
@@ -324,13 +389,77 @@ const NovaAnalise = () => {
       const url = isEditing ? apiUrl(`/api/analysis/${editId}`) : apiUrl('/api/analysis');
       const method = isEditing ? 'PUT' : 'POST';
 
+      const payload = { ...formData };
+      const modLower = (payload.modalidade || '').toLowerCase();
+      if (modLower.includes('atletismo')) {
+        const dados = { ...(payload.dadosEspecificos || {}) };
+        if (dados.classificacaoFinalPontos && !dados.colocacao) {
+          dados.colocacao = dados.classificacaoFinalPontos;
+        }
+        const colocacao = dados.colocacao || dados.classificacaoFinalPontos;
+        payload.resultado = isPrimeiroLugar(colocacao) ? 'Vitória' : null;
+        payload.categoria = (payload.categoria === 'Masculino' || dados.genero === 'Masculino') ? 'Masculino' : 'Feminino';
+        dados.genero = payload.categoria;
+        payload.dadosEspecificos = dados;
+        if (!payload.data) {
+          payload.data = new Date().toISOString().split('T')[0];
+        }
+      } else if (modLower.includes('tenis de mesa')) {
+        const dados = payload.dadosEspecificos || {};
+        let setsNos = 0;
+        let setsAdv = 0;
+        for (let s = 1; s <= 5; s++) {
+          const p = dados[`placarSet${s}`];
+          if (p && typeof p === 'object') {
+            const pNos = parseInt(p.nos, 10) || 0;
+            const pAdv = parseInt(p.adv, 10) || 0;
+            if (pNos > 0 || pAdv > 0) {
+              if (pNos > pAdv) setsNos++;
+              else if (pAdv > pNos) setsAdv++;
+            }
+          }
+        }
+        payload.placar = { nos: setsNos, adv: setsAdv };
+        if (setsNos > setsAdv) {
+          payload.resultado = 'Vitória';
+        } else if (setsAdv > setsNos) {
+          payload.resultado = 'Derrota';
+        }
+        if (!payload.data) {
+          payload.data = new Date().toISOString().split('T')[0];
+        }
+        if (!payload.categoria) {
+          payload.categoria = 'Geral';
+        }
+      } else if (modLower.includes('xadrez')) {
+        payload.placar = null;
+        if (!payload.data) {
+          payload.data = new Date().toISOString().split('T')[0];
+        }
+        if (!payload.categoria) {
+          payload.categoria = 'Geral';
+        }
+      } else {
+        if (!payload.placar || payload.placar === '') {
+          const dados = payload.dadosEspecificos || {};
+          if (dados.placar1Tempo || dados.placar2Tempo) {
+            payload.placar = {
+              nos: (dados.placar1Tempo?.nos || 0) + (dados.placar2Tempo?.nos || 0),
+              adv: (dados.placar1Tempo?.adv || 0) + (dados.placar2Tempo?.adv || 0)
+            };
+          } else {
+            payload.placar = { nos: 0, adv: 0 };
+          }
+        }
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -374,7 +503,10 @@ const NovaAnalise = () => {
     if (mod.includes('volei') || mod.includes('vôlei')) {
       return <VoleiForm {...commonProps} />;
     }
-    if (mod.includes('badminton') || mod.includes('tênis de mesa') || mod.includes('tenis de mesa')) {
+    if (mod.includes('tenis de mesa') || mod.includes('tênis de mesa')) {
+      return <TenisMesaForm {...commonProps} />;
+    }
+    if (mod.includes('badminton')) {
       return <BadmintonTenisMesaForm {...commonProps} />;
     }
     if (mod.includes('xadrez')) {
@@ -393,8 +525,10 @@ const NovaAnalise = () => {
 
   const normMod = (formData.modalidade || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const isAtletismo = normMod.includes('atletismo');
+  const isTenisMesa = normMod.includes('tenis de mesa');
+  const isXadrez = normMod.includes('xadrez');
   const isEquipe = normMod.includes('futebol') || normMod.includes('futsal') || normMod.includes('basquete') || normMod.includes('handebol') || normMod.includes('volei') || normMod.includes('voleibol');
-  const isIndividualSport = !isEquipe && !isAtletismo;
+  const isIndividualSport = !isEquipe && !isAtletismo && !isTenisMesa && !isXadrez;
 
   if (loading) {
     return (
@@ -488,111 +622,163 @@ const NovaAnalise = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Card 1: Contexto e Informações Gerais */}
-          <div style={{
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '24px',
-            border: '1px solid var(--border-light)',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Trophy size={18} style={{ color: 'var(--primary)' }} />
-              1. Informações Gerais do Registro
-            </h5>
+          {/* Se for Atletismo: Card Único da Análise */}
+          {isAtletismo ? (
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} style={{ color: 'var(--primary)' }} />
+                Análise — {formData.subtipoProva || 'Atletismo'}
+              </h5>
 
-            <div className="row g-3">
-              {isIndividualSport && (
-                <div className="col-12 col-md-4">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                    Atleta / Jogador Avaliado
-                  </label>
-                  <select
-                    className="form-select"
-                    value={formData.aluno || ''}
-                    onChange={(e) => handleInputChange('aluno', e.target.value)}
-                    style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-                  >
-                    <option value="">Selecione o atleta (opcional)</option>
-                    {filteredStudents.map(st => (
-                      <option key={st._id} value={st._id}>
-                        {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
-                      </option>
-                    ))}
-                  </select>
+              {renderSportForm()}
+            </div>
+          ) : isTenisMesa ? (
+            /* Se for Tênis de Mesa: Card Único com exclusivamente os 5 campos solicitados */
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Trophy size={18} style={{ color: 'var(--primary)' }} />
+                Análise — Tênis de Mesa
+              </h5>
+
+              {renderSportForm()}
+            </div>
+          ) : isXadrez ? (
+            /* Se for Xadrez: Card Único com exclusivamente os 3 campos solicitados */
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Trophy size={18} style={{ color: 'var(--primary)' }} />
+                Análise — Xadrez
+              </h5>
+
+              {renderSportForm()}
+            </div>
+          ) : (
+            <>
+              {/* Card 1: Contexto e Informações Gerais */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Trophy size={18} style={{ color: 'var(--primary)' }} />
+                  1. Informações Gerais do Registro
+                </h5>
+
+                <div className="row g-3">
+                  {isIndividualSport && (
+                    <div className="col-12 col-md-4">
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                        Atleta / Jogador Avaliado
+                      </label>
+                      <select
+                        className="form-select"
+                        value={formData.aluno || ''}
+                        onChange={(e) => handleInputChange('aluno', e.target.value)}
+                        style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+                      >
+                        <option value="">Selecione o atleta (opcional)</option>
+                        {filteredStudents.map(st => (
+                          <option key={st._id} value={st._id}>
+                            {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className={isIndividualSport ? "col-12 col-md-4" : "col-12 col-md-6"}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                      Categoria / Gênero
+                    </label>
+                    <select
+                      className="form-select"
+                      value={formData.categoria}
+                      onChange={(e) => handleInputChange('categoria', e.target.value)}
+                      style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+                      required
+                    >
+                      <option value="Feminino">Feminino</option>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Geral">Geral / Misto</option>
+                    </select>
+                  </div>
+
+                  <div className={isIndividualSport ? "col-12 col-md-4" : "col-12 col-md-6"}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                      Data da Partida <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={formData.data}
+                      onChange={(e) => handleInputChange('data', e.target.value)}
+                      style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+                      required
+                    />
+                  </div>
                 </div>
-              )}
-
-              <div className={isIndividualSport ? "col-12 col-md-4" : "col-12 col-md-6"}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                  Categoria / Gênero
-                </label>
-                <select
-                  className="form-select"
-                  value={formData.categoria}
-                  onChange={(e) => handleInputChange('categoria', e.target.value)}
-                  style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
-                  required
-                >
-                  <option value="Feminino">Feminino</option>
-                  <option value="Masculino">Masculino</option>
-                  <option value="Geral">Geral / Misto</option>
-                </select>
               </div>
 
-              <div className={isIndividualSport ? "col-12 col-md-4" : "col-12 col-md-6"}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                  {isAtletismo ? 'Data da Prova' : 'Data da Partida'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
-                </label>
-                <input
-                  type="date"
+              {/* Card 2: Dados Técnicos e Estatísticos Específicos do Esporte */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Users size={18} style={{ color: 'var(--primary)' }} />
+                  2. Dados Técnicos e Estatísticas de {formData.modalidade}
+                </h5>
+
+                {renderSportForm()}
+              </div>
+
+              {/* Card 3: Observações do Treinador */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '14px', fontSize: '1rem' }}>
+                  Observações do treinador
+                </h5>
+
+                <textarea
                   className="form-control"
-                  value={formData.data}
-                  onChange={(e) => handleInputChange('data', e.target.value)}
+                  rows={4}
+                  placeholder="Digite aqui as observações..."
+                  value={formData.observacoes || ''}
+                  onChange={(e) => handleInputChange('observacoes', e.target.value)}
                   style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-                  required
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Card 2: Dados Técnicos e Estatísticos Específicos do Esporte */}
-          <div style={{
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '24px',
-            border: '1px solid var(--border-light)',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Users size={18} style={{ color: 'var(--primary)' }} />
-              2. Dados Técnicos e Estatísticas de {formData.modalidade}
-            </h5>
-
-            {renderSportForm()}
-          </div>
-
-          {/* Card 3: Observações do Treinador */}
-          <div style={{
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '24px',
-            border: '1px solid var(--border-light)',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '14px', fontSize: '1rem' }}>
-              Observações do treinador
-            </h5>
-
-            <textarea
-              className="form-control"
-              rows={4}
-              placeholder="Digite aqui as observações..."
-              value={formData.observacoes || ''}
-              onChange={(e) => handleInputChange('observacoes', e.target.value)}
-              style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-            />
-          </div>
+            </>
+          )}
 
           {/* Footer de Ações */}
           <div style={{

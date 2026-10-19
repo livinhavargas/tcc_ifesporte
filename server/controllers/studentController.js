@@ -71,6 +71,22 @@ const mapLegacyToNewModality = (mod) => {
     'Atletismo - Lançamentos - Dardo': 'Atletismo - Arremessos e Lançamentos - Lançamento de Dardo',
     'Atletismo - Lançamentos - Peso': 'Atletismo - Arremessos e Lançamentos - Arremesso de Peso',
     
+    // Novas submodalidades e variações
+    '400m com Barreiras': 'Atletismo - Corridas - 400m com Barreiras',
+    'Corridas - 400m com Barreiras': 'Atletismo - Corridas - 400m com Barreiras',
+    '10000m': 'Atletismo - Corridas - 10000m',
+    '10.000m': 'Atletismo - Corridas - 10000m',
+    '10000m rasos': 'Atletismo - Corridas - 10000m',
+    '10.000m Rasos': 'Atletismo - Corridas - 10000m',
+    'Corridas - 10.000m Rasos': 'Atletismo - Corridas - 10000m',
+    'Corridas - 10000m': 'Atletismo - Corridas - 10000m',
+    'Salto com Vara': 'Atletismo - Saltos - Salto com Vara',
+    'Salto com vara': 'Atletismo - Saltos - Salto com Vara',
+    'Saltos - Salto com Vara': 'Atletismo - Saltos - Salto com Vara',
+    'Arremesso de Martelo': 'Atletismo - Arremessos e Lançamentos - Arremesso de Martelo',
+    'Lançamento de Martelo': 'Atletismo - Arremessos e Lançamentos - Arremesso de Martelo',
+    'Arremessos e Lançamentos - Arremesso de Martelo': 'Atletismo - Arremessos e Lançamentos - Arremesso de Martelo',
+    
     // Tênis de Mesa
     'Tênis de Mesa - Individual': 'Tênis de Mesa (Individual)',
     'Tênis de Mesa - Misto': 'Tênis de Mesa (Misto)',

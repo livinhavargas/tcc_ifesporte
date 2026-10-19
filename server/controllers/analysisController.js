@@ -48,7 +48,7 @@ const getAllAnalyses = async (req, res) => {
 
 // Validação dos campos obrigatórios conforme modalidade
 const validateAnalysisFields = (data) => {
-  const { modalidade, equipeAdversaria, resultado, placar, subtipoProva, aluno, dadosEspecificos = {} } = data;
+  const { modalidade, categoria, equipeAdversaria, resultado, placar, subtipoProva, aluno, dadosEspecificos = {} } = data;
   
   if (!modalidade || typeof modalidade !== 'string' || !modalidade.trim()) {
     return 'A modalidade esportiva é obrigatória.';
@@ -63,6 +63,20 @@ const validateAnalysisFields = (data) => {
     }
 
     const provaLower = subtipoProva.toLowerCase();
+
+    // Regras estritas de gênero para provas com barreiras
+    if (provaLower.includes('100m') && provaLower.includes('barreiras') && !provaLower.includes('400m')) {
+      const catNorm = (categoria || '').toLowerCase().trim();
+      if (!catNorm.startsWith('fem')) {
+        return 'A prova 100m com Barreiras é exclusiva da categoria Feminino.';
+      }
+    }
+    if (provaLower.includes('110m') && provaLower.includes('barreiras')) {
+      const catNorm = (categoria || '').toLowerCase().trim();
+      if (!catNorm.startsWith('masc')) {
+        return 'A prova 110m com Barreiras é exclusiva da categoria Masculino.';
+      }
+    }
 
     // Revezamentos 4x100m e 4x400m
     if (provaLower.includes('revezamento') || provaLower.includes('4x')) {
@@ -86,10 +100,21 @@ const validateAnalysisFields = (data) => {
     if (dadosEspecificos.quantidadeAdversarios === undefined || dadosEspecificos.quantidadeAdversarios === null || dadosEspecificos.quantidadeAdversarios === '') {
       return 'A quantidade de adversários é obrigatória.';
     }
-    if (!dadosEspecificos.colocacao) {
+    if (!dadosEspecificos.colocacao && !dadosEspecificos.classificacaoFinalPontos) {
       return 'A colocação é obrigatória.';
     }
 
+    return null;
+  }
+
+  // TÊNIS DE MESA
+  if (modLower.includes('tenis de mesa') || modLower.includes('tênis de mesa')) {
+    if (!equipeAdversaria || !equipeAdversaria.trim()) {
+      return 'O nome do atleta adversário ou dupla adversária é obrigatório.';
+    }
+    if (!resultado || !['Vitória', 'Derrota'].includes(resultado)) {
+      return 'O resultado da partida de tênis de mesa deve ser Vitória ou Derrota.';
+    }
     return null;
   }
 
@@ -107,17 +132,13 @@ const validateAnalysisFields = (data) => {
     return null;
   }
 
-  // HANDEBOL, BASQUETE, FUTSAL, FUTEBOL, VOLEIBOL, VÔLEI DE PRAIA, BADMINTON, TÊNIS DE MESA
+  // HANDEBOL, BASQUETE, FUTSAL, FUTEBOL, VOLEIBOL, VÔLEI DE PRAIA, BADMINTON
   if (placar === undefined || placar === null || placar === '') {
     return 'O placar da partida é obrigatório.';
   }
 
-  // Modalidades baseadas em sets (Badminton e Tênis de Mesa)
-  if (
-    modLower.includes('badminton') ||
-    modLower.includes('tênis de mesa') ||
-    modLower.includes('tenis de mesa')
-  ) {
+  // Modalidade baseada em sets legada (Badminton)
+  if (modLower.includes('badminton')) {
     if (!dadosEspecificos.pontosCadaSet || (Array.isArray(dadosEspecificos.pontosCadaSet) && dadosEspecificos.pontosCadaSet.length === 0)) {
       return 'Os pontos de cada set são obrigatórios.';
     }
@@ -126,17 +147,85 @@ const validateAnalysisFields = (data) => {
   return null;
 };
 
+// Resolver e garantir placar válido a partir dos tempos ou dados específicos
+const resolvePlacar = (modalidade, placar, dadosEspecificos = {}) => {
+  const modLower = (modalidade || '').toLowerCase().trim();
+  if (modLower.includes('atletismo') || modLower.includes('xadrez')) {
+    return null;
+  }
+  // Se for Tênis de Mesa (placar de sets calculado a partir dos 5 sets)
+  if (modLower.includes('tenis de mesa') || modLower.includes('tênis de mesa')) {
+    let nos = 0;
+    let adv = 0;
+    for (let s = 1; s <= 5; s++) {
+      const p = dadosEspecificos[`placarSet${s}`];
+      if (p && typeof p === 'object') {
+        const pNos = parseInt(p.nos, 10) || 0;
+        const pAdv = parseInt(p.adv, 10) || 0;
+        if (pNos > 0 || pAdv > 0) {
+          if (pNos > pAdv) nos += 1;
+          else if (pAdv > pNos) adv += 1;
+        }
+      }
+    }
+    return { nos, adv };
+  }
+  if (placar !== undefined && placar !== null && placar !== '') {
+    return placar;
+  }
+  // Se houver placar de tempos (Basquete, Handebol, Futsal, Futebol)
+  if (dadosEspecificos && (dadosEspecificos.placar1Tempo || dadosEspecificos.placar2Tempo)) {
+    return {
+      nos: (dadosEspecificos.placar1Tempo?.nos || 0) + (dadosEspecificos.placar2Tempo?.nos || 0),
+      adv: (dadosEspecificos.placar1Tempo?.adv || 0) + (dadosEspecificos.placar2Tempo?.adv || 0)
+    };
+  }
+  // Se for Voleibol ou Vôlei de Praia (sets opcionais)
+  if (modLower.includes('volei') || modLower.includes('vôlei')) {
+    let nos = 0;
+    let adv = 0;
+    for (let s = 1; s <= 5; s++) {
+      const p = dadosEspecificos[`placarSet${s}`];
+      if (p && typeof p === 'object') {
+        const pNos = parseInt(p.nos, 10) || 0;
+        const pAdv = parseInt(p.adv, 10) || 0;
+        if (pNos > 0 || pAdv > 0) {
+          if (pNos > pAdv) nos += 1;
+          else if (pAdv > pNos) adv += 1;
+        }
+      }
+    }
+    return { nos, adv };
+  }
+  return { nos: 0, adv: 0 };
+};
+
+const isPrimeiroLugar = (val) => {
+  if (!val) return false;
+  const str = String(val).trim().toLowerCase();
+  return (
+    str === '1' ||
+    str === '1º' ||
+    str === '1°' ||
+    str === '1o' ||
+    str.startsWith('1º') ||
+    str.startsWith('1°') ||
+    str.startsWith('1o') ||
+    str.includes('1º lugar') ||
+    str.includes('1° lugar') ||
+    str.includes('primeiro') ||
+    str.includes('campeão') ||
+    str.includes('campeao') ||
+    str.includes('vencedor')
+  );
+};
+
 // Criar nova análise esportiva
 const createAnalysis = async (req, res) => {
   try {
     const userTipo = (req.userTipo || '').toLowerCase();
     if (userTipo === 'estudante') {
       return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises.' });
-    }
-
-    const errorMsg = validateAnalysisFields(req.body);
-    if (errorMsg) {
-      return res.status(400).json({ message: errorMsg });
     }
 
     const {
@@ -153,15 +242,39 @@ const createAnalysis = async (req, res) => {
       observacoes
     } = req.body;
 
+    let resolvedResultado = resultado;
+    let resolvedCategoria = categoria || 'Geral';
+
+    if (modalidade && modalidade.toLowerCase().includes('atletismo')) {
+      if (dadosEspecificos.classificacaoFinalPontos && !dadosEspecificos.colocacao) {
+        dadosEspecificos.colocacao = dadosEspecificos.classificacaoFinalPontos;
+      }
+      if (dadosEspecificos.genero) {
+        resolvedCategoria = dadosEspecificos.genero;
+      } else if (resolvedCategoria && (resolvedCategoria === 'Feminino' || resolvedCategoria === 'Masculino')) {
+        dadosEspecificos.genero = resolvedCategoria;
+      }
+      const colocacao = dadosEspecificos.colocacao || dadosEspecificos.classificacaoFinalPontos || dadosEspecificos.classificacao;
+      resolvedResultado = isPrimeiroLugar(colocacao) ? 'Vitória' : null;
+    }
+
+    const resolvedPlacar = resolvePlacar(modalidade, placar, dadosEspecificos);
+    const dataToValidate = { ...req.body, categoria: resolvedCategoria, placar: resolvedPlacar, dadosEspecificos, resultado: resolvedResultado };
+
+    const errorMsg = validateAnalysisFields(dataToValidate);
+    if (errorMsg) {
+      return res.status(400).json({ message: errorMsg });
+    }
+
     const newAnalysis = new Analysis({
       modalidade: modalidade.trim(),
-      categoria: categoria.trim(),
+      categoria: resolvedCategoria.trim(),
       subtipoProva: subtipoProva ? subtipoProva.trim() : undefined,
       data,
       avaliador: req.userId || req.user?._id,
       equipeAdversaria: equipeAdversaria ? equipeAdversaria.trim() : undefined,
-      resultado,
-      placar,
+      resultado: resolvedResultado,
+      placar: resolvedPlacar,
       aluno: aluno || undefined,
       atletas: Array.isArray(atletas) ? atletas : [],
       dadosEspecificos,
@@ -190,11 +303,6 @@ const updateAnalysis = async (req, res) => {
     }
 
     const { id } = req.params;
-    const errorMsg = validateAnalysisFields(req.body);
-    if (errorMsg) {
-      return res.status(400).json({ message: errorMsg });
-    }
-
     const {
       modalidade,
       categoria = 'Geral',
@@ -209,14 +317,38 @@ const updateAnalysis = async (req, res) => {
       observacoes
     } = req.body;
 
+    let resolvedResultado = resultado;
+    let resolvedCategoria = categoria || 'Geral';
+
+    if (modalidade && modalidade.toLowerCase().includes('atletismo')) {
+      if (dadosEspecificos.classificacaoFinalPontos && !dadosEspecificos.colocacao) {
+        dadosEspecificos.colocacao = dadosEspecificos.classificacaoFinalPontos;
+      }
+      if (dadosEspecificos.genero) {
+        resolvedCategoria = dadosEspecificos.genero;
+      } else if (resolvedCategoria && (resolvedCategoria === 'Feminino' || resolvedCategoria === 'Masculino')) {
+        dadosEspecificos.genero = resolvedCategoria;
+      }
+      const colocacao = dadosEspecificos.colocacao || dadosEspecificos.classificacaoFinalPontos || dadosEspecificos.classificacao;
+      resolvedResultado = isPrimeiroLugar(colocacao) ? 'Vitória' : null;
+    }
+
+    const resolvedPlacar = resolvePlacar(modalidade, placar, dadosEspecificos);
+    const dataToValidate = { ...req.body, categoria: resolvedCategoria, placar: resolvedPlacar, dadosEspecificos, resultado: resolvedResultado };
+
+    const errorMsg = validateAnalysisFields(dataToValidate);
+    if (errorMsg) {
+      return res.status(400).json({ message: errorMsg });
+    }
+
     const updatePayload = {
       modalidade: modalidade.trim(),
-      categoria: (categoria || 'Geral').trim(),
+      categoria: resolvedCategoria.trim(),
       subtipoProva: subtipoProva ? subtipoProva.trim() : undefined,
       data: data || new Date(),
       equipeAdversaria: equipeAdversaria ? equipeAdversaria.trim() : undefined,
-      resultado,
-      placar,
+      resultado: resolvedResultado,
+      placar: resolvedPlacar,
       aluno: aluno || undefined,
       atletas: Array.isArray(atletas) ? atletas : [],
       dadosEspecificos,
@@ -311,6 +443,7 @@ module.exports = {
   createAnalysis,
   updateAnalysis,
   getAnalysisByStudent,
-  deleteAnalysis
+  deleteAnalysis,
+  validateAnalysisFields
 };
 

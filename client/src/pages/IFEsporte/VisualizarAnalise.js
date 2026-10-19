@@ -8,6 +8,7 @@ import {
   ArrowLeft, Edit2, Trash2, Calendar, 
   Users, Activity, MessageSquare, AlertCircle 
 } from 'lucide-react';
+import { isPrimeiroLugar } from './components/AtletismoForm';
 
 const VisualizarAnalise = () => {
   const { id } = useParams();
@@ -130,6 +131,10 @@ const VisualizarAnalise = () => {
 
   const { modalidade, categoria, subtipoProva, data, equipeAdversaria, resultado, placar, aluno, atletas, dadosEspecificos = {}, observacoes } = analysis;
 
+  const isAtletismo = (modalidade || '').toLowerCase().includes('atletismo');
+  const colocacao = dadosEspecificos?.colocacao || dadosEspecificos?.classificacaoFinalPontos || dadosEspecificos?.classificacao;
+  const displayResultado = isAtletismo ? (isPrimeiroLugar(colocacao) ? 'Vitória' : null) : resultado;
+
   return (
     <Layout>
       <div style={{ width: '100%', maxWidth: '960px', margin: '0 auto', paddingBottom: '60px' }}>
@@ -247,11 +252,15 @@ const VisualizarAnalise = () => {
                   </span>
                 )}
               </div>
-              {equipeAdversaria && (
+              {equipeAdversaria ? (
                 <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: '0 0 6px', fontSize: '1.25rem' }}>
                   vs {equipeAdversaria}
                 </h3>
-              )}
+              ) : subtipoProva ? (
+                <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: '0 0 6px', fontSize: '1.25rem' }}>
+                  {subtipoProva}
+                </h3>
+              ) : null}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
                 <Calendar size={14} />
                 <span>Data: <strong>{new Date(data || Date.now()).toLocaleDateString('pt-BR')}</strong></span>
@@ -260,10 +269,10 @@ const VisualizarAnalise = () => {
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            {resultado && (
+            {displayResultado && (
               <div className="badge" style={{
-                background: resultado === 'Vitória' ? 'var(--success-light)' : resultado === 'Derrota' ? 'var(--danger-light)' : 'var(--warning-light)',
-                color: resultado === 'Vitória' ? 'var(--success)' : resultado === 'Derrota' ? 'var(--danger)' : 'var(--warning-text)',
+                background: displayResultado === 'Vitória' ? 'var(--success-light)' : displayResultado === 'Derrota' ? 'var(--danger-light)' : 'var(--warning-light)',
+                color: displayResultado === 'Vitória' ? 'var(--success)' : displayResultado === 'Derrota' ? 'var(--danger)' : 'var(--warning-text)',
                 fontSize: '1rem',
                 fontWeight: 800,
                 padding: '8px 18px',
@@ -271,7 +280,7 @@ const VisualizarAnalise = () => {
                 display: 'inline-block',
                 marginBottom: '8px'
               }}>
-                {resultado}
+                {displayResultado}
               </div>
             )}
             {placar !== undefined && placar !== null && (
@@ -279,14 +288,24 @@ const VisualizarAnalise = () => {
                 {typeof placar === 'object' ? `${placar.nos || 0} x ${placar.adv || 0}` : String(placar)}
               </div>
             )}
-            {dadosEspecificos?.colocacao && (
+            {(dadosEspecificos?.colocacao || dadosEspecificos?.classificacaoFinalPontos) && (
               <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--primary)', marginTop: '4px' }}>
-                Colocação: {dadosEspecificos.colocacao}
+                Classificação: {dadosEspecificos.colocacao || dadosEspecificos.classificacaoFinalPontos}
               </div>
             )}
             {dadosEspecificos?.tempo && (
               <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>
                 Tempo: {dadosEspecificos.tempo}
+              </div>
+            )}
+            {dadosEspecificos?.alturaConseguida && (
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>
+                Altura Conseguida: {dadosEspecificos.alturaConseguida}
+              </div>
+            )}
+            {dadosEspecificos?.distanciaConseguida && (
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>
+                Distância Conseguida: {dadosEspecificos.distanciaConseguida}
               </div>
             )}
           </div>
@@ -391,6 +410,7 @@ const VisualizarAnalise = () => {
                     if (val === '' || val === null || val === undefined) return null;
                     if (key === 'penaltisCobrancas' && dadosEspecificos.penaltisParticipantes) return null;
                     if (key === 'cartoes' && (dadosEspecificos.cartoes1T || dadosEspecificos.cartoes2T)) return null;
+                    if (key.startsWith('placarSet') && typeof val === 'object' && val !== null && (parseInt(val.nos, 10) || 0) === 0 && (parseInt(val.adv, 10) || 0) === 0) return null;
 
                     const LABELS_MAP = {
                       placar1Tempo: 'Placar 1º Tempo',
@@ -431,7 +451,11 @@ const VisualizarAnalise = () => {
                       lancesLivresSofridos2T: 'Lances Livres Sofridos (2º Tempo)',
                       lancesLivresAFavorQtd: 'Lances Livres a Favor',
                       lancesLivresContraQtd: 'Lances Livres Contra',
-                      // Voleibol e Vôlei de Praia
+                      // Tênis de Mesa e Xadrez
+                      formatoPartida: 'Individual ou em Dupla',
+                      corPecas: 'Cor com a qual o atleta está jogando',
+                      cor: 'Cor com a qual o atleta está jogando',
+                      // Voleibol, Vôlei de Praia e Tênis de Mesa
                       pontosCadaSet: 'Pontos de Cada Set (Histórico)',
                       placarSet1: 'Placar 1º Set',
                       placarSet2: 'Placar 2º Set',
@@ -447,13 +471,33 @@ const VisualizarAnalise = () => {
                       acesFavorSet4: 'Aces a favor (4º Set)',
                       acesContraSet4: 'Aces contra (4º Set)',
                       acesFavorSet5: 'Aces a favor (5º Set)',
-                      acesContraSet5: 'Aces contra (5º Set)',
                       qualidadeSaque: 'Qualidade do Saque',
                       qualidadePasse: 'Qualidade do Passe',
                       qualidadeAtaque: 'Qualidade do Ataque',
                       levantamentosZona: 'Levantamentos (Zona)',
                       qualidadeLevantamento: 'Qualidade do Levantamento',
-                      qualidadeBloqueio: 'Qualidade do Bloqueio'
+                      qualidadeBloqueio: 'Qualidade do Bloqueio',
+                      // Atletismo
+                      genero: 'Gênero',
+                      quantidadeAdversarios: 'Adversários',
+                      quantidadeEquipes: 'Equipes',
+                      colocacao: 'Classificação',
+                      tempo: 'Tempo',
+                      raia: 'Raia',
+                      tempoVencedor: 'Tempo do Vencedor / Vencedores',
+                      alturaPartida: 'Altura de Partida',
+                      tentativasPartida: 'Tentativas na Altura de Partida',
+                      alturasPosteriores: 'Alturas Posteriores',
+                      tentativasPosteriores: 'Tentativas nas Alturas Posteriores',
+                      alturaConseguida: 'Altura Conseguida',
+                      alturaVencedor: 'Altura do Vencedor',
+                      distanciasTentativas: 'Distância em Cada Tentativa',
+                      distanciaConseguida: 'Distância Conseguida',
+                      distanciaVencedor: 'Distância do Vencedor',
+                      classificacaoFinalPontos: 'Classificação Final',
+                      classificacaoFinalVencedorPontos: 'Classificação Final do Vencedor',
+                      atletasRevezamento: 'Atletas do Revezamento',
+                      pentatlo: 'Provas Específicas do Pentatlo'
                     };
 
                     const label = LABELS_MAP[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
@@ -461,6 +505,37 @@ const VisualizarAnalise = () => {
 
                     if (key === 'foiParaPenaltis') {
                       formatted = val ? 'Sim, decidida nos pênaltis' : 'Não';
+                    } else if (key === 'distanciasTentativas' && Array.isArray(val)) {
+                      const attempts = val.map((d, i) => d ? `T${i + 1}: ${d}` : null).filter(Boolean);
+                      formatted = attempts.length > 0 ? attempts.join(' | ') : 'Nenhuma marca registrada';
+                    } else if ((key === 'tentativasPartida' || key === 'tentativasPosteriores') && Array.isArray(val)) {
+                      const attempts = val.map((t, i) => t ? `T${i + 1}: ${t}` : null).filter(Boolean);
+                      formatted = attempts.length > 0 ? attempts.join(' | ') : 'Nenhuma tentativa registrada';
+                    } else if (key === 'atletasRevezamento' && Array.isArray(val)) {
+                      const nomes = val.map((id, i) => {
+                        const a = (Array.isArray(atletas) ? atletas : []).find(x => (x._id || x) === id);
+                        return a ? (a.nome || a) : (id ? `Atleta ${i + 1}` : null);
+                      }).filter(Boolean);
+                      formatted = nomes.join(', ') || `${val.length} atletas`;
+                    } else if (key === 'pentatlo' && typeof val === 'object' && val !== null) {
+                      const p = val;
+                      const parts = [];
+                      if (p.barreirasColocacao || p.barreirasTempo || p.barreirasTempoVencedor) {
+                        parts.push(`Classificação 100m/110m com Barreiras: [Classif: ${p.barreirasColocacao || '-'} | Tempo: ${p.barreirasTempo || '-'} | Vencedor: ${p.barreirasTempoVencedor || '-'}]`);
+                      }
+                      if (p.alturaColocacao || p.alturaMarca || p.alturaVencedor) {
+                        parts.push(`Classificação Salto em Altura: [Classif: ${p.alturaColocacao || '-'} | Altura: ${p.alturaMarca || p.saltoAlturaAltura || '-'} | Vencedor: ${p.alturaVencedor || '-'}]`);
+                      }
+                      if (p.pesoColocacao || p.pesoMarca || p.pesoVencedor) {
+                        parts.push(`Classificação Arremesso de Peso: [Classif: ${p.pesoColocacao || '-'} | Distância: ${p.pesoMarca || p.arremessoPesoDistancia || '-'} | Vencedor: ${p.pesoVencedor || '-'}]`);
+                      }
+                      if (p.distanciaColocacao || p.distanciaMarca || p.distanciaVencedor) {
+                        parts.push(`Classificação Salto em Distância: [Classif: ${p.distanciaColocacao || '-'} | Distância: ${p.distanciaMarca || p.saltoDistanciaDistancia || '-'} | Vencedor: ${p.distanciaVencedor || '-'}]`);
+                      }
+                      if (p.corrida800mColocacao || p.corrida800mTempo || p.corrida800mTempoVencedor) {
+                        parts.push(`Classificação 800m: [Classif: ${p.corrida800mColocacao || '-'} | Tempo: ${p.corrida800mTempo || '-'} | Vencedor: ${p.corrida800mTempoVencedor || '-'}]`);
+                      }
+                      formatted = parts.length > 0 ? parts.join('\n') : 'Dados não informados';
                     } else if (key === 'placar1Tempo' || key === 'placar2Tempo' || key.startsWith('placarSet')) {
                       formatted = typeof val === 'object' && val !== null ? `${val.nos || 0} x ${val.adv || 0}` : String(val);
                     } else if (key === 'cartoes1T' || key === 'cartoes2T' || key === 'cartoes') {
@@ -484,6 +559,8 @@ const VisualizarAnalise = () => {
                       formatted = val.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');
                     } else if (typeof val === 'object') {
                       formatted = JSON.stringify(val, null, 2);
+                    } else if (typeof val === 'string' && /^[A-C]\s*—\s*/.test(val)) {
+                      formatted = val.replace(/^[A-C]\s*—\s*/, '');
                     } else {
                       formatted = String(val);
                     }
@@ -525,7 +602,7 @@ const VisualizarAnalise = () => {
               }}>
                 <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '12px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <MessageSquare size={18} style={{ color: 'var(--primary)' }} />
-                  Observações do Treinador
+                  Observações do treinador
                 </h5>
                 <div style={{
                   background: 'var(--bg)',

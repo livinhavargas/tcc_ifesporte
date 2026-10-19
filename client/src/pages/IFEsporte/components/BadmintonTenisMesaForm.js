@@ -75,7 +75,7 @@ const BadmintonTenisMesaForm = ({
 
         <div className="col-12 col-md-6">
           <label className="form-label" style={{ fontWeight: 700 }}>
-            Resultado <span style={{ color: 'var(--error)' }}>*</span>
+            Resultado Final <span style={{ color: 'var(--error)' }}>*</span>
           </label>
           <select
             className="form-select"

@@ -27,6 +27,25 @@ const VoleiForm = ({
     }));
   };
 
+  // Funções de compatibilidade para valores de qualidade com/sem letras
+  const mapStandardQualityValue = (val) => {
+    if (!val) return '';
+    const clean = val.replace(/^[A-C]\s*—\s*/, '').trim().toLowerCase();
+    if (clean === 'positivo') return 'A — Positivo';
+    if (clean === 'medio' || clean === 'médio') return 'B — Médio';
+    if (clean === 'negativo') return 'C — Negativo';
+    return val;
+  };
+
+  const mapAtaqueValue = (val) => {
+    if (!val) return '';
+    const clean = val.replace(/^[A-C]\s*—\s*/, '').trim().toLowerCase();
+    if (clean === 'ponto') return 'A — Ponto';
+    if (clean.includes('defesa')) return 'B — Defesa do Adversário';
+    if (clean.includes('erro')) return 'C — Erro (bloqueio, rede ou bola fora)';
+    return val;
+  };
+
   // Placar geral em sets
   const placarObj = typeof formData.placar === 'object' && formData.placar !== null
     ? formData.placar
@@ -74,6 +93,17 @@ const VoleiForm = ({
     }));
   };
 
+  React.useEffect(() => {
+    if (!formData.placar || formData.placar === '') {
+      const setsWon = calculateSetsWon(dados);
+      setFormData(prev => ({
+        ...prev,
+        placar: (typeof prev.placar === 'object' && prev.placar !== null) ? prev.placar : setsWon
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
 
@@ -115,7 +145,7 @@ const VoleiForm = ({
 
           <div className="col-12 col-md-6">
             <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              Resultado Final por Sets <span style={{ color: 'var(--error)' }}>*</span>
+              Resultado Final <span style={{ color: 'var(--error)' }}>*</span>
             </label>
             <select
               className="form-select"
@@ -143,9 +173,7 @@ const VoleiForm = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '16px',
-          flexWrap: 'wrap',
-          gap: '8px'
+          marginBottom: '16px'
         }}>
           <h6 style={{
             fontWeight: 700,
@@ -157,11 +185,8 @@ const VoleiForm = ({
             gap: '8px'
           }}>
             <Activity size={16} style={{ color: 'var(--primary)' }} />
-            2. Placar dos Sets (Opcional)
+            2. Placar dos Sets
           </h6>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-            {isPraia ? 'Até 3 sets disponíveis' : 'Até 5 sets disponíveis'} · Preencha apenas os sets disputados
-          </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -223,23 +248,41 @@ const VoleiForm = ({
           })}
         </div>
 
-        {/* Resumo do placar em sets acumulados */}
+        {/* Placar Total destacado e centralizado */}
         <div style={{
-          marginTop: '16px',
-          paddingTop: '12px',
-          borderTop: '1px dashed var(--border-light)',
-          fontSize: '0.8125rem',
-          color: 'var(--text-tertiary)',
+          marginTop: '20px',
+          paddingTop: '16px',
+          borderTop: '1px solid var(--border-light)',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '8px'
+          justifyContent: 'center'
         }}>
-          <span>Placar Total em Sets:</span>
-          <strong style={{ color: 'var(--text)', fontSize: '0.9375rem' }}>
-            {placarObj.nos || 0} x {placarObj.adv || 0}
-          </strong>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            background: 'var(--bg)',
+            padding: '10px 24px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-light)'
+          }}>
+            <span style={{
+              fontSize: '1rem',
+              fontWeight: 700,
+              color: 'var(--text-secondary)'
+            }}>
+              Placar Total:
+            </span>
+            <span style={{
+              fontSize: '1.25rem',
+              fontWeight: 800,
+              color: 'var(--primary)',
+              letterSpacing: '0.5px'
+            }}>
+              {placarObj.nos || 0} x {placarObj.adv || 0}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -271,9 +314,11 @@ const VoleiForm = ({
             <Zap size={16} style={{ color: 'var(--primary)' }} />
             3. Estatísticas de Saque — Aces por Set
           </h6>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-            Registre os aces da nossa equipe e do adversário por set
-          </span>
+          {!isPraia && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+              Registre os aces da nossa equipe e do adversário por set
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -362,13 +407,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={dados.qualidadeSaque || ''}
+              value={mapStandardQualityValue(dados.qualidadeSaque)}
               onChange={(e) => updateDados({ qualidadeSaque: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">A — Positivo</option>
-              <option value="B — Médio">B — Médio</option>
-              <option value="C — Negativo">C — Negativo</option>
+              <option value="A — Positivo">Positivo</option>
+              <option value="B — Médio">Médio</option>
+              <option value="C — Negativo">Negativo</option>
             </select>
           </div>
 
@@ -379,13 +424,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={dados.qualidadePasse || ''}
+              value={mapStandardQualityValue(dados.qualidadePasse)}
               onChange={(e) => updateDados({ qualidadePasse: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">A — Positivo</option>
-              <option value="B — Médio">B — Médio</option>
-              <option value="C — Negativo">C — Negativo</option>
+              <option value="A — Positivo">Positivo</option>
+              <option value="B — Médio">Médio</option>
+              <option value="C — Negativo">Negativo</option>
             </select>
           </div>
 
@@ -396,13 +441,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={dados.qualidadeAtaque || ''}
+              value={mapAtaqueValue(dados.qualidadeAtaque)}
               onChange={(e) => updateDados({ qualidadeAtaque: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Ponto">A — Ponto</option>
-              <option value="B — Defesa do Adversário">B — Defesa do Adversário</option>
-              <option value="C — Erro (bloqueio, rede ou bola fora)">C — Erro (bloqueio, rede ou bola fora)</option>
+              <option value="A — Ponto">Ponto</option>
+              <option value="B — Defesa do Adversário">Defesa do Adversário</option>
+              <option value="C — Erro (bloqueio, rede ou bola fora)">Erro (bloqueio, rede ou bola fora)</option>
             </select>
           </div>
 
@@ -434,13 +479,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={dados.qualidadeLevantamento || ''}
+              value={mapStandardQualityValue(dados.qualidadeLevantamento)}
               onChange={(e) => updateDados({ qualidadeLevantamento: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">A — Positivo</option>
-              <option value="B — Médio">B — Médio</option>
-              <option value="C — Negativo">C — Negativo</option>
+              <option value="A — Positivo">Positivo</option>
+              <option value="B — Médio">Médio</option>
+              <option value="C — Negativo">Negativo</option>
             </select>
           </div>
 
@@ -451,13 +496,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={dados.qualidadeBloqueio || ''}
+              value={mapStandardQualityValue(dados.qualidadeBloqueio)}
               onChange={(e) => updateDados({ qualidadeBloqueio: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">A — Positivo</option>
-              <option value="B — Médio">B — Médio</option>
-              <option value="C — Negativo">C — Negativo</option>
+              <option value="A — Positivo">Positivo</option>
+              <option value="B — Médio">Médio</option>
+              <option value="C — Negativo">Negativo</option>
             </select>
           </div>
         </div>

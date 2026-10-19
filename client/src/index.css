@@ -1319,3 +1319,129 @@ textarea.form-control {
   color: var(--primary) !important;
 }
 
+/* ── Atletismo Vertical Category Cards & Lists ── */
+.atletismo-category-card-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+  margin-bottom: 20px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.atletismo-category-card-group:hover {
+  border-color: rgba(30, 94, 255, 0.25);
+  box-shadow: var(--shadow-sm);
+}
+
+.atletismo-category-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card);
+}
+
+.atletismo-category-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.atletismo-vertical-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.atletismo-subitem-row-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.atletismo-subitem-row-item:last-child {
+  border-bottom: none;
+}
+
+.atletismo-subitem-row-item:hover {
+  background: var(--bg-hover);
+}
+
+.atletismo-subitem-row-item:hover .atletismo-subitem-name {
+  color: var(--primary);
+}
+
+.atletismo-subitem-row-item:hover .chevron-box {
+  color: var(--primary);
+  transform: translateX(3px);
+}
+
+.atletismo-subitem-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.atletismo-subitem-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  transition: color var(--transition-fast);
+  line-height: 1.4;
+}
+
+.atletismo-gender-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.atletismo-gender-badge.feminino {
+  background: rgba(236, 72, 153, 0.12);
+  color: #db2777;
+  border: 1px solid rgba(236, 72, 153, 0.25);
+}
+
+.atletismo-gender-badge.masculino {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.atletismo-subitem-row-item .chevron-box {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--text-tertiary);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .atletismo-category-card-header {
+    padding: 14px 16px;
+  }
+  .atletismo-subitem-row-item {
+    padding: 12px 16px;
+  }
+  .atletismo-category-title {
+    font-size: 0.9375rem;
+  }
+}
+
+

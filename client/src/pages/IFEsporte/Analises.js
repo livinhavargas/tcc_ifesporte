@@ -43,6 +43,35 @@ const getCategoryGroup = (str) => {
   return 'Geral';
 };
 
+const checkSubMatch = (target, actual) => {
+  if (!target || !actual) return false;
+  const t = normalize(target).replace(/[\s_.-]/g, '');
+  const a = normalize(actual).replace(/[\s_.-]/g, '');
+  if (t === a) return true;
+  if (t.includes('10000m') || a.includes('10000m')) {
+    return t.includes('10000m') && a.includes('10000m');
+  }
+  if (t.includes('100m') && t.includes('barreiras')) {
+    return a.includes('100m') && a.includes('barreiras') && !a.includes('110m') && !a.includes('400m');
+  }
+  if (t.includes('110m') && t.includes('barreiras')) {
+    return a.includes('110m') && a.includes('barreiras');
+  }
+  if (t.includes('400m') && t.includes('barreiras')) {
+    return a.includes('400m') && a.includes('barreiras');
+  }
+  if (t.includes('100m') && !t.includes('barreiras') && !t.includes('4x100')) {
+    return a.includes('100m') && !a.includes('barreiras') && !a.includes('4x100') && !a.includes('10000m');
+  }
+  if (t.includes('400m') && !t.includes('barreiras') && !t.includes('4x400')) {
+    return a.includes('400m') && !a.includes('barreiras') && !a.includes('4x400');
+  }
+  if (t.includes('vara')) return a.includes('vara');
+  if (t.includes('altura')) return a.includes('altura') && !a.includes('vara');
+  if (t.includes('martelo')) return a.includes('martelo');
+  return t.includes(a) || a.includes(t);
+};
+
 const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero = null, embebed = false }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -61,9 +90,15 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
   // Sync state if query params or props change
   useEffect(() => {
     const mod = defaultModalidade || searchParams.get('modalidade') || initialSport || '';
-    const gen = defaultGenero || searchParams.get('genero') || searchParams.get('categoria') || 'Geral';
+    let gen = defaultGenero || searchParams.get('genero') || searchParams.get('categoria') || 'Geral';
+    const norm = (mod || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_-]/g, "");
+    if (norm.includes('100m') && norm.includes('barreiras') && !norm.includes('400m')) {
+      gen = 'Feminino';
+    } else if (norm.includes('110m') && norm.includes('barreiras')) {
+      gen = 'Masculino';
+    }
     if (mod) setSelectedModalidade(mod);
-    if (gen) setSelectedGenero(gen);
+    setSelectedGenero(gen);
   }, [searchParams, defaultModalidade, defaultGenero, initialSport]);
 
   useEffect(() => {
@@ -143,17 +178,16 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
 
     // 2. If target specifies a submodality/prova (e.g. "200m" or "Salto em distância")
     if (parts.length > 1) {
-      const specificTarget = normalize(parts.length > 2 ? parts[2] : parts[1]).replace(/[\s_-]/g, '');
-      const analysisSub = normalize(a.subtipoProva || '').replace(/[\s_-]/g, '');
-      const analysisModRaw = normalize(a.modalidade || '').replace(/[\s_-]/g, '');
+      const specificTarget = parts.length > 2 ? parts[2] : parts[1];
+      const analysisSub = a.subtipoProva || '';
+      const analysisModRaw = a.modalidade || '';
 
       if (analysisSub) {
-        const subMatches = analysisSub === specificTarget || 
-                           analysisSub.includes(specificTarget) || 
-                           specificTarget.includes(analysisSub);
-        if (!subMatches) return false;
+        if (!checkSubMatch(specificTarget, analysisSub)) return false;
       } else if (analysisModRaw.includes(' - ')) {
-        if (!analysisModRaw.includes(specificTarget)) return false;
+        const aParts = analysisModRaw.split(' - ').map(s => s.trim());
+        const aSub = aParts.length > 2 ? aParts[2] : aParts[1];
+        if (!checkSubMatch(specificTarget, aSub)) return false;
       }
     }
 
@@ -313,7 +347,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
                         fontSize: '0.75rem'
                       }}>
                         <Medal size={12} className="me-1" />
-                        {analysis.dadosEspecificos?.colocacao || 'Participação'}
+                        {analysis.dadosEspecificos?.colocacao || analysis.dadosEspecificos?.classificacaoFinalPontos || 'Participação'}
                       </span>
                     )}
                   </div>
@@ -843,26 +877,33 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
             border: '1px solid var(--border-light)',
             boxShadow: 'var(--shadow-xs)'
           }}>
-            {['Geral', 'Feminino', 'Masculino'].map(gen => (
-              <button
-                key={gen}
-                onClick={() => handleGenderChange(gen)}
-                style={{
-                  padding: '8px 20px',
-                  borderRadius: 'var(--radius-full)',
-                  border: 'none',
-                  fontFamily: 'var(--font)',
-                  fontWeight: selectedGenero === gen ? 700 : 500,
-                  fontSize: '0.8125rem',
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)',
-                  background: selectedGenero === gen ? 'var(--primary)' : 'transparent',
-                  color: selectedGenero === gen ? '#ffffff' : 'var(--text-secondary)'
-                }}
-              >
-                {gen}
-              </button>
-            ))}
+            {(() => {
+              const norm = (selectedModalidade || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_-]/g, "");
+              const is100mBarreiras = norm.includes('100m') && norm.includes('barreiras') && !norm.includes('400m');
+              const is110mBarreiras = norm.includes('110m') && norm.includes('barreiras');
+              const genderOptions = is100mBarreiras ? ['Feminino'] : is110mBarreiras ? ['Masculino'] : ['Geral', 'Feminino', 'Masculino'];
+
+              return genderOptions.map(gen => (
+                <button
+                  key={gen}
+                  onClick={() => handleGenderChange(gen)}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    fontFamily: 'var(--font)',
+                    fontWeight: selectedGenero === gen ? 700 : 500,
+                    fontSize: '0.8125rem',
+                    cursor: genderOptions.length === 1 ? 'default' : 'pointer',
+                    transition: 'all var(--transition-fast)',
+                    background: selectedGenero === gen ? 'var(--primary)' : 'transparent',
+                    color: selectedGenero === gen ? '#ffffff' : 'var(--text-secondary)'
+                  }}
+                >
+                  {gen}
+                </button>
+              ));
+            })()}
           </div>
 
           {/* Quick Switch Sport Dropdown */}

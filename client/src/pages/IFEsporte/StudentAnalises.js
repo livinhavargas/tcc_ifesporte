@@ -8,6 +8,7 @@ import {
 import Layout from '../../components/Layout';
 import SportIcon from '../../components/SportIcon';
 import { apiUrl } from '../../services/api';
+import { isPrimeiroLugar } from './components/AtletismoForm';
 
 const normalizeStr = (str) => {
   return (str || '')
@@ -450,7 +451,7 @@ const StudentAnalises = () => {
                                       </span>
                                     )}
 
-                                    {isAtletismo && analysis.dadosEspecificos?.colocacao && (
+                                    {isAtletismo && (analysis.dadosEspecificos?.colocacao || analysis.dadosEspecificos?.classificacaoFinalPontos) && (
                                       <span className="badge" style={{
                                         background: 'var(--primary-light)',
                                         color: 'var(--primary)',
@@ -461,7 +462,7 @@ const StudentAnalises = () => {
                                         gap: '4px'
                                       }}>
                                         <Medal size={12} />
-                                        {analysis.dadosEspecificos.colocacao}
+                                        {analysis.dadosEspecificos.colocacao || analysis.dadosEspecificos.classificacaoFinalPontos}
                                       </span>
                                     )}
                                   </div>
@@ -661,27 +662,33 @@ const StudentAnalises = () => {
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    {selectedAnalysisModal.resultado && (
-                      <div className="badge" style={{
-                        background: selectedAnalysisModal.resultado === 'Vitória' ? 'var(--success-light)' : selectedAnalysisModal.resultado === 'Derrota' ? 'var(--danger-light)' : 'var(--warning-light)',
-                        color: selectedAnalysisModal.resultado === 'Vitória' ? 'var(--success)' : selectedAnalysisModal.resultado === 'Derrota' ? 'var(--danger)' : 'var(--warning-text)',
-                        fontSize: '0.9375rem',
-                        fontWeight: 800,
-                        padding: '6px 16px',
-                        display: 'inline-block',
-                        marginBottom: '6px'
-                      }}>
-                        {selectedAnalysisModal.resultado}
-                      </div>
-                    )}
+                    {(() => {
+                      const isAtle = (selectedAnalysisModal.modalidade || '').toLowerCase().includes('atletismo');
+                      const col = selectedAnalysisModal.dadosEspecificos?.colocacao || selectedAnalysisModal.dadosEspecificos?.classificacaoFinalPontos || selectedAnalysisModal.dadosEspecificos?.classificacao;
+                      const resToDisplay = isAtle ? (isPrimeiroLugar(col) ? 'Vitória' : null) : selectedAnalysisModal.resultado;
+                      if (!resToDisplay) return null;
+                      return (
+                        <div className="badge" style={{
+                          background: resToDisplay === 'Vitória' ? 'var(--success-light)' : resToDisplay === 'Derrota' ? 'var(--danger-light)' : 'var(--warning-light)',
+                          color: resToDisplay === 'Vitória' ? 'var(--success)' : resToDisplay === 'Derrota' ? 'var(--danger)' : 'var(--warning-text)',
+                          fontSize: '0.9375rem',
+                          fontWeight: 800,
+                          padding: '6px 16px',
+                          display: 'inline-block',
+                          marginBottom: '6px'
+                        }}>
+                          {resToDisplay}
+                        </div>
+                      );
+                    })()}
                     {selectedAnalysisModal.placar !== undefined && selectedAnalysisModal.placar !== null && (
                       <div style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--text)' }}>
                         {typeof selectedAnalysisModal.placar === 'object' ? `${selectedAnalysisModal.placar.nos || 0} x ${selectedAnalysisModal.placar.adv || 0}` : String(selectedAnalysisModal.placar)}
                       </div>
                     )}
-                    {selectedAnalysisModal.dadosEspecificos?.colocacao && (
+                    {(selectedAnalysisModal.dadosEspecificos?.colocacao || selectedAnalysisModal.dadosEspecificos?.classificacaoFinalPontos) && (
                       <div style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--primary)' }}>
-                        Colocação: {selectedAnalysisModal.dadosEspecificos.colocacao}
+                        Classificação: {selectedAnalysisModal.dadosEspecificos.colocacao || selectedAnalysisModal.dadosEspecificos.classificacaoFinalPontos}
                       </div>
                     )}
                     {selectedAnalysisModal.dadosEspecificos?.tempo && (
@@ -707,8 +714,29 @@ const StudentAnalises = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
                       {Object.entries(selectedAnalysisModal.dadosEspecificos).map(([k, v]) => {
                         if (v === '' || v === null || v === undefined) return null;
-                        const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-                        const formattedVal = Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : String(v);
+                        if (k.startsWith('placarSet') && typeof v === 'object' && v !== null && (parseInt(v.nos, 10) || 0) === 0 && (parseInt(v.adv, 10) || 0) === 0) return null;
+
+                        const LABELS_STUDENT = {
+                          formatoPartida: 'Individual ou em Dupla',
+                          corPecas: 'Cor com a qual o atleta está jogando',
+                          cor: 'Cor com a qual o atleta está jogando',
+                          placarSet1: 'Placar 1º Set',
+                          placarSet2: 'Placar 2º Set',
+                          placarSet3: 'Placar 3º Set',
+                          placarSet4: 'Placar 4º Set',
+                          placarSet5: 'Placar 5º Set'
+                        };
+                        const label = LABELS_STUDENT[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+                        let formattedVal = v;
+                        if (k.startsWith('placarSet') && typeof v === 'object' && v !== null) {
+                          formattedVal = `${v.nos || 0} x ${v.adv || 0}`;
+                        } else if (Array.isArray(v)) {
+                          formattedVal = v.join(', ');
+                        } else if (typeof v === 'object') {
+                          formattedVal = JSON.stringify(v);
+                        } else {
+                          formattedVal = String(v);
+                        }
                         return (
                           <div key={k} style={{
                             background: 'var(--bg)',
@@ -741,7 +769,7 @@ const StudentAnalises = () => {
                   }}>
                     <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <MessageSquare size={16} style={{ color: 'var(--primary)' }} />
-                      Observações do Treinador:
+                      Observações do treinador
                     </div>
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                       {selectedAnalysisModal.observacoes}

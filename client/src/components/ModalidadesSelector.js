@@ -11,29 +11,45 @@ export const estruturaModalidades = [
   { id: 'Badminton', nome: 'Badminton' },
   { id: 'Xadrez', nome: 'Xadrez' },
   { id: 'Atletismo', nome: 'Atletismo', sub: [
-    { id: 'Atletismo - Corridas', nome: 'Corridas', sub: [
-      { id: 'Atletismo - Corridas - 100m', nome: '100m' },
-      { id: 'Atletismo - Corridas - 200m', nome: '200m' },
-      { id: 'Atletismo - Corridas - 400m', nome: '400m' },
-      { id: 'Atletismo - Corridas - 800m', nome: '800m' },
-      { id: 'Atletismo - Corridas - 1500m', nome: '1500m' },
-      { id: 'Atletismo - Corridas - 3000m', nome: '3000m' },
-      { id: 'Atletismo - Corridas - 5000m', nome: '5000m' },
-      { id: 'Atletismo - Corridas - Revezamento 4x100', nome: 'Revezamento 4x100' },
-      { id: 'Atletismo - Corridas - Revezamento 4x400', nome: 'Revezamento 4x400' },
-      { id: 'Atletismo - Corridas - Pentatlo', nome: 'Pentatlo' },
-      { id: 'Atletismo - Corridas - 100m com Barreiras', nome: '100m com Barreiras', genero: 'Feminino' },
-      { id: 'Atletismo - Corridas - 110m com Barreiras', nome: '110m com Barreiras', genero: 'Masculino' }
+    { id: 'Atletismo - Provas de Velocidade', nome: 'Provas de Velocidade', sub: [
+      { id: 'Atletismo - Provas de Velocidade - 100m Rasos', nome: '100m Rasos' },
+      { id: 'Atletismo - Provas de Velocidade - 200m Rasos', nome: '200m Rasos' },
+      { id: 'Atletismo - Provas de Velocidade - 400m Rasos', nome: '400m Rasos' }
     ]},
-    { id: 'Atletismo - Saltos', nome: 'Saltos', sub: [
-      { id: 'Atletismo - Saltos - Salto em Distância', nome: 'Salto em distância' },
-      { id: 'Atletismo - Saltos - Salto em Altura', nome: 'Salto em altura' },
-      { id: 'Atletismo - Saltos - Salto Triplo', nome: 'Salto triplo' }
+    { id: 'Atletismo - Provas com Obstáculos', nome: 'Provas com Obstáculos', sub: [
+      { id: 'Atletismo - Provas com Obstáculos - 100m com Barreiras', nome: '100m com Barreiras', genero: 'Feminino' },
+      { id: 'Atletismo - Provas com Obstáculos - 110m com Barreiras', nome: '110m com Barreiras', genero: 'Masculino' },
+      { id: 'Atletismo - Provas com Obstáculos - 400m com Barreiras', nome: '400m com Barreiras' }
     ]},
-    { id: 'Atletismo - Arremessos e Lançamentos', nome: 'Arremessos e Lançamentos', sub: [
-      { id: 'Atletismo - Arremessos e Lançamentos - Arremesso de Peso', nome: 'Arremesso de peso' },
-      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Disco', nome: 'Lançamento de disco' },
-      { id: 'Atletismo - Arremessos e Lançamentos - Lançamento de Dardo', nome: 'Lançamento de dardo' }
+    { id: 'Atletismo - Provas de Meio Fundo', nome: 'Provas de Meio Fundo', sub: [
+      { id: 'Atletismo - Provas de Meio Fundo - 800m Rasos', nome: '800m Rasos' },
+      { id: 'Atletismo - Provas de Meio Fundo - 1.500m Rasos', nome: '1.500m Rasos' }
+    ]},
+    { id: 'Atletismo - Provas de Fundo', nome: 'Provas de Fundo', sub: [
+      { id: 'Atletismo - Provas de Fundo - 3.000m Rasos', nome: '3.000m Rasos' },
+      { id: 'Atletismo - Provas de Fundo - 5.000m Rasos', nome: '5.000m Rasos' },
+      { id: 'Atletismo - Provas de Fundo - 10.000m Rasos', nome: '10.000m Rasos' }
+    ]},
+    { id: 'Atletismo - Provas de Revezamento', nome: 'Provas de Revezamento', sub: [
+      { id: 'Atletismo - Provas de Revezamento - 4x100m', nome: '4x100m' },
+      { id: 'Atletismo - Provas de Revezamento - 4x400m', nome: '4x400m' }
+    ]},
+    { id: 'Atletismo - Provas de Saltos Verticais', nome: 'Provas de Saltos Verticais', sub: [
+      { id: 'Atletismo - Provas de Saltos Verticais - Salto em Altura', nome: 'Salto em Altura' },
+      { id: 'Atletismo - Provas de Saltos Verticais - Salto com Vara', nome: 'Salto com Vara' }
+    ]},
+    { id: 'Atletismo - Provas de Saltos Horizontais', nome: 'Provas de Saltos Horizontais', sub: [
+      { id: 'Atletismo - Provas de Saltos Horizontais - Salto em Distância', nome: 'Salto em Distância' },
+      { id: 'Atletismo - Provas de Saltos Horizontais - Salto Triplo', nome: 'Salto Triplo' }
+    ]},
+    { id: 'Atletismo - Provas de Arremessos e Lançamentos', nome: 'Provas de Arremessos e Lançamentos', sub: [
+      { id: 'Atletismo - Provas de Arremessos e Lançamentos - Arremesso de Martelo', nome: 'Arremesso de Martelo' },
+      { id: 'Atletismo - Provas de Arremessos e Lançamentos - Arremesso de Peso', nome: 'Arremesso de Peso' },
+      { id: 'Atletismo - Provas de Arremessos e Lançamentos - Lançamento de Dardo', nome: 'Lançamento de Dardo' },
+      { id: 'Atletismo - Provas de Arremessos e Lançamentos - Lançamento de Disco', nome: 'Lançamento de Disco' }
+    ]},
+    { id: 'Atletismo - Prova Combinada', nome: 'Prova Combinada', sub: [
+      { id: 'Atletismo - Prova Combinada - Pentatlo', nome: 'Pentatlo' }
     ]}
   ]},
   { id: 'Tênis de Mesa', nome: 'Tênis de Mesa', sub: [
@@ -42,19 +58,41 @@ export const estruturaModalidades = [
   ]}
 ];
 
+const getProvaKey = (str) => {
+  if (!str) return null;
+  const s = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s-()._]/g, '');
+  if (s.includes('100mcombarreiras') || s.includes('100mbarreiras')) return '100m_barreiras';
+  if (s.includes('110mcombarreiras') || s.includes('110mbarreiras')) return '110m_barreiras';
+  if (s.includes('400mcombarreiras') || s.includes('400mbarreiras')) return '400m_barreiras';
+  if (s.includes('4x100') || s.includes('revezamento100')) return '4x100';
+  if (s.includes('4x400') || s.includes('revezamento400')) return '4x400';
+  if (s.includes('10000m')) return '10000m';
+  if (s.includes('100m') && !s.includes('barreiras') && !s.includes('4x100')) return '100m';
+  if (s.includes('200m')) return '200m';
+  if (s.includes('400m') && !s.includes('barreiras') && !s.includes('4x400')) return '400m';
+  if (s.includes('800m')) return '800m';
+  if (s.includes('1500m')) return '1500m';
+  if (s.includes('3000m')) return '3000m';
+  if (s.includes('5000m')) return '5000m';
+  if (s.includes('vara')) return 'vara';
+  if (s.includes('altura')) return 'altura';
+  if (s.includes('distancia')) return 'distancia';
+  if (s.includes('triplo')) return 'triplo';
+  if (s.includes('peso')) return 'peso';
+  if (s.includes('dardo')) return 'dardo';
+  if (s.includes('disco')) return 'disco';
+  if (s.includes('martelo')) return 'martelo';
+  if (s.includes('pentatlo')) return 'pentatlo';
+  return s;
+};
+
 const matchNodeId = (idA, idB) => {
   if (!idA || !idB) return false;
   if (idA === idB) return true;
-  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s-()]/g, '');
-  const a = norm(idA);
-  const b = norm(idB);
-  if (a.includes('distancia') && b.includes('distancia')) return true;
-  if (a.includes('altura') && b.includes('altura')) return true;
-  if (a.includes('triplo') && b.includes('triplo')) return true;
-  if (a.includes('peso') && b.includes('peso')) return true;
-  if (a.includes('disco') && b.includes('disco')) return true;
-  if (a.includes('dardo') && b.includes('dardo')) return true;
-  return a === b;
+  const keyA = getProvaKey(idA);
+  const keyB = getProvaKey(idB);
+  if (keyA && keyB && keyA === keyB) return true;
+  return false;
 };
 
 const TreeNode = ({ node, selectedIds, onToggle, gender }) => {

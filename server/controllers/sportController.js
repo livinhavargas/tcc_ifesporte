@@ -1,30 +1,36 @@
 const Sport = require('../models/Sport');
 
+const ATLETISMO_SUBCATEGORIAS = [
+  '100m Rasos',
+  '200m Rasos',
+  '400m Rasos',
+  '100m com Barreiras',
+  '110m com Barreiras',
+  '400m com Barreiras',
+  '800m Rasos',
+  '1.500m Rasos',
+  '3.000m Rasos',
+  '5.000m Rasos',
+  '10.000m Rasos',
+  '4x100m',
+  '4x400m',
+  'Salto em Altura',
+  'Salto com Vara',
+  'Salto em Distância',
+  'Salto Triplo',
+  'Arremesso de Peso',
+  'Lançamento de Dardo',
+  'Lançamento de Disco',
+  'Arremesso de Martelo',
+  'Pentatlo'
+];
+
 const DEFAULT_SPORTS = [
   // Modalidades Individuais
   {
     nome: 'Atletismo',
     tipo: 'individual',
-    subcategorias: [
-      'Corridas - 100m rasos',
-      'Corridas - 200m rasos',
-      'Corridas - 400m rasos',
-      'Corridas - 800m',
-      'Corridas - 1500m',
-      'Corridas - 3000m',
-      'Corridas - 5000m',
-      'Corridas - Revezamento 4x100',
-      'Corridas - Revezamento 4x400',
-      'Corridas - Pentatlo',
-      'Corridas - 100m com Barreiras',
-      'Corridas - 110m com Barreiras',
-      'Saltos - Salto em Distância',
-      'Saltos - Salto em Altura',
-      'Saltos - Salto Triplo',
-      'Lançamentos - Disco',
-      'Lançamentos - Dardo',
-      'Lançamentos - Peso'
-    ]
+    subcategorias: ATLETISMO_SUBCATEGORIAS
   },
   {
     nome: 'Badminton',
@@ -94,16 +100,10 @@ const ensureDefaultSports = async () => {
           }
         }
 
-        // Se for Atletismo, remover submodalidades não solicitadas (Lançamento de martelo e Salto com vara)
-        if (primary.nome.toLowerCase() === 'atletismo' && Array.isArray(primary.subcategorias)) {
-          const sanitizedSub = primary.subcategorias.filter(sub => {
-            const s = (sub || '').toLowerCase();
-            return !s.includes('vara') && !s.includes('martelo');
-          });
-          if (sanitizedSub.length !== primary.subcategorias.length) {
-            primary.subcategorias = sanitizedSub;
-            await primary.save();
-          }
+        // Se for Atletismo, garantir todas as 22 submodalidades padronizadas
+        if (primary.nome.toLowerCase() === 'atletismo') {
+          primary.subcategorias = ATLETISMO_SUBCATEGORIAS;
+          await primary.save();
         }
       }
     }

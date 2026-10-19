@@ -1,71 +1,122 @@
-import React, { useMemo, useEffect } from 'react';
-import NumberStepper from '../../../components/NumberStepper';
+import React from 'react';
 
 export const PROVAS_ATLETISMO = [
-  { id: '100m', label: '100m rasos', grupo: 'Velocidade' },
-  { id: '100m_barreiras', label: '100m com barreiras', grupo: 'Velocidade' },
-  { id: '110m_barreiras', label: '110m com barreiras', grupo: 'Velocidade' },
-  { id: '200m', label: '200m rasos', grupo: 'Velocidade' },
-  { id: '400m', label: '400m rasos', grupo: 'Velocidade' },
-  { id: '400m_barreiras', label: '400m com barreiras', grupo: 'Velocidade' },
+  // Provas de Velocidade
+  { id: '100m', label: '100m Rasos', grupo: 'Provas de Velocidade' },
+  { id: '200m', label: '200m Rasos', grupo: 'Provas de Velocidade' },
+  { id: '400m', label: '400m Rasos', grupo: 'Provas de Velocidade' },
 
-  { id: '800m', label: '800m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 0.8 },
-  { id: '1500m', label: '1500m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 1.5 },
-  { id: '3000m', label: '3000m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 3.0 },
-  { id: '5000m', label: '5000m rasos', grupo: 'Meio-Fundo / Fundo', distanciaKm: 5.0 },
+  // Provas com Obstáculos
+  { id: '100m_barreiras', label: '100m com Barreiras', grupo: 'Provas com Obstáculos', generoExclusivo: 'Feminino' },
+  { id: '110m_barreiras', label: '110m com Barreiras', grupo: 'Provas com Obstáculos', generoExclusivo: 'Masculino' },
+  { id: '400m_barreiras', label: '400m com Barreiras', grupo: 'Provas com Obstáculos' },
 
-  { id: 'revezamento_4x100m', label: 'Revezamento 4x100m', grupo: 'Revezamento' },
-  { id: 'revezamento_4x400m', label: 'Revezamento 4x400m', grupo: 'Revezamento' },
+  // Provas de Meio Fundo
+  { id: '800m', label: '800m Rasos', grupo: 'Provas de Meio Fundo' },
+  { id: '1500m', label: '1.500m Rasos', grupo: 'Provas de Meio Fundo' },
 
-  { id: 'salto_altura', label: 'Salto em Altura', grupo: 'Saltos' },
-  { id: 'salto_distancia', label: 'Salto em Distância', grupo: 'Saltos' },
-  { id: 'salto_triplo', label: 'Salto Triplo', grupo: 'Saltos' },
+  // Provas de Fundo
+  { id: '3000m', label: '3.000m Rasos', grupo: 'Provas de Fundo' },
+  { id: '5000m', label: '5.000m Rasos', grupo: 'Provas de Fundo' },
+  { id: '10000m', label: '10.000m Rasos', grupo: 'Provas de Fundo' },
 
-  { id: 'arremesso_peso', label: 'Arremesso de Peso', grupo: 'Lançamentos' },
-  { id: 'lancamento_disco', label: 'Lançamento de Disco', grupo: 'Lançamentos' },
-  { id: 'lancamento_dardo', label: 'Lançamento de Dardo', grupo: 'Lançamentos' },
+  // Provas de Revezamento
+  { id: 'revezamento_4x100m', label: '4x100m', grupo: 'Provas de Revezamento' },
+  { id: 'revezamento_4x400m', label: '4x400m', grupo: 'Provas de Revezamento' },
 
-  { id: 'pentatlo', label: 'Pentatlo', grupo: 'Combinadas' }
+  // Provas de Saltos Verticais
+  { id: 'salto_altura', label: 'Salto em Altura', grupo: 'Provas de Saltos Verticais' },
+  { id: 'salto_vara', label: 'Salto com Vara', grupo: 'Provas de Saltos Verticais' },
+
+  // Provas de Saltos Horizontais
+  { id: 'salto_distancia', label: 'Salto em Distância', grupo: 'Provas de Saltos Horizontais' },
+  { id: 'salto_triplo', label: 'Salto Triplo', grupo: 'Provas de Saltos Horizontais' },
+
+  // Provas de Arremessos e Lançamentos (Ordem: Martelo, Peso, Dardo, Disco)
+  { id: 'arremesso_martelo', label: 'Arremesso de Martelo', grupo: 'Provas de Arremessos e Lançamentos' },
+  { id: 'arremesso_peso', label: 'Arremesso de Peso', grupo: 'Provas de Arremessos e Lançamentos' },
+  { id: 'lancamento_dardo', label: 'Lançamento de Dardo', grupo: 'Provas de Arremessos e Lançamentos' },
+  { id: 'lancamento_disco', label: 'Lançamento de Disco', grupo: 'Provas de Arremessos e Lançamentos' },
+
+  // Prova Combinada
+  { id: 'pentatlo', label: 'Pentatlo', grupo: 'Prova Combinada' }
 ];
 
-// Utilitário para cálculo de Pace automático
-export const calculatePace = (tempoStr, distanciaKm) => {
-  if (!tempoStr || !distanciaKm) return '';
+export const getAtletismoGroup = (provaStr) => {
+  const s = (provaStr || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_.-]/g, '');
 
-  const clean = String(tempoStr).trim();
-  let totalSegundos = 0;
-
-  if (clean.includes(':')) {
-    const parts = clean.split(':');
-    if (parts.length === 2) {
-      const min = parseFloat(parts[0]) || 0;
-      const seg = parseFloat(parts[1]) || 0;
-      totalSegundos = min * 60 + seg;
-    } else if (parts.length === 3) {
-      const h = parseFloat(parts[0]) || 0;
-      const min = parseFloat(parts[1]) || 0;
-      const seg = parseFloat(parts[2]) || 0;
-      totalSegundos = h * 3600 + min * 60 + seg;
-    }
-  } else {
-    totalSegundos = parseFloat(clean) || 0;
+  if (s.includes('pentatlo')) {
+    return 'pentatlo'; // 2.5 Prova Combinada
   }
-
-  if (totalSegundos <= 0) return '';
-
-  const segundosPorKm = totalSegundos / distanciaKm;
-  const paceMin = Math.floor(segundosPorKm / 60);
-  const paceSeg = Math.round(segundosPorKm % 60);
-
-  return `${paceMin}'${String(paceSeg).padStart(2, '0')}"/km`;
+  if (s.includes('4x100') || s.includes('4x400') || s.includes('revezamento')) {
+    return 'revezamento'; // 2.2 Revezamento
+  }
+  if (
+    s.includes('saltoemaltura') || 
+    (s.includes('altura') && !s.includes('pentatlo')) || 
+    s.includes('saltocomvara') || 
+    s.includes('vara')
+  ) {
+    return 'saltos_verticais'; // 2.3 Saltos Verticais
+  }
+  if (
+    s.includes('distancia') || 
+    s.includes('triplo') || 
+    s.includes('martelo') || 
+    s.includes('peso') || 
+    s.includes('dardo') || 
+    s.includes('disco')
+  ) {
+    return 'saltos_horizontais_lancamentos'; // 2.4 Saltos Horizontais e Arremesso/Lançamento
+  }
+  // 2.1 Velocidade, Obstáculo, Meio Fundo e Fundo
+  return 'corridas';
 };
 
-const normalizeProvaStr = (str) => {
-  return (str || '')
+export const isPrimeiroLugar = (colocacaoStr) => {
+  if (!colocacaoStr) return false;
+  const s = String(colocacaoStr)
     .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\s_-]/g, "");
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+  if (/^1\s*(º|o|°)?(\s*lugar)?$/i.test(s)) return true;
+  if (/^1\s*(º|o|°)\b/i.test(s)) return true;
+  if (/^1\s*st\b/i.test(s)) return true;
+  if (s.startsWith('primeiro') || s.startsWith('campeao') || s.startsWith('ouro')) return true;
+  if (/^1\s*(º|o|°)?\s*lugar\b/i.test(s)) return true;
+  return false;
+};
+
+const labelStyle = {
+  display: 'block',
+  fontWeight: 700,
+  fontSize: '0.8125rem',
+  color: 'var(--text)',
+  marginBottom: '6px'
+};
+
+const subLabelStyle = {
+  display: 'block',
+  fontWeight: 600,
+  fontSize: '0.75rem',
+  color: 'var(--text-secondary)',
+  marginBottom: '4px'
+};
+
+const sectionBoxStyle = {
+  background: 'var(--bg)',
+  borderRadius: 'var(--radius-md)',
+  padding: '16px',
+  border: '1px solid var(--border-light)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px'
 };
 
 const AtletismoForm = ({
@@ -74,17 +125,8 @@ const AtletismoForm = ({
   students = []
 }) => {
   const dados = formData.dadosEspecificos || {};
-  const rawSubtipo = formData.subtipoProva || '100m';
-  const normRaw = normalizeProvaStr(rawSubtipo);
-
-  const selectedProva = PROVAS_ATLETISMO.find(p => 
-    p.id === rawSubtipo || 
-    normalizeProvaStr(p.id) === normRaw ||
-    normalizeProvaStr(p.label).includes(normRaw) ||
-    normRaw.includes(normalizeProvaStr(p.label))
-  ) || PROVAS_ATLETISMO[0];
-
-  const selectedProvaId = selectedProva.id;
+  const currentSubtipo = formData.subtipoProva || '100m Rasos';
+  const group = getAtletismoGroup(currentSubtipo);
 
   const updateDados = (updates) => {
     setFormData(prev => ({
@@ -96,39 +138,69 @@ const AtletismoForm = ({
     }));
   };
 
-  // Cálculo automático do Pace para 800m, 1500m, 3000m, 5000m
-  const computedPace = useMemo(() => {
-    if (selectedProva?.distanciaKm && dados.tempo) {
-      return calculatePace(dados.tempo, selectedProva.distanciaKm);
-    }
-    return '';
-  }, [selectedProva, dados.tempo]);
-
-  useEffect(() => {
+  const handleGeneroChange = (genero) => {
     setFormData(prev => ({
       ...prev,
+      categoria: genero,
       dadosEspecificos: {
         ...(prev.dadosEspecificos || {}),
-        paceCalculado: computedPace || '',
-        pace: computedPace || ''
+        genero
       }
     }));
-  }, [computedPace, setFormData]);
-
-  // Tentativas dinâmicas para Saltos em Distância/Triplo e Arremessos/Lançamentos
-  const distanciasTentativas = Array.isArray(dados.distanciasTentativas) ? dados.distanciasTentativas : [];
-  const handleTentativasQtdChange = (qtd) => {
-    const current = [...distanciasTentativas];
-    if (qtd > current.length) {
-      while (current.length < qtd) current.push('');
-    } else {
-      current.splice(qtd);
-    }
-    updateDados({
-      quantidadeTentativas: qtd,
-      distanciasTentativas: current
-    });
   };
+
+  // Valor atual do gênero: exclusivamente 'Feminino' ou 'Masculino'
+  const currentGenero = (formData.categoria === 'Masculino' || dados.genero === 'Masculino')
+    ? 'Masculino'
+    : 'Feminino';
+
+  // Revezamento (4 atletas)
+  const atletasRevezamento = Array.isArray(dados.atletasRevezamento) 
+    ? [dados.atletasRevezamento[0] || '', dados.atletasRevezamento[1] || '', dados.atletasRevezamento[2] || '', dados.atletasRevezamento[3] || '']
+    : ['', '', '', ''];
+
+  const handleRevezamentoAtletaChange = (idx, val) => {
+    const updated = [...atletasRevezamento];
+    updated[idx] = val;
+    updateDados({ atletasRevezamento: updated });
+    setFormData(prev => ({
+      ...prev,
+      atletas: updated.filter(Boolean)
+    }));
+  };
+
+  // Saltos Verticais (3 tentativas de Partida e 3 tentativas Posteriores)
+  const tentativasPartida = Array.isArray(dados.tentativasPartida)
+    ? [dados.tentativasPartida[0] || '', dados.tentativasPartida[1] || '', dados.tentativasPartida[2] || '']
+    : ['', '', ''];
+
+  const handleTentativaPartidaChange = (idx, val) => {
+    const updated = [...tentativasPartida];
+    updated[idx] = val;
+    updateDados({ tentativasPartida: updated });
+  };
+
+  const tentativasPosteriores = Array.isArray(dados.tentativasPosteriores)
+    ? [dados.tentativasPosteriores[0] || '', dados.tentativasPosteriores[1] || '', dados.tentativasPosteriores[2] || '']
+    : ['', '', ''];
+
+  const handleTentativaPosteriorChange = (idx, val) => {
+    const updated = [...tentativasPosteriores];
+    updated[idx] = val;
+    updateDados({ tentativasPosteriores: updated });
+  };
+
+  // Saltos Horizontais e Arremesso/Lançamento (Exatamente 6 tentativas)
+  const distanciasTentativas = Array.isArray(dados.distanciasTentativas)
+    ? [
+        dados.distanciasTentativas[0] || '',
+        dados.distanciasTentativas[1] || '',
+        dados.distanciasTentativas[2] || '',
+        dados.distanciasTentativas[3] || '',
+        dados.distanciasTentativas[4] || '',
+        dados.distanciasTentativas[5] || ''
+      ]
+    : ['', '', '', '', '', ''];
 
   const handleDistanciaTentativaChange = (idx, val) => {
     const updated = [...distanciasTentativas];
@@ -136,28 +208,7 @@ const AtletismoForm = ({
     updateDados({ distanciasTentativas: updated });
   };
 
-  // Revezamento (4 atletas obrigatórios)
-  const atletasRevezamento = Array.isArray(dados.atletasRevezamento) ? dados.atletasRevezamento : ['', '', '', ''];
-  const temposIndividuais = Array.isArray(dados.temposIndividuais) ? dados.temposIndividuais : ['', '', '', ''];
-
-  const handleRevezamentoAtletaChange = (idx, val) => {
-    const updated = [...atletasRevezamento];
-    updated[idx] = val;
-    updateDados({ atletasRevezamento: updated });
-    // Atualiza lista de atletas vinculados na análise
-    setFormData(prev => ({
-      ...prev,
-      atletas: updated.filter(Boolean)
-    }));
-  };
-
-  const handleTempoIndividualChange = (idx, val) => {
-    const updated = [...temposIndividuais];
-    updated[idx] = val;
-    updateDados({ temposIndividuais: updated });
-  };
-
-  // Pentatlo sub-fields
+  // Pentatlo
   const pentatloData = dados.pentatlo || {};
   const updatePentatlo = (field, val) => {
     updateDados({
@@ -168,24 +219,27 @@ const AtletismoForm = ({
     });
   };
 
-  // Identificação do grupo de prova
-  const isCorridasCurta = ['100m', '100m_barreiras', '110m_barreiras', '200m', '400m', '400m_barreiras'].includes(selectedProvaId);
-  const isCorridasFundo = ['800m', '1500m', '3000m', '5000m'].includes(selectedProvaId);
-  const isRevezamento = ['revezamento_4x100m', 'revezamento_4x400m'].includes(selectedProvaId);
-  const isSaltoAltura = selectedProvaId === 'salto_altura';
-  const isTentativasProva = ['salto_distancia', 'salto_triplo', 'arremesso_peso', 'lancamento_disco', 'lancamento_dardo'].includes(selectedProvaId);
-  const isPentatlo = selectedProvaId === 'pentatlo';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      
-      {/* ── GRUPO 1: 100m, 200m, 400m E PROVAS COM BARREIRAS ── */}
-      {isCorridasCurta && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* ──────────────────────────────────────────────────────────────────
+          2.1: Provas de Velocidade, Obstáculo, Meio Fundo e Fundo
+          Atleta
+          Gênero (Feminino / Masculino)
+          Adversários
+          Classificação
+          Tempo
+          Raia
+          Tempo do Vencedor
+          Observações do treinador
+         ────────────────────────────────────────────────────────────────── */}
+      {group === 'corridas' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div className="row g-3">
+            {/* Atleta */}
             <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
+              <label style={labelStyle}>
+                Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
               <select
                 className="form-select"
@@ -194,43 +248,69 @@ const AtletismoForm = ({
                 required
               >
                 <option value="">Selecione o atleta</option>
-                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+                {students.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {s.nome} {s.turma ? `(${s.turma})` : ''} {s.matricula ? `· ${s.matricula}` : ''}
+                  </option>
+                ))}
               </select>
             </div>
 
+            {/* Gênero */}
             <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
+              <label style={labelStyle}>
+                Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
-              <div>
-                <NumberStepper
-                  value={dados.quantidadeAdversarios || 0}
-                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
-                  min={0}
-                  ariaLabel="Quantidade de adversários"
-                />
-              </div>
+              <select
+                className="form-select"
+                value={currentGenero}
+                onChange={(e) => handleGeneroChange(e.target.value)}
+                required
+              >
+                <option value="Feminino">Feminino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
             </div>
           </div>
 
           <div className="row g-3">
+            {/* Adversários */}
             <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              <label style={labelStyle}>
+                Adversários <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                className="form-control"
+                placeholder="Quantidade de adversários"
+                value={dados.quantidadeAdversarios !== undefined && dados.quantidadeAdversarios !== null ? dados.quantidadeAdversarios : ''}
+                onChange={(e) => updateDados({ quantidadeAdversarios: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0 })}
+                required
+              />
+            </div>
+
+            {/* Classificação */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Classificação <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Ex: 1º lugar, 2º lugar, 3º..."
+                placeholder="Ex: 1º lugar"
                 value={dados.colocacao || ''}
                 onChange={(e) => updateDados({ colocacao: e.target.value })}
                 required
               />
             </div>
+          </div>
 
-            <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                4. Tempo
+          <div className="row g-3">
+            {/* Tempo */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Tempo
               </label>
               <input
                 type="text"
@@ -240,112 +320,86 @@ const AtletismoForm = ({
                 onChange={(e) => updateDados({ tempo: e.target.value })}
               />
             </div>
+
+            {/* Raia */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Raia
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: Raia 4"
+                value={dados.raia || ''}
+                onChange={(e) => updateDados({ raia: e.target.value })}
+              />
+            </div>
+
+            {/* Tempo do Vencedor */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Tempo do Vencedor
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 10.20s"
+                value={dados.tempoVencedor || ''}
+                onChange={(e) => updateDados({ tempoVencedor: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Observações do treinador */}
+          <div>
+            <label style={labelStyle}>
+              Observações do treinador
+            </label>
+            <textarea
+              className="form-control"
+              rows={4}
+              placeholder="Digite aqui as observações..."
+              value={formData.observacoes || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+            />
           </div>
         </div>
       )}
 
-      {/* ── GRUPO 2: 800m, 1500m, 3000m E 5000m (com Pace Automático) ── */}
-      {isCorridasFundo && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="row g-3">
-            <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <select
-                className="form-select"
-                value={formData.aluno || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
-                required
-              >
-                <option value="">Selecione o atleta</option>
-                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
-              </select>
-            </div>
-
-            <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <div>
-                <NumberStepper
-                  value={dados.quantidadeAdversarios || 0}
-                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
-                  min={0}
-                  ariaLabel="Quantidade de adversários"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="row g-3">
-            <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Ex: 1º lugar"
-                value={dados.colocacao || ''}
-                onChange={(e) => updateDados({ colocacao: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                4. Tempo
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Ex: 02:15 ou 135 (segundos)"
-                value={dados.tempo || ''}
-                onChange={(e) => updateDados({ tempo: e.target.value })}
-              />
-            </div>
-
-            <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700, color: 'var(--primary)' }}>
-                5. Pace Calculado Automaticamente
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                value={computedPace || '—'}
-                readOnly
-                style={{
-                  background: 'var(--primary-light)',
-                  color: 'var(--primary)',
-                  fontWeight: 800,
-                  border: '1.5px solid var(--primary)'
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── GRUPO 3: REVEZAMENTOS 4x100m E 4x400m ── */}
-      {isRevezamento && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-            <label className="form-label" style={{ fontWeight: 700, marginBottom: '10px', display: 'block' }}>
-              1. Selecionar os Quatro Atletas que Correram <span style={{ color: 'var(--error)' }}>*</span>
+      {/* ──────────────────────────────────────────────────────────────────
+          2.2: Provas de Revezamento (4x100m e 4x400m)
+          Atletas (plural - 4 atletas)
+          Gênero (Feminino / Masculino)
+          Equipes
+          Classificação
+          Tempo
+          Raia
+          Tempo dos Vencedores
+          Observações do treinador
+         ────────────────────────────────────────────────────────────────── */}
+      {group === 'revezamento' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* Atletas */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Atletas <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
             </label>
             <div className="row g-2">
-              {[0, 1, 2, 3].map((pos) => (
-                <div key={pos} className="col-12 col-sm-6">
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Atleta {pos + 1} <span style={{ color: 'var(--error)' }}>*</span>:</span>
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx} className="col-12 col-sm-6">
+                  <span style={subLabelStyle}>Atleta {idx + 1} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>:</span>
                   <select
                     className="form-select form-select-sm"
-                    value={atletasRevezamento[pos] || ''}
-                    onChange={(e) => handleRevezamentoAtletaChange(pos, e.target.value)}
+                    value={atletasRevezamento[idx] || ''}
+                    onChange={(e) => handleRevezamentoAtletaChange(idx, e.target.value)}
                     required
                   >
-                    <option value="">Selecione o atleta {pos + 1}</option>
-                    {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
+                    <option value="">Selecione o atleta {idx + 1}</option>
+                    {students.map(s => (
+                      <option key={s._id} value={s._id}>
+                        {s.nome} {s.turma ? `(${s.turma})` : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
               ))}
@@ -353,23 +407,42 @@ const AtletismoForm = ({
           </div>
 
           <div className="row g-3">
+            {/* Gênero */}
             <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                2. Quantas equipes participaram <span style={{ color: 'var(--error)' }}>*</span>
+              <label style={labelStyle}>
+                Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
-              <div>
-                <NumberStepper
-                  value={dados.quantidadeEquipes || 0}
-                  onChange={(v) => updateDados({ quantidadeEquipes: v })}
-                  min={0}
-                  ariaLabel="Quantidade de equipes"
-                />
-              </div>
+              <select
+                className="form-select"
+                value={currentGenero}
+                onChange={(e) => handleGeneroChange(e.target.value)}
+                required
+              >
+                <option value="Feminino">Feminino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
             </div>
 
+            {/* Equipes */}
             <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              <label style={labelStyle}>
+                Equipes <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                className="form-control"
+                placeholder="Quantidade de equipes"
+                value={dados.quantidadeEquipes !== undefined && dados.quantidadeEquipes !== null ? dados.quantidadeEquipes : ''}
+                onChange={(e) => updateDados({ quantidadeEquipes: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0 })}
+                required
+              />
+            </div>
+
+            {/* Classificação */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Classificação <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
               <input
                 type="text"
@@ -380,426 +453,757 @@ const AtletismoForm = ({
                 required
               />
             </div>
+          </div>
 
+          <div className="row g-3">
+            {/* Tempo */}
             <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                4. Tempo Final da Equipe
+              <label style={labelStyle}>
+                Tempo
               </label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Tempo total (ex: 42.80s)"
+                placeholder="Ex: 42.80s"
                 value={dados.tempo || ''}
                 onChange={(e) => updateDados({ tempo: e.target.value })}
               />
             </div>
+
+            {/* Raia */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Raia
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: Raia 3"
+                value={dados.raia || ''}
+                onChange={(e) => updateDados({ raia: e.target.value })}
+              />
+            </div>
+
+            {/* Tempo dos Vencedores */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Tempo dos Vencedores
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 41.50s"
+                value={dados.tempoVencedor || ''}
+                onChange={(e) => updateDados({ tempoVencedor: e.target.value })}
+              />
+            </div>
           </div>
 
-          {/* 5. Tempo individual por atleta */}
-          <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-            <label className="form-label" style={{ fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-              5. Tempo Individual por Atleta
+          {/* Observações do treinador */}
+          <div>
+            <label style={labelStyle}>
+              Observações do treinador
+            </label>
+            <textarea
+              className="form-control"
+              rows={4}
+              placeholder="Digite aqui as observações..."
+              value={formData.observacoes || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────
+          2.3: Provas de Saltos Verticais (Salto em Altura e Salto com Vara)
+          Atleta
+          Gênero (Feminino / Masculino)
+          Adversários
+          Classificação
+          Altura de Partida — 3 tentativas
+          Alturas Posteriores — 3 tentativas
+          Altura Conseguida
+          Altura do Vencedor
+          Observações do treinador
+         ────────────────────────────────────────────────────────────────── */}
+      {group === 'saltos_verticais' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div className="row g-3">
+            {/* Atleta */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={formData.aluno || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                required
+              >
+                <option value="">Selecione o atleta</option>
+                {students.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {s.nome} {s.turma ? `(${s.turma})` : ''} {s.matricula ? `· ${s.matricula}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Gênero */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={currentGenero}
+                onChange={(e) => handleGeneroChange(e.target.value)}
+                required
+              >
+                <option value="Feminino">Feminino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            {/* Adversários */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Adversários <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                className="form-control"
+                placeholder="Quantidade de adversários"
+                value={dados.quantidadeAdversarios !== undefined && dados.quantidadeAdversarios !== null ? dados.quantidadeAdversarios : ''}
+                onChange={(e) => updateDados({ quantidadeAdversarios: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0 })}
+                required
+              />
+            </div>
+
+            {/* Classificação */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Classificação <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar"
+                value={dados.colocacao || ''}
+                onChange={(e) => updateDados({ colocacao: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Altura de Partida — 3 tentativas */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Altura de Partida — 3 tentativas
             </label>
             <div className="row g-2">
-              {[0, 1, 2, 3].map((pos) => (
-                <div key={pos} className="col-12 col-sm-6 col-md-3">
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tempo Atleta {pos + 1}:</span>
+              <div className="col-12 col-md-3">
+                <span style={subLabelStyle}>Altura de Partida:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 1.50m"
+                  value={dados.alturaPartida || ''}
+                  onChange={(e) => updateDados({ alturaPartida: e.target.value })}
+                />
+              </div>
+              <div className="col-4 col-md-3">
+                <span style={subLabelStyle}>Tentativa 1:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: O, X, -"
+                  value={tentativasPartida[0]}
+                  onChange={(e) => handleTentativaPartidaChange(0, e.target.value)}
+                />
+              </div>
+              <div className="col-4 col-md-3">
+                <span style={subLabelStyle}>Tentativa 2:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: O, X, -"
+                  value={tentativasPartida[1]}
+                  onChange={(e) => handleTentativaPartidaChange(1, e.target.value)}
+                />
+              </div>
+              <div className="col-4 col-md-3">
+                <span style={subLabelStyle}>Tentativa 3:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: O, X, -"
+                  value={tentativasPartida[2]}
+                  onChange={(e) => handleTentativaPartidaChange(2, e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Alturas Posteriores — 3 tentativas */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Alturas Posteriores — 3 tentativas
+            </label>
+            <div className="row g-2">
+              <div className="col-12 col-md-3">
+                <span style={subLabelStyle}>Alturas Posteriores:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 1.55m"
+                  value={dados.alturasPosteriores || ''}
+                  onChange={(e) => updateDados({ alturasPosteriores: e.target.value })}
+                />
+              </div>
+              <div className="col-4 col-md-3">
+                <span style={subLabelStyle}>Tentativa 1:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: O, X, -"
+                  value={tentativasPosteriores[0]}
+                  onChange={(e) => handleTentativaPosteriorChange(0, e.target.value)}
+                />
+              </div>
+              <div className="col-4 col-md-3">
+                <span style={subLabelStyle}>Tentativa 2:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: O, X, -"
+                  value={tentativasPosteriores[1]}
+                  onChange={(e) => handleTentativaPosteriorChange(1, e.target.value)}
+                />
+              </div>
+              <div className="col-4 col-md-3">
+                <span style={subLabelStyle}>Tentativa 3:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: O, X, -"
+                  value={tentativasPosteriores[2]}
+                  onChange={(e) => handleTentativaPosteriorChange(2, e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            {/* Altura Conseguida */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Altura Conseguida
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1.85m"
+                value={dados.alturaConseguida || ''}
+                onChange={(e) => updateDados({ alturaConseguida: e.target.value })}
+              />
+            </div>
+
+            {/* Altura do Vencedor */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Altura do Vencedor
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1.90m"
+                value={dados.alturaVencedor || ''}
+                onChange={(e) => updateDados({ alturaVencedor: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Observações do treinador */}
+          <div>
+            <label style={labelStyle}>
+              Observações do treinador
+            </label>
+            <textarea
+              className="form-control"
+              rows={4}
+              placeholder="Digite aqui as observações..."
+              value={formData.observacoes || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────
+          2.4: Provas de Saltos Horizontais e Provas de Arremesso e Lançamento
+          Atleta
+          Gênero (Feminino / Masculino)
+          Adversários
+          Classificação
+          Distância em Cada Tentativa — 6 tentativas
+          Distância Conseguida
+          Distância do Vencedor
+          Observações do treinador
+         ────────────────────────────────────────────────────────────────── */}
+      {group === 'saltos_horizontais_lancamentos' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div className="row g-3">
+            {/* Atleta */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={formData.aluno || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                required
+              >
+                <option value="">Selecione o atleta</option>
+                {students.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {s.nome} {s.turma ? `(${s.turma})` : ''} {s.matricula ? `· ${s.matricula}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Gênero */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={currentGenero}
+                onChange={(e) => handleGeneroChange(e.target.value)}
+                required
+              >
+                <option value="Feminino">Feminino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            {/* Adversários */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Adversários <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                className="form-control"
+                placeholder="Quantidade de adversários"
+                value={dados.quantidadeAdversarios !== undefined && dados.quantidadeAdversarios !== null ? dados.quantidadeAdversarios : ''}
+                onChange={(e) => updateDados({ quantidadeAdversarios: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0 })}
+                required
+              />
+            </div>
+
+            {/* Classificação */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Classificação <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar"
+                value={dados.colocacao || ''}
+                onChange={(e) => updateDados({ colocacao: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Distância em Cada Tentativa — 6 tentativas */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Distância em Cada Tentativa — 6 tentativas
+            </label>
+            <div className="row g-2">
+              {[0, 1, 2, 3, 4, 5].map((idx) => (
+                <div key={idx} className="col-12 col-sm-6 col-md-4">
+                  <span style={subLabelStyle}>Tentativa {idx + 1}:</span>
                   <input
                     type="text"
                     className="form-control form-control-sm"
-                    placeholder="Ex: 10.50s"
-                    value={temposIndividuais[pos] || ''}
-                    onChange={(e) => handleTempoIndividualChange(pos, e.target.value)}
+                    placeholder={`Ex: ${idx === 2 ? 'X (queima)' : '6.45m'}`}
+                    value={distanciasTentativas[idx]}
+                    onChange={(e) => handleDistanciaTentativaChange(idx, e.target.value)}
                   />
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ── GRUPO 4: SALTO EM ALTURA ── */}
-      {isSaltoAltura && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="row g-3">
-            <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <select
-                className="form-select"
-                value={formData.aluno || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
-                required
-              >
-                <option value="">Selecione o atleta</option>
-                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
-              </select>
-            </div>
-
-            <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <div>
-                <NumberStepper
-                  value={dados.quantidadeAdversarios || 0}
-                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
-                  min={0}
-                  ariaLabel="Quantidade de adversários"
-                />
-              </div>
-            </div>
-          </div>
 
           <div className="row g-3">
+            {/* Distância Conseguida */}
             <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
+              <label style={labelStyle}>
+                Distância Conseguida
               </label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Ex: 1º lugar"
-                value={dados.colocacao || ''}
-                onChange={(e) => updateDados({ colocacao: e.target.value })}
-                required
+                placeholder="Ex: 6.50m"
+                value={dados.distanciaConseguida || ''}
+                onChange={(e) => updateDados({ distanciaConseguida: e.target.value })}
               />
             </div>
 
+            {/* Distância do Vencedor */}
             <div className="col-12 col-md-6">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                4. Maior altura pulada
+              <label style={labelStyle}>
+                Distância do Vencedor
               </label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Ex: 1.85m ou 185 cm"
-                value={dados.maiorAltura || ''}
-                onChange={(e) => updateDados({ maiorAltura: e.target.value })}
+                placeholder="Ex: 6.75m"
+                value={dados.distanciaVencedor || ''}
+                onChange={(e) => updateDados({ distanciaVencedor: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Observações do treinador */}
+          <div>
+            <label style={labelStyle}>
+              Observações do treinador
+            </label>
+            <textarea
+              className="form-control"
+              rows={4}
+              placeholder="Digite aqui as observações..."
+              value={formData.observacoes || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+            />
           </div>
         </div>
       )}
 
-      {/* ── GRUPO 5 & 6: SALTO DISTÂNCIA/TRIPLO & ARREMESSO PESO/DISCO/DARDO (TENTATIVAS) ── */}
-      {isTentativasProva && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="row g-3">
-            <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <select
-                className="form-select"
-                value={formData.aluno || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
-                required
-              >
-                <option value="">Selecione o atleta</option>
-                {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
-              </select>
-            </div>
-
-            <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <div>
-                <NumberStepper
-                  value={dados.quantidadeAdversarios || 0}
-                  onChange={(v) => updateDados({ quantidadeAdversarios: v })}
-                  min={0}
-                  ariaLabel="Quantidade de adversários"
-                />
-              </div>
-            </div>
-
-            <div className="col-12 col-md-4">
-              <label className="form-label" style={{ fontWeight: 700 }}>
-                3. Colocação <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Ex: 1º lugar"
-                value={dados.colocacao || ''}
-                onChange={(e) => updateDados({ colocacao: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '14px', flexWrap: 'wrap' }}>
-              <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>
-                4. Selecionar quantas tentativas teve
-              </label>
-              <NumberStepper
-                value={dados.quantidadeTentativas || 0}
-                onChange={handleTentativasQtdChange}
-                min={0}
-                max={10}
-                ariaLabel="Quantidade de tentativas"
-              />
-            </div>
-
-            {/* 5. Informar a distância de cada tentativa */}
-            {distanciasTentativas.length > 0 ? (
-              <div>
-                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px', display: 'block' }}>
-                  5. Distância de cada tentativa
-                </label>
-                <div className="row g-2">
-                  {distanciasTentativas.map((dist, idx) => (
-                    <div key={idx} className="col-12 col-sm-6 col-md-4 col-lg-3">
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Tentativa {idx + 1}:</span>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Ex: 6.45m"
-                        value={dist || ''}
-                        onChange={(e) => handleDistanciaTentativaChange(idx, e.target.value)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0, fontStyle: 'italic' }}>
-                Nenhuma tentativa registrada.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── GRUPO 7: PENTATLO ── */}
-      {isPentatlo && (
+      {/* ──────────────────────────────────────────────────────────────────
+          2.5: Prova Combinada — Pentatlo
+          Títulos exatos e SEM numeração:
+          Atleta
+          Gênero (Feminino / Masculino)
+          Adversários
+          Classificação Final
+          Classificação Final do Vencedor
+          Classificação 100m/110m com Barreiras
+          Classificação Salto em Altura
+          Classificação Arremesso de Peso
+          Classificação Salto em Distância
+          Classificação 800m
+          Observações do treinador
+         ────────────────────────────────────────────────────────────────── */}
+      {group === 'pentatlo' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          
-          {/* Seção 0: Informações Gerais */}
-          <div style={{ background: 'var(--bg-card)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-            <h6 style={{ fontWeight: 800, color: 'var(--text)', marginBottom: '14px', fontSize: '0.9375rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
-              PENTATLO — Informações Gerais
-            </h6>
-            <div className="row g-3">
-              <div className="col-12 col-md-4">
-                <label className="form-label" style={{ fontWeight: 700 }}>
-                  1. Selecionar o Atleta <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
-                <select
-                  className="form-select"
-                  value={formData.aluno || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
-                  required
-                >
-                  <option value="">Selecione o atleta</option>
-                  {students.map(s => <option key={s._id} value={s._id}>{s.nome} {s.turma ? `(${s.turma})` : ''}</option>)}
-                </select>
-              </div>
+          <div className="row g-3">
+            {/* Atleta */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={formData.aluno || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, aluno: e.target.value }))}
+                required
+              >
+                <option value="">Selecione o atleta</option>
+                {students.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {s.nome} {s.turma ? `(${s.turma})` : ''} {s.matricula ? `· ${s.matricula}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="col-12 col-md-4">
-                <label className="form-label" style={{ fontWeight: 700 }}>
-                  2. Quantos adversários tem <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
-                <div>
-                  <NumberStepper
-                    value={dados.quantidadeAdversarios || 0}
-                    onChange={(v) => updateDados({ quantidadeAdversarios: v })}
-                    min={0}
-                    ariaLabel="Quantidade de adversários"
-                  />
-                </div>
-              </div>
+            {/* Gênero */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={currentGenero}
+                onChange={(e) => handleGeneroChange(e.target.value)}
+                required
+              >
+                <option value="Feminino">Feminino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
+            </div>
+          </div>
 
+          <div className="row g-3">
+            {/* Adversários */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Adversários <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                className="form-control"
+                placeholder="Quantidade de adversários"
+                value={dados.quantidadeAdversarios !== undefined && dados.quantidadeAdversarios !== null ? dados.quantidadeAdversarios : ''}
+                onChange={(e) => updateDados({ quantidadeAdversarios: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0 })}
+                required
+              />
+            </div>
+
+            {/* Classificação Final */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Classificação Final <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar — 3.450 pts"
+                value={dados.classificacaoFinalPontos || dados.colocacao || ''}
+                onChange={(e) => updateDados({ classificacaoFinalPontos: e.target.value, colocacao: e.target.value })}
+                required
+              />
+            </div>
+
+            {/* Classificação Final do Vencedor */}
+            <div className="col-12 col-md-4">
+              <label style={labelStyle}>
+                Classificação Final do Vencedor
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Ex: 1º lugar — 3.820 pts"
+                value={dados.classificacaoFinalVencedorPontos || ''}
+                onChange={(e) => updateDados({ classificacaoFinalVencedorPontos: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Classificação 100m/110m com Barreiras */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Classificação 100m/110m com Barreiras
+            </label>
+            <div className="row g-2">
               <div className="col-12 col-md-4">
-                <label className="form-label" style={{ fontWeight: 700 }}>
-                  3. Colocação Geral <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
+                <span style={subLabelStyle}>Classificação:</span>
                 <input
                   type="text"
-                  className="form-control"
-                  placeholder="Ex: 1º lugar geral"
-                  value={dados.colocacao || ''}
-                  onChange={(e) => updateDados({ colocacao: e.target.value })}
-                  required
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 1º lugar"
+                  value={pentatloData.barreirasColocacao || ''}
+                  onChange={(e) => updatePentatlo('barreirasColocacao', e.target.value)}
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Tempo da Prova:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 14.80s"
+                  value={pentatloData.barreirasTempo || ''}
+                  onChange={(e) => updatePentatlo('barreirasTempo', e.target.value)}
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Tempo do Vencedor:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 14.20s"
+                  value={pentatloData.barreirasTempoVencedor || ''}
+                  onChange={(e) => updatePentatlo('barreirasTempoVencedor', e.target.value)}
                 />
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <h6 style={{ fontWeight: 800, color: 'var(--text)', margin: '4px 0 0' }}>
-              Provas Específicas do Pentatlo:
-            </h6>
-
-            {/* Prova 1: Corrida com barreiras */}
-            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🏃 1. Corrida com Barreiras</span>
+          {/* Classificação Salto em Altura */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Classificação Salto em Altura
+            </label>
+            <div className="row g-2">
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Classificação:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 2º lugar"
+                  value={pentatloData.alturaColocacao || ''}
+                  onChange={(e) => updatePentatlo('alturaColocacao', e.target.value)}
+                />
               </div>
-              <div className="row g-3">
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Tempo da Corrida com Barreiras:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 14.5s"
-                    value={pentatloData.barreirasTempo || ''}
-                    onChange={(e) => updatePentatlo('barreirasTempo', e.target.value)}
-                  />
-                </div>
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Colocação Específica na Prova:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 1º lugar"
-                    value={pentatloData.barreirasColocacao || ''}
-                    onChange={(e) => updatePentatlo('barreirasColocacao', e.target.value)}
-                  />
-                </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Altura da Prova:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 1.75m"
+                  value={pentatloData.alturaMarca || pentatloData.saltoAlturaAltura || ''}
+                  onChange={(e) => updatePentatlo('alturaMarca', e.target.value)}
+                />
               </div>
-            </div>
-
-            {/* Prova 2: Corrida 800m */}
-            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>⏱️ 2. Corrida 800m</span>
-              </div>
-              <div className="row g-3">
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Tempo dos 800m:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 02:20"
-                    value={pentatloData.corrida800mTempo || ''}
-                    onChange={(e) => updatePentatlo('corrida800mTempo', e.target.value)}
-                  />
-                </div>
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Colocação Específica nos 800m:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 2º lugar"
-                    value={pentatloData.corrida800mColocacao || ''}
-                    onChange={(e) => updatePentatlo('corrida800mColocacao', e.target.value)}
-                  />
-                </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Altura do Vencedor:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 1.85m"
+                  value={pentatloData.alturaVencedor || ''}
+                  onChange={(e) => updatePentatlo('alturaVencedor', e.target.value)}
+                />
               </div>
             </div>
+          </div>
 
-            {/* Prova 3: Arremesso de peso */}
-            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🎯 3. Arremesso de Peso</span>
+          {/* Classificação Arremesso de Peso */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Classificação Arremesso de Peso
+            </label>
+            <div className="row g-2">
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Classificação:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 1º lugar"
+                  value={pentatloData.pesoColocacao || pentatloData.arremessoPesoColocacao || ''}
+                  onChange={(e) => updatePentatlo('pesoColocacao', e.target.value)}
+                />
               </div>
-              <div className="row g-3">
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Distância do Arremesso:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 12.30m"
-                    value={pentatloData.arremessoPesoDistancia || ''}
-                    onChange={(e) => updatePentatlo('arremessoPesoDistancia', e.target.value)}
-                  />
-                </div>
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Colocação no Arremesso:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 1º lugar"
-                    value={pentatloData.arremessoPesoColocacao || ''}
-                    onChange={(e) => updatePentatlo('arremessoPesoColocacao', e.target.value)}
-                  />
-                </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Distância da Prova:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 12.40m"
+                  value={pentatloData.pesoMarca || pentatloData.arremessoPesoDistancia || ''}
+                  onChange={(e) => updatePentatlo('pesoMarca', e.target.value)}
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Distância do Vencedor:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 13.10m"
+                  value={pentatloData.pesoVencedor || ''}
+                  onChange={(e) => updatePentatlo('pesoVencedor', e.target.value)}
+                />
               </div>
             </div>
+          </div>
 
-            {/* Prova 4: Salto em altura */}
-            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🪜 4. Salto em Altura</span>
+          {/* Classificação Salto em Distância */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Classificação Salto em Distância
+            </label>
+            <div className="row g-2">
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Classificação:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 3º lugar"
+                  value={pentatloData.distanciaColocacao || pentatloData.saltoDistanciaColocacao || ''}
+                  onChange={(e) => updatePentatlo('distanciaColocacao', e.target.value)}
+                />
               </div>
-              <div className="row g-3">
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Altura Alcançada:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 1.70m"
-                    value={pentatloData.saltoAlturaAltura || ''}
-                    onChange={(e) => updatePentatlo('saltoAlturaAltura', e.target.value)}
-                  />
-                </div>
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Colocação no Salto em Altura:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 3º lugar"
-                    value={pentatloData.saltoAlturaColocacao || ''}
-                    onChange={(e) => updatePentatlo('saltoAlturaColocacao', e.target.value)}
-                  />
-                </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Distância da Prova:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 5.90m"
+                  value={pentatloData.distanciaMarca || pentatloData.saltoDistanciaDistancia || ''}
+                  onChange={(e) => updatePentatlo('distanciaMarca', e.target.value)}
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Distância do Vencedor:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 6.25m"
+                  value={pentatloData.distanciaVencedor || ''}
+                  onChange={(e) => updatePentatlo('distanciaVencedor', e.target.value)}
+                />
               </div>
             </div>
+          </div>
 
-            {/* Prova 5: Salto em distância */}
-            <div style={{ background: 'var(--bg-card)', padding: '16px 18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.875rem', marginBottom: '10px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>📏 5. Salto em Distância</span>
+          {/* Classificação 800m */}
+          <div style={sectionBoxStyle}>
+            <label style={{ ...labelStyle, margin: 0 }}>
+              Classificação 800m
+            </label>
+            <div className="row g-2">
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Classificação:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 2º lugar"
+                  value={pentatloData.corrida800mColocacao || ''}
+                  onChange={(e) => updatePentatlo('corrida800mColocacao', e.target.value)}
+                />
               </div>
-              <div className="row g-3">
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Distância Alcançada:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 5.80m"
-                    value={pentatloData.saltoDistanciaDistancia || ''}
-                    onChange={(e) => updatePentatlo('saltoDistanciaDistancia', e.target.value)}
-                  />
-                </div>
-                <div className="col-12 col-sm-6">
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Colocação no Salto em Distância:
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Ex: 1º lugar"
-                    value={pentatloData.saltoDistanciaColocacao || ''}
-                    onChange={(e) => updatePentatlo('saltoDistanciaColocacao', e.target.value)}
-                  />
-                </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Tempo da Prova:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 02:18.5"
+                  value={pentatloData.corrida800mTempo || ''}
+                  onChange={(e) => updatePentatlo('corrida800mTempo', e.target.value)}
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <span style={subLabelStyle}>Tempo do Vencedor:</span>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Ex: 02:14.0"
+                  value={pentatloData.corrida800mTempoVencedor || ''}
+                  onChange={(e) => updatePentatlo('corrida800mTempoVencedor', e.target.value)}
+                />
               </div>
             </div>
+          </div>
 
+          {/* Observações do treinador */}
+          <div>
+            <label style={labelStyle}>
+              Observações do treinador
+            </label>
+            <textarea
+              className="form-control"
+              rows={4}
+              placeholder="Digite aqui as observações..."
+              value={formData.observacoes || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+            />
           </div>
         </div>
       )}
