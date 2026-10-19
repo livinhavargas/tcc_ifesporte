@@ -11,6 +11,16 @@
   command = "npm run build"
 
 # ──────────────────────────────────────────────────────────────────────────────
+# PROXY DE API (Render Backend)
+# Redireciona chamadas /api/* diretamente para o backend no Render
+# ──────────────────────────────────────────────────────────────────────────────
+[[redirects]]
+  from = "/api/*"
+  to = "https://tcc-ifesporte.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# ──────────────────────────────────────────────────────────────────────────────
 # REGRA DE REDIRECIONAMENTO SPA (React Router)
 # Impede erros 404 ao atualizar a página (F5) ou acessar rotas diretas
 # ──────────────────────────────────────────────────────────────────────────────
