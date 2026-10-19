@@ -10,6 +10,9 @@
   # Comando de build do frontend
   command = "npm run build"
 
+[build.environment]
+  CI = "false"
+
 # ──────────────────────────────────────────────────────────────────────────────
 # PROXY DE API (Render Backend)
 # Redireciona chamadas /api/* diretamente para o backend no Render
