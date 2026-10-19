@@ -8,7 +8,7 @@
   # Diretório de publicação gerado pelo build do Create React App
   publish = "build"
   # Comando de build do frontend
-  command = "npm run build"
+  command = "CI=false npm run build"
 
 [build.environment]
   CI = "false"

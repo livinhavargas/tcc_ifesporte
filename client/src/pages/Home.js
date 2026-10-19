@@ -5,9 +5,9 @@ import {
   Calendar, Clock
 } from 'lucide-react';
 import Layout from '../components/Layout';
-import StudentHome from './IFesporte/StudentHome';
+import StudentHome from './IFEsporte/StudentHome';
 import SportIcon, { detectSport } from '../components/SportIcon';
-import EventModal from './IFesporte/components/EventModal';
+import EventModal from './IFEsporte/components/EventModal';
 import { apiUrl } from '../services/api';
 
 const Home = () => {

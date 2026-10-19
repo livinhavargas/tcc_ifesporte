@@ -6,16 +6,16 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Perfil from './pages/Perfil';
-import Alunos from './pages/IFesporte/Alunos';
-import Agenda from './pages/IFesporte/Agenda';
-import Esportes from './pages/IFesporte/Esportes';
-import NovaAnalise from './pages/IFesporte/NovaAnalise';
-import VisualizarAnalise from './pages/IFesporte/VisualizarAnalise';
-import SportDetail from './pages/IFesporte/SportDetail';
-import StudentProfile from './pages/IFesporte/StudentProfile';
-import EducacaoFisica from './pages/IFesporte/EducacaoFisica';
-import StudentAnalises from './pages/IFesporte/StudentAnalises';
-import AdminDashboard from './pages/IFesporte/AdminDashboard'; // We can use this as Relatórios mock for now
+import Alunos from './pages/IFEsporte/Alunos';
+import Agenda from './pages/IFEsporte/Agenda';
+import Esportes from './pages/IFEsporte/Esportes';
+import NovaAnalise from './pages/IFEsporte/NovaAnalise';
+import VisualizarAnalise from './pages/IFEsporte/VisualizarAnalise';
+import SportDetail from './pages/IFEsporte/SportDetail';
+import StudentProfile from './pages/IFEsporte/StudentProfile';
+import EducacaoFisica from './pages/IFEsporte/EducacaoFisica';
+import StudentAnalises from './pages/IFEsporte/StudentAnalises';
+import AdminDashboard from './pages/IFEsporte/AdminDashboard'; // We can use this as Relatórios mock for now
 import AdminRoute from './components/AdminRoute';
 
 export default function App() {
