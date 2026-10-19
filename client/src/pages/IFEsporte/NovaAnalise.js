@@ -161,8 +161,15 @@ const NovaAnalise = () => {
     }));
   };
 
-  // Filtrar atletas disponíveis pelo esporte e gênero
+  // Filtrar atletas disponíveis pelo esporte e gênero, garantindo inclusão dos já selecionados
   const filteredStudents = students.filter(student => {
+    const isAlreadySelected = 
+      (formData.aluno && (student._id === formData.aluno || student._id === formData.aluno?._id)) ||
+      (Array.isArray(formData.atletas) && formData.atletas.some(a => (a?._id || a) === student._id)) ||
+      (formData.dadosEspecificos?.atleta1 === student._id) ||
+      (formData.dadosEspecificos?.atleta2 === student._id);
+    if (isAlreadySelected) return true;
+
     if (formData.categoria && formData.categoria !== 'Geral' && formData.categoria !== 'Misto' && student.sexo) {
       if (student.sexo.toLowerCase() !== formData.categoria.toLowerCase()) {
         return false;
@@ -266,12 +273,16 @@ const NovaAnalise = () => {
         return 'Selecione o gênero (Misto, Feminino ou Masculino).';
       }
       if (isDupla) {
-        if (!dados.nomeDupla || !String(dados.nomeDupla).trim()) {
-          return 'Informe ou selecione o nome da dupla.';
+        const hasAthlete = dados.atleta1 || dados.atleta2 || formData.aluno || (Array.isArray(formData.atletas) && formData.atletas.length > 0) || dados.nomeDupla;
+        if (!hasAthlete) {
+          return 'Selecione pelo menos um atleta da nossa equipe para a dupla.';
+        }
+        if (dados.atleta1 && dados.atleta2 && dados.atleta1 === dados.atleta2) {
+          return 'Não é permitido selecionar o mesmo atleta duas vezes na mesma dupla.';
         }
       } else {
-        if (!dados.nomeAtleta && !formData.aluno) {
-          return 'Informe ou selecione o nome do atleta.';
+        if (!dados.nomeAtleta && !formData.aluno && (!formData.atletas || formData.atletas.length === 0)) {
+          return 'Selecione o atleta da nossa equipe.';
         }
       }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
@@ -305,6 +316,9 @@ const NovaAnalise = () => {
     // 2.2 BADMINTON
     if (mod.includes('badminton')) {
       const isDupla = dados.formatoPartida === 'Em Dupla' || dados.formatoPartida === 'Dupla';
+      if (!formData.aluno && !dados.nomeAtleta && (!formData.atletas || formData.atletas.length === 0)) {
+        return 'Selecione o atleta da nossa equipe.';
+      }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
         return isDupla ? 'Informe a dupla adversária.' : 'Informe o atleta adversário.';
       }
@@ -366,8 +380,8 @@ const NovaAnalise = () => {
       if (!dados.genero && !formData.categoria) {
         return 'Selecione o gênero da partida de xadrez (Feminino ou Masculino).';
       }
-      if (!dados.nomeAtleta && !formData.aluno) {
-        return 'Informe ou selecione o nome do atleta da nossa equipe.';
+      if (!formData.aluno && !dados.nomeAtleta && (!formData.atletas || formData.atletas.length === 0)) {
+        return 'Selecione o atleta da nossa equipe.';
       }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
         return 'Informe o adversário da partida de xadrez.';
@@ -442,8 +456,24 @@ const NovaAnalise = () => {
         if (!payload.categoria) {
           payload.categoria = 'Geral';
         }
-      } else if (modLower.includes('tenis de mesa')) {
+        payload.atletas = payload.aluno ? [payload.aluno] : [];
+      } else if (modLower.includes('tenis de mesa') || modLower.includes('tênis de mesa')) {
         const dados = payload.dadosEspecificos || {};
+        const isDupla = dados.formatoPartida === 'Dupla' || dados.formatoPartida === 'Em Dupla';
+        if (isDupla) {
+          const arrAtletas = [dados.atleta1, dados.atleta2].filter(Boolean);
+          payload.atletas = arrAtletas;
+          payload.aluno = arrAtletas[0] || null;
+        } else {
+          payload.atletas = payload.aluno ? [payload.aluno] : [];
+          // Garantir que o segundo atleta não permaneça vinculado ao mudar para individual
+          delete dados.atleta2;
+          delete dados.atleta2Nome;
+          delete dados.nomeDupla;
+          if (payload.aluno) {
+            dados.atleta1 = payload.aluno;
+          }
+        }
         let setsNos = 0;
         let setsAdv = 0;
         for (let s = 1; s <= 5; s++) {
@@ -474,6 +504,7 @@ const NovaAnalise = () => {
       } else if (modLower.includes('xadrez')) {
         const dados = payload.dadosEspecificos || {};
         payload.placar = null;
+        payload.atletas = payload.aluno ? [payload.aluno] : [];
         if (!payload.data) {
           payload.data = new Date().toISOString().split('T')[0];
         }

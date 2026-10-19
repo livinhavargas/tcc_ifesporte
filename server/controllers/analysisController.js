@@ -376,7 +376,7 @@ const updateAnalysis = async (req, res) => {
       equipeAdversaria: equipeAdversaria ? equipeAdversaria.trim() : undefined,
       resultado: resolvedResultado,
       placar: resolvedPlacar,
-      aluno: aluno || undefined,
+      aluno: aluno || null,
       atletas: Array.isArray(atletas) ? atletas : [],
       dadosEspecificos,
       observacoes: observacoes ? observacoes.trim() : undefined

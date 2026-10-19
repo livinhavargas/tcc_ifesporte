@@ -4,7 +4,8 @@ import NumberStepper from '../../../components/NumberStepper';
 const BadmintonForm = ({
   formData,
   setFormData,
-  onUpdateDados
+  onUpdateDados,
+  students = []
 }) => {
   const dados = formData.dadosEspecificos || {};
   const formato = dados.formatoPartida || 'Individual';
@@ -39,6 +40,33 @@ const BadmintonForm = ({
           ...updates
         }
       }));
+    }
+  };
+
+  const currentStudentId = formData.aluno 
+    ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno)
+    : (formData.atletas?.[0]?._id || formData.atletas?.[0] || '');
+
+  const currentNome = dados.nomeAtleta || (typeof formData.aluno === 'object' ? formData.aluno?.nome : '');
+
+  const handleSelectStudent = (studentId) => {
+    if (!studentId) {
+      setFormData(prev => ({
+        ...prev,
+        aluno: '',
+        atletas: []
+      }));
+      updateDados({ nomeAtleta: '' });
+      return;
+    }
+    const st = students.find(s => s._id === studentId);
+    if (st) {
+      setFormData(prev => ({
+        ...prev,
+        aluno: st._id,
+        atletas: [st._id]
+      }));
+      updateDados({ nomeAtleta: st.nome });
     }
   };
 
@@ -138,7 +166,7 @@ const BadmintonForm = ({
           className="form-select"
           value={isDupla ? 'Em Dupla' : 'Individual'}
           onChange={(e) => handleFormatoChange(e.target.value)}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600, height: '42px' }}
           required
         >
           <option value="Individual">Individual</option>
@@ -146,20 +174,47 @@ const BadmintonForm = ({
         </select>
       </div>
 
-      {/* 2. Atleta Adversário ou Dupla Adversária */}
-      <div>
-        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-          {isDupla ? 'Dupla Adversária' : 'Atleta Adversário'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          placeholder={isDupla ? 'Digite os nomes da dupla adversária' : 'Digite o nome do atleta adversário'}
-          value={formData.equipeAdversaria || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, equipeAdversaria: e.target.value }))}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-          required
-        />
+      {/* 2. Atleta (Nossa Equipe) e Atleta Adversário / Dupla Adversária lado a lado */}
+      <div className="row g-3">
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+          </label>
+          <select
+            className="form-select"
+            value={currentStudentId}
+            onChange={(e) => handleSelectStudent(e.target.value)}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+            required
+          >
+            <option value="">Selecione o atleta</option>
+            {students.map(st => (
+              <option key={st._id} value={st._id}>
+                {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
+              </option>
+            ))}
+            {currentStudentId && !students.some(s => s._id === currentStudentId) && (
+              <option value={currentStudentId}>
+                {currentNome || 'Atleta Selecionado'}
+              </option>
+            )}
+          </select>
+        </div>
+
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            {isDupla ? 'Dupla Adversária' : 'Atleta Adversário'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder={isDupla ? 'Digite os nomes da dupla adversária' : 'Digite o nome do atleta adversário'}
+            value={formData.equipeAdversaria || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, equipeAdversaria: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+            required
+          />
+        </div>
       </div>
 
       {/* 3. Resultado Final por Sets */}
@@ -171,7 +226,7 @@ const BadmintonForm = ({
           className="form-select"
           value={formData.resultado || ''}
           onChange={(e) => handleResultadoChange(e.target.value)}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600, height: '42px' }}
           required
         >
           <option value="">Selecione o resultado</option>

@@ -54,32 +54,145 @@ const TenisMesaForm = ({
     }));
   };
 
-  const currentNome = isDupla 
-    ? (dados.nomeDupla || '') 
-    : (dados.nomeAtleta || (typeof formData.aluno === 'object' ? formData.aluno?.nome : ''));
+  // Resolução dos atletas conforme o formato
+  const atleta1Id = dados.atleta1 || (isDupla
+    ? (formData.atletas?.[0]?._id || formData.atletas?.[0] || (formData.aluno ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno) : ''))
+    : (formData.aluno ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno) : (formData.atletas?.[0]?._id || formData.atletas?.[0] || '')));
 
-  const handleNomeChange = (val) => {
-    const matched = students.find(s => s.nome && s.nome.toLowerCase() === val.trim().toLowerCase());
-    if (isDupla) {
-      updateDados({ nomeDupla: val });
-    } else {
-      updateDados({ nomeAtleta: val });
-      if (matched) {
-        setFormData(prev => ({ ...prev, aluno: matched._id }));
-      }
+  const atleta2Id = isDupla
+    ? (dados.atleta2 || (formData.atletas?.[1]?._id || formData.atletas?.[1] || ''))
+    : '';
+
+  // Seleção de atleta quando formato for Individual
+  const handleSelectAtletaIndividual = (studentId) => {
+    if (!studentId) {
+      setFormData(prev => ({
+        ...prev,
+        aluno: '',
+        atletas: []
+      }));
+      updateDados({
+        nomeAtleta: '',
+        atleta1: undefined,
+        atleta1Nome: undefined,
+        atleta2: undefined,
+        atleta2Nome: undefined,
+        nomeDupla: undefined
+      });
+      return;
+    }
+    const st = students.find(s => s._id === studentId);
+    if (st) {
+      setFormData(prev => ({
+        ...prev,
+        aluno: st._id,
+        atletas: [st._id]
+      }));
+      updateDados({
+        nomeAtleta: st.nome,
+        atleta1: st._id,
+        atleta1Nome: st.nome,
+        atleta2: undefined,
+        atleta2Nome: undefined,
+        nomeDupla: undefined
+      });
     }
   };
 
-  const handleSelectStudent = (studentId) => {
-    const st = students.find(s => s._id === studentId);
-    if (!st) return;
-    if (isDupla) {
-      const current = dados.nomeDupla || '';
-      const newNome = current ? `${current} e ${st.nome}` : st.nome;
-      updateDados({ nomeDupla: newNome });
+  // Seleção de atleta quando formato for Em Dupla (1º ou 2º Atleta)
+  const handleSelectAtletaDupla = (pos, studentId) => {
+    let next1 = pos === 1 ? studentId : atleta1Id;
+    let next2 = pos === 2 ? studentId : atleta2Id;
+
+    // Não permitir selecionar o mesmo atleta duas vezes na mesma dupla:
+    if (pos === 1 && studentId && studentId === next2) {
+      next2 = '';
+    } else if (pos === 2 && studentId && studentId === next1) {
+      next1 = '';
+    }
+
+    const st1 = students.find(s => s._id === next1);
+    const st2 = students.find(s => s._id === next2);
+
+    const nomes = [st1?.nome || (pos === 1 && !next1 ? '' : dados.atleta1Nome), st2?.nome || (pos === 2 && !next2 ? '' : dados.atleta2Nome)].filter(Boolean);
+    const nomeDupla = nomes.join(' e ');
+
+    const newAtletas = [next1, next2].filter(Boolean);
+    const primaryAluno = next1 || next2 || '';
+
+    setFormData(prev => ({
+      ...prev,
+      aluno: primaryAluno,
+      atletas: newAtletas
+    }));
+
+    updateDados({
+      atleta1: next1 || undefined,
+      atleta1Nome: st1?.nome || undefined,
+      atleta2: next2 || undefined,
+      atleta2Nome: st2?.nome || undefined,
+      nomeDupla: nomeDupla || undefined,
+      nomeAtleta: nomeDupla || undefined
+    });
+  };
+
+  // Alteração dinâmica do Formato (Individual ou Em Dupla)
+  const handleFormatoChange = (novoFormato) => {
+    const isNowDupla = novoFormato === 'Dupla' || novoFormato === 'Em Dupla';
+    if (!isNowDupla) {
+      // Ajuste imediato para Individual: mantém apenas um atleta e remove o segundo atleta completamente
+      const currentAtleta1 = atleta1Id;
+      const st1 = students.find(s => s._id === currentAtleta1);
+      const st1Nome = st1?.nome || dados.atleta1Nome || dados.nomeAtleta || '';
+
+      const updatedDados = {
+        formatoPartida: 'Individual',
+        atleta1: currentAtleta1 || undefined,
+        atleta1Nome: st1Nome || undefined,
+        nomeAtleta: st1Nome || undefined,
+        atleta2: undefined,
+        atleta2Nome: undefined,
+        nomeDupla: undefined
+      };
+
+      if (onUpdateDados) {
+        onUpdateDados(updatedDados);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        aluno: currentAtleta1 || '',
+        atletas: currentAtleta1 ? [currentAtleta1] : [],
+        dadosEspecificos: {
+          ...(prev.dadosEspecificos || {}),
+          ...updatedDados
+        }
+      }));
     } else {
-      updateDados({ nomeAtleta: st.nome });
-      setFormData(prev => ({ ...prev, aluno: st._id }));
+      // Ajuste imediato para Em Dupla
+      const st1 = students.find(s => s._id === atleta1Id);
+      const st1Nome = st1?.nome || dados.atleta1Nome || dados.nomeAtleta || '';
+
+      const updatedDados = {
+        formatoPartida: 'Em Dupla',
+        atleta1: atleta1Id || undefined,
+        atleta1Nome: st1Nome || undefined,
+        nomeDupla: st1Nome || undefined
+      };
+
+      if (onUpdateDados) {
+        onUpdateDados(updatedDados);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        aluno: atleta1Id || '',
+        atletas: atleta1Id ? [atleta1Id] : [],
+        dadosEspecificos: {
+          ...(prev.dadosEspecificos || {}),
+          ...updatedDados
+        }
+      }));
     }
   };
 
@@ -133,11 +246,6 @@ const TenisMesaForm = ({
     }));
   };
 
-  // Alteração do Formato (Individual ou Dupla)
-  const handleFormatoChange = (novoFormato) => {
-    updateDados({ formatoPartida: novoFormato });
-  };
-
   // Alteração do Resultado Final por Sets com validação anti-contradição
   const handleResultadoChange = (novoResultado) => {
     if (setsNos > setsAdv && novoResultado === 'Derrota') {
@@ -168,7 +276,7 @@ const TenisMesaForm = ({
           className="form-select"
           value={selectedGenero}
           onChange={(e) => handleGeneroChange(e.target.value)}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600, height: '42px' }}
           required
         >
           <option value="">Selecione o gênero</option>
@@ -185,70 +293,137 @@ const TenisMesaForm = ({
         </label>
         <select
           className="form-select"
-          value={isDupla ? 'Dupla' : 'Individual'}
+          value={isDupla ? 'Em Dupla' : 'Individual'}
           onChange={(e) => handleFormatoChange(e.target.value)}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600, height: '42px' }}
           required
         >
           <option value="Individual">Individual</option>
-          <option value="Dupla">Dupla</option>
+          <option value="Em Dupla">Em Dupla</option>
         </select>
       </div>
 
-      {/* 3. Nome do Atleta/Dupla (Nossa Equipe) */}
-      <div>
-        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-          {isDupla ? 'Nome da Dupla' : 'Nome do Atleta'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
-        </label>
-        <div className="row g-2">
-          {students && students.length > 0 && (
-            <div className="col-12 col-md-6">
-              <select
-                className="form-select"
-                value={!isDupla && formData.aluno ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno) : ''}
-                onChange={(e) => handleSelectStudent(e.target.value)}
-                style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-              >
-                <option value="">-- Selecionar da lista de atletas --</option>
-                {students.map(st => (
-                  <option key={st._id} value={st._id}>
-                    {st.nome} {st.turma ? `(${st.turma})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className={students && students.length > 0 ? "col-12 col-md-6" : "col-12"}>
+      {/* 3. Seleção de Atletas e Adversário conforme o formato escolhido */}
+      {!isDupla ? (
+        /* INDIVIDUAL: apenas um campo para nosso atleta e um campo para atleta adversário, lado a lado */
+        <div className="row g-3">
+          <div className="col-12 col-md-6">
+            <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+              Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+            </label>
+            <select
+              className="form-select"
+              value={atleta1Id}
+              onChange={(e) => handleSelectAtletaIndividual(e.target.value)}
+              style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+              required
+            >
+              <option value="">Selecione o atleta</option>
+              {students.map(st => (
+                <option key={st._id} value={st._id}>
+                  {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
+                </option>
+              ))}
+              {atleta1Id && !students.some(s => s._id === atleta1Id) && (
+                <option value={atleta1Id}>
+                  {dados.atleta1Nome || dados.nomeAtleta || 'Atleta Selecionado'}
+                </option>
+              )}
+            </select>
+          </div>
+
+          <div className="col-12 col-md-6">
+            <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+              Atleta Adversário <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+            </label>
             <input
               type="text"
               className="form-control"
-              placeholder={isDupla ? "Informe ou selecione o nome da dupla" : "Informe ou selecione o nome do atleta"}
-              value={currentNome}
-              onChange={(e) => handleNomeChange(e.target.value)}
-              style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+              placeholder="Digite o nome do atleta adversário"
+              value={formData.equipeAdversaria || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, equipeAdversaria: e.target.value }))}
+              style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
               required
             />
           </div>
         </div>
-      </div>
+      ) : (
+        /* EM DUPLA: até dois atletas da nossa equipe lado a lado, e campo da dupla adversária independente */
+        <>
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+                1º Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <select
+                className="form-select"
+                value={atleta1Id}
+                onChange={(e) => handleSelectAtletaDupla(1, e.target.value)}
+                style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+              >
+                <option value="">Selecione o 1º atleta</option>
+                {students
+                  .filter(st => st._id !== atleta2Id)
+                  .map(st => (
+                    <option key={st._id} value={st._id}>
+                      {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
+                    </option>
+                  ))}
+                {atleta1Id && !students.some(s => s._id === atleta1Id) && (
+                  <option value={atleta1Id}>
+                    {dados.atleta1Nome || '1º Atleta Selecionado'}
+                  </option>
+                )}
+              </select>
+            </div>
 
-      {/* 4. Atleta Adversário ou Dupla Adversária */}
-      <div>
-        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-          {isDupla ? 'Dupla Adversária' : 'Atleta Adversário'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          placeholder={isDupla ? 'Digite os nomes da dupla adversária' : 'Digite o nome do atleta adversário'}
-          value={formData.equipeAdversaria || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, equipeAdversaria: e.target.value }))}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-          required
-        />
-      </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+                2º Atleta <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-tertiary)' }}>(opcional)</span>
+              </label>
+              <select
+                className="form-select"
+                value={atleta2Id}
+                onChange={(e) => handleSelectAtletaDupla(2, e.target.value)}
+                style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+              >
+                <option value="">Selecione o 2º atleta</option>
+                {students
+                  .filter(st => st._id !== atleta1Id)
+                  .map(st => (
+                    <option key={st._id} value={st._id}>
+                      {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
+                    </option>
+                  ))}
+                {atleta2Id && !students.some(s => s._id === atleta2Id) && (
+                  <option value={atleta2Id}>
+                    {dados.atleta2Nome || '2º Atleta Selecionado'}
+                  </option>
+                )}
+              </select>
+            </div>
+          </div>
 
-      {/* 5. Resultado Final por Sets */}
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+                Dupla Adversária <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Digite os nomes da dupla adversária"
+                value={formData.equipeAdversaria || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, equipeAdversaria: e.target.value }))}
+                style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+                required
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 4. Resultado Final por Sets */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Resultado Final por Sets <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
@@ -257,7 +432,7 @@ const TenisMesaForm = ({
           className="form-select"
           value={formData.resultado || ''}
           onChange={(e) => handleResultadoChange(e.target.value)}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600, height: '42px' }}
           required
         >
           <option value="">Selecione o resultado</option>
@@ -266,7 +441,7 @@ const TenisMesaForm = ({
         </select>
       </div>
 
-      {/* 6. Placar dos Sets */}
+      {/* 5. Placar dos Sets */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '12px', display: 'block' }}>
           Placar dos Sets
@@ -331,7 +506,7 @@ const TenisMesaForm = ({
         </div>
       </div>
 
-      {/* 7. Observações do treinador */}
+      {/* 6. Observações do treinador */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Observações do treinador

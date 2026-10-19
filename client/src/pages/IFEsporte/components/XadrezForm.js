@@ -34,21 +34,31 @@ const XadrezForm = ({
     }));
   };
 
+  const currentStudentId = formData.aluno 
+    ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno)
+    : '';
+
   const currentNome = dados.nomeAtleta || (typeof formData.aluno === 'object' ? formData.aluno?.nome : '');
 
-  const handleNomeChange = (val) => {
-    updateDados({ nomeAtleta: val });
-    const matched = students.find(s => s.nome && s.nome.toLowerCase() === val.trim().toLowerCase());
-    if (matched) {
-      setFormData(prev => ({ ...prev, aluno: matched._id }));
-    }
-  };
-
   const handleSelectStudent = (studentId) => {
+    if (!studentId) {
+      setFormData(prev => ({
+        ...prev,
+        aluno: '',
+        atletas: []
+      }));
+      updateDados({ nomeAtleta: '' });
+      return;
+    }
     const st = students.find(s => s._id === studentId);
-    if (!st) return;
-    updateDados({ nomeAtleta: st.nome });
-    setFormData(prev => ({ ...prev, aluno: st._id }));
+    if (st) {
+      setFormData(prev => ({
+        ...prev,
+        aluno: st._id,
+        atletas: [st._id]
+      }));
+      updateDados({ nomeAtleta: st.nome });
+    }
   };
 
   const handleCorChange = (cor) => {
@@ -69,7 +79,7 @@ const XadrezForm = ({
           className="form-select"
           value={selectedGenero}
           onChange={(e) => handleGeneroChange(e.target.value)}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600, height: '42px' }}
           required
         >
           <option value="">Selecione o gênero</option>
@@ -78,63 +88,55 @@ const XadrezForm = ({
         </select>
       </div>
 
-      {/* 2. Nome do Atleta (Nossa Equipe) */}
-      <div>
-        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-          Nome do Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
-        </label>
-        <div className="row g-2">
-          {students && students.length > 0 && (
-            <div className="col-12 col-md-6">
-              <select
-                className="form-select"
-                value={formData.aluno ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno) : ''}
-                onChange={(e) => handleSelectStudent(e.target.value)}
-                style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-              >
-                <option value="">-- Selecionar da lista de atletas --</option>
-                {students.map(st => (
-                  <option key={st._id} value={st._id}>
-                    {st.nome} {st.turma ? `(${st.turma})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className={students && students.length > 0 ? "col-12 col-md-6" : "col-12"}>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Informe ou selecione o nome do atleta"
-              value={currentNome}
-              onChange={(e) => handleNomeChange(e.target.value)}
-              style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-              required
-            />
-          </div>
+      {/* 2. Atleta (Nossa Equipe) e Adversário lado a lado em duas colunas equilibradas */}
+      <div className="row g-3">
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+          </label>
+          <select
+            className="form-select"
+            value={currentStudentId}
+            onChange={(e) => handleSelectStudent(e.target.value)}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+            required
+          >
+            <option value="">Selecione o atleta</option>
+            {students.map(st => (
+              <option key={st._id} value={st._id}>
+                {st.nome} {st.turma ? `(${st.turma})` : ''} {st.matricula ? `· ${st.matricula}` : ''}
+              </option>
+            ))}
+            {currentStudentId && !students.some(s => s._id === currentStudentId) && (
+              <option value={currentStudentId}>
+                {currentNome || 'Atleta Selecionado'}
+              </option>
+            )}
+          </select>
+        </div>
+
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            Adversário <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Digite o nome do adversário"
+            value={formData.equipeAdversaria || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, equipeAdversaria: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', height: '42px' }}
+            required
+          />
         </div>
       </div>
 
-      {/* 3. Adversário (com opção de cor: Brancas ou Pretas) */}
+      {/* 3. Cor com a qual o atleta está jogando (Brancas ou Pretas) */}
       <div>
-        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-          Adversário <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Digite o nome do adversário"
-          value={formData.equipeAdversaria || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, equipeAdversaria: e.target.value }))}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', marginBottom: '14px' }}
-          required
-        />
-
-        <div>
-          <span style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Cor com a qual o atleta está jogando <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
-          </span>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <span style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          Cor com a qual o atleta está jogando <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+        </span>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <label style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -186,7 +188,6 @@ const XadrezForm = ({
             </label>
           </div>
         </div>
-      </div>
 
       {/* 4. Resultado Final */}
       <div>
@@ -197,7 +198,7 @@ const XadrezForm = ({
           className="form-select"
           value={formData.resultado || ''}
           onChange={(e) => setFormData(prev => ({ ...prev, resultado: e.target.value }))}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600, height: '42px' }}
           required
         >
           <option value="">Selecione o resultado</option>

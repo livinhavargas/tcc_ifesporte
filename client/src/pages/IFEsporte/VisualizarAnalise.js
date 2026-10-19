@@ -386,7 +386,13 @@ const VisualizarAnalise = () => {
                     </div>
                   )}
 
-                  {Array.isArray(atletas) && atletas.map(at => (
+                  {Array.isArray(atletas) && atletas
+                    .filter(at => {
+                      const atId = String(at?._id || at);
+                      const alId = String(aluno?._id || aluno || '');
+                      return atId !== alId;
+                    })
+                    .map(at => (
                     <div key={at._id || at} style={{
                       background: 'var(--bg)',
                       padding: '12px 16px',
@@ -437,6 +443,8 @@ const VisualizarAnalise = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
                   {Object.entries(dadosEspecificos).map(([key, val]) => {
                     if (val === '' || val === null || val === undefined) return null;
+                    if (key === 'atleta1' || key === 'atleta2') return null;
+                    if (key === 'atleta1Nome' || key === 'atleta2Nome' || key === 'nomeAtleta' || key === 'nomeDupla') return null;
                     if (key === 'penaltisCobrancas' && dadosEspecificos.penaltisParticipantes) return null;
                     if (key === 'cartoes' && (dadosEspecificos.cartoes1T || dadosEspecificos.cartoes2T)) return null;
                     if (key.startsWith('placarSet') && typeof val === 'object' && val !== null && (parseInt(val.nos, 10) || 0) === 0 && (parseInt(val.adv, 10) || 0) === 0) return null;
