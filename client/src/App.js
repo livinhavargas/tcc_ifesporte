@@ -14,7 +14,6 @@ import VisualizarAnalise from './pages/IFEsporte/VisualizarAnalise';
 import SportDetail from './pages/IFEsporte/SportDetail';
 import StudentProfile from './pages/IFEsporte/StudentProfile';
 import EducacaoFisica from './pages/IFEsporte/EducacaoFisica';
-import StudentAnalises from './pages/IFEsporte/StudentAnalises';
 import AdminDashboard from './pages/IFEsporte/AdminDashboard'; // We can use this as Relatórios mock for now
 import AdminRoute from './components/AdminRoute';
 
@@ -52,10 +51,10 @@ export default function App() {
         <Route path="/educacao-fisica" element={token && isStaff ? <EducacaoFisica /> : <Navigate to="/" replace />} />
         <Route path="/esportes" element={token && isStaff ? <Esportes /> : <Navigate to="/" replace />} />
         <Route path="/esportes/:id" element={token && isStaff ? <SportDetail /> : <Navigate to="/" replace />} />
-        <Route path="/analises" element={token ? (isStaff ? <Navigate to="/esportes" replace /> : <StudentAnalises />) : <Navigate to="/login" replace />} />
+        <Route path="/analises" element={token ? (isStaff ? <Navigate to="/esportes" replace /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />} />
         <Route path="/analises/nova" element={token && isStaff ? <NovaAnalise /> : <Navigate to="/" replace />} />
         <Route path="/analises/editar/:id" element={token && isStaff ? <NovaAnalise /> : <Navigate to="/" replace />} />
-        <Route path="/analises/:id" element={token ? <VisualizarAnalise /> : <Navigate to="/login" replace />} />
+        <Route path="/analises/:id" element={token ? (isStaff ? <VisualizarAnalise /> : <Navigate to="/" replace />) : <Navigate to="/login" replace />} />
         
         {/* Relatórios */}
         <Route path="/relatorios" element={token && isStaff ? <AdminDashboard /> : <Navigate to="/" replace />} />

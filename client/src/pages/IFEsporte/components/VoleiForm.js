@@ -27,22 +27,49 @@ const VoleiForm = ({
     }));
   };
 
-  // Funções de compatibilidade para valores de qualidade com/sem letras
-  const mapStandardQualityValue = (val) => {
+  // Funções de compatibilidade para valores de qualidade com/sem letras e descrições
+  const mapSaqueValue = (val) => {
     if (!val) return '';
-    const clean = val.replace(/^[A-C]\s*—\s*/, '').trim().toLowerCase();
-    if (clean === 'positivo') return 'A — Positivo';
-    if (clean === 'medio' || clean === 'médio') return 'B — Médio';
-    if (clean === 'negativo') return 'C — Negativo';
+    const s = String(val).toLowerCase();
+    if (s.includes('positivo') || s.includes('ace') || s.includes('passe quebrado')) return 'Positivo — Ace / Passe quebrado';
+    if (s.includes('medio') || s.includes('médio') || s.includes('bola viva') || s.includes('saque facil') || s.includes('saque fácil')) return 'Médio — Bola viva / Saque fácil';
+    if (s.includes('negativo') || s.includes('erro')) return 'Negativo — Erro (rede/fora)';
+    return val;
+  };
+
+  const mapPasseValue = (val) => {
+    if (!val) return '';
+    const s = String(val).toLowerCase();
+    if (s.includes('positivo') || s.includes('bola na mao') || s.includes('bola na mão')) return 'Positivo — Bola na mão';
+    if (s.includes('medio') || s.includes('médio') || s.includes('passe quebrado') || s.includes('deslocada')) return 'Médio — Passe quebrado / Bola deslocada';
+    if (s.includes('negativo') || s.includes('ace sofrido') || s.includes('overpass')) return 'Negativo — Ace sofrido / Overpass (bola de graça)';
     return val;
   };
 
   const mapAtaqueValue = (val) => {
     if (!val) return '';
-    const clean = val.replace(/^[A-C]\s*—\s*/, '').trim().toLowerCase();
-    if (clean === 'ponto') return 'A — Ponto';
-    if (clean.includes('defesa')) return 'B — Defesa do Adversário';
-    if (clean.includes('erro')) return 'C — Erro (bloqueio, rede ou bola fora)';
+    const s = String(val).toLowerCase();
+    if (s.includes('positivo') || s.includes('ponto') || s.includes('bloqueio explorado')) return 'Positivo — Ponto direto / Bloqueio explorado';
+    if (s.includes('medio') || s.includes('médio') || s.includes('defendida') || s.includes('amortecido') || s.includes('defesa')) return 'Médio — Bola defendida / Ataque amortecido';
+    if (s.includes('negativo') || s.includes('erro') || s.includes('toco')) return 'Negativo — Erro (rede/fora) / Toco (bloqueado)';
+    return val;
+  };
+
+  const mapLevantamentoValue = (val) => {
+    if (!val) return '';
+    const s = String(val).toLowerCase();
+    if (s.includes('positivo') || s.includes('bola na medida') || s.includes('bloqueio quebrado')) return 'Positivo — Bola na medida / Bloqueio quebrado';
+    if (s.includes('medio') || s.includes('médio') || s.includes('seguranca') || s.includes('segurança') || s.includes('ajustado')) return 'Médio — Bola de segurança / Levantamento ajustado';
+    if (s.includes('negativo') || s.includes('falta') || s.includes('inatacavel') || s.includes('inatacável')) return 'Negativo — Falta / Bola inatacável';
+    return val;
+  };
+
+  const mapBloqueioValue = (val) => {
+    if (!val) return '';
+    const s = String(val).toLowerCase();
+    if (s.includes('positivo') || s.includes('toco') || s.includes('amortecida') || s.includes('stuff block')) return 'Positivo — Toco (stuff block) / Bola amortecida';
+    if (s.includes('medio') || s.includes('médio') || s.includes('espaco fechado') || s.includes('espaço fechado') || s.includes('direcionado')) return 'Médio — Espaço fechado / Ataque direcionado';
+    if (s.includes('negativo') || s.includes('explorado') || s.includes('falta')) return 'Negativo — Bloqueio explorado / Falta';
     return val;
   };
 
@@ -407,13 +434,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={mapStandardQualityValue(dados.qualidadeSaque)}
+              value={mapSaqueValue(dados.qualidadeSaque)}
               onChange={(e) => updateDados({ qualidadeSaque: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">Positivo</option>
-              <option value="B — Médio">Médio</option>
-              <option value="C — Negativo">Negativo</option>
+              <option value="Positivo — Ace / Passe quebrado">Positivo — Ace / Passe quebrado</option>
+              <option value="Médio — Bola viva / Saque fácil">Médio — Bola viva / Saque fácil</option>
+              <option value="Negativo — Erro (rede/fora)">Negativo — Erro (rede/fora)</option>
             </select>
           </div>
 
@@ -424,13 +451,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={mapStandardQualityValue(dados.qualidadePasse)}
+              value={mapPasseValue(dados.qualidadePasse)}
               onChange={(e) => updateDados({ qualidadePasse: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">Positivo</option>
-              <option value="B — Médio">Médio</option>
-              <option value="C — Negativo">Negativo</option>
+              <option value="Positivo — Bola na mão">Positivo — Bola na mão</option>
+              <option value="Médio — Passe quebrado / Bola deslocada">Médio — Passe quebrado / Bola deslocada</option>
+              <option value="Negativo — Ace sofrido / Overpass (bola de graça)">Negativo — Ace sofrido / Overpass (bola de graça)</option>
             </select>
           </div>
 
@@ -445,9 +472,9 @@ const VoleiForm = ({
               onChange={(e) => updateDados({ qualidadeAtaque: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Ponto">Ponto</option>
-              <option value="B — Defesa do Adversário">Defesa do Adversário</option>
-              <option value="C — Erro (bloqueio, rede ou bola fora)">Erro (bloqueio, rede ou bola fora)</option>
+              <option value="Positivo — Ponto direto / Bloqueio explorado">Positivo — Ponto direto / Bloqueio explorado</option>
+              <option value="Médio — Bola defendida / Ataque amortecido">Médio — Bola defendida / Ataque amortecido</option>
+              <option value="Negativo — Erro (rede/fora) / Toco (bloqueado)">Negativo — Erro (rede/fora) / Toco (bloqueado)</option>
             </select>
           </div>
 
@@ -479,13 +506,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={mapStandardQualityValue(dados.qualidadeLevantamento)}
+              value={mapLevantamentoValue(dados.qualidadeLevantamento)}
               onChange={(e) => updateDados({ qualidadeLevantamento: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">Positivo</option>
-              <option value="B — Médio">Médio</option>
-              <option value="C — Negativo">Negativo</option>
+              <option value="Positivo — Bola na medida / Bloqueio quebrado">Positivo — Bola na medida / Bloqueio quebrado</option>
+              <option value="Médio — Bola de segurança / Levantamento ajustado">Médio — Bola de segurança / Levantamento ajustado</option>
+              <option value="Negativo — Falta / Bola inatacável">Negativo — Falta / Bola inatacável</option>
             </select>
           </div>
 
@@ -496,13 +523,13 @@ const VoleiForm = ({
             </label>
             <select
               className="form-select"
-              value={mapStandardQualityValue(dados.qualidadeBloqueio)}
+              value={mapBloqueioValue(dados.qualidadeBloqueio)}
               onChange={(e) => updateDados({ qualidadeBloqueio: e.target.value })}
             >
               <option value="">Selecione uma avaliação</option>
-              <option value="A — Positivo">Positivo</option>
-              <option value="B — Médio">Médio</option>
-              <option value="C — Negativo">Negativo</option>
+              <option value="Positivo — Toco (stuff block) / Bola amortecida">Positivo — Toco (stuff block) / Bola amortecida</option>
+              <option value="Médio — Espaço fechado / Ataque direcionado">Médio — Espaço fechado / Ataque direcionado</option>
+              <option value="Negativo — Bloqueio explorado / Falta">Negativo — Bloqueio explorado / Falta</option>
             </select>
           </div>
         </div>

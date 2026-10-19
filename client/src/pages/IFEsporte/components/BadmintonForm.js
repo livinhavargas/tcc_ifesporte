@@ -135,22 +135,19 @@ const BadmintonForm = ({
   // Mapeamentos para normalização e seleção de valores de qualidade
   const mapQualidadeSaqueValue = (val) => {
     if (!val) return '';
-    if (val.includes('Ace')) return 'Ace';
-    if (val.includes('Passe quebrado')) return 'Passe quebrado';
-    if (val.includes('Bola viva')) return 'Bola viva';
-    if (val.includes('Saque fácil') || val.includes('Saque facil')) return 'Saque fácil';
-    if (val.includes('Erro')) return 'Erro (rede/fora)';
+    const s = String(val).toLowerCase();
+    if (s.includes('positivo') || s.includes('ponto direto') || s.includes('ace') || s.includes('passe quebrado')) return 'Positivo — Ponto direto';
+    if (s.includes('medio') || s.includes('médio') || s.includes('saque facil') || s.includes('saque fácil') || s.includes('bola viva')) return 'Médio — Saque fácil';
+    if (s.includes('negativo') || s.includes('erro')) return 'Negativo — Erro (rede/fora)';
     return val;
   };
 
   const mapQualidadeAtaqueValue = (val) => {
     if (!val) return '';
-    if (val.includes('Ponto direto')) return 'Ponto direto';
-    if (val.includes('Bloqueio explorado')) return 'Bloqueio explorado';
-    if (val.includes('Bola defendida')) return 'Bola defendida';
-    if (val.includes('Ataque amortecido')) return 'Ataque amortecido';
-    if (val.includes('Toco')) return 'Toco (bloqueado)';
-    if (val.includes('Erro')) return 'Erro (rede/fora)';
+    const s = String(val).toLowerCase();
+    if (s.includes('positivo') || s.includes('ponto direto') || s.includes('bloqueio explorado')) return 'Positivo — Ponto direto';
+    if (s.includes('medio') || s.includes('médio') || s.includes('ataque amortecido') || s.includes('amortecido') || s.includes('defendida')) return 'Médio — Ataque amortecido';
+    if (s.includes('negativo') || s.includes('erro') || s.includes('toco')) return 'Negativo — Erro (rede/fora)';
     return val;
   };
 
@@ -411,17 +408,9 @@ const BadmintonForm = ({
           style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
         >
           <option value="">Selecione uma avaliação</option>
-          <optgroup label="Positivo">
-            <option value="Ace">Ace</option>
-            <option value="Passe quebrado">Passe quebrado</option>
-          </optgroup>
-          <optgroup label="Médio">
-            <option value="Bola viva">Bola viva</option>
-            <option value="Saque fácil">Saque fácil</option>
-          </optgroup>
-          <optgroup label="Negativo">
-            <option value="Erro (rede/fora)">Erro (rede/fora)</option>
-          </optgroup>
+          <option value="Positivo — Ponto direto">Positivo — Ponto direto</option>
+          <option value="Médio — Saque fácil">Médio — Saque fácil</option>
+          <option value="Negativo — Erro (rede/fora)">Negativo — Erro (rede/fora)</option>
         </select>
       </div>
 
@@ -437,18 +426,9 @@ const BadmintonForm = ({
           style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
         >
           <option value="">Selecione uma avaliação</option>
-          <optgroup label="Positivo">
-            <option value="Ponto direto">Ponto direto</option>
-            <option value="Bloqueio explorado">Bloqueio explorado</option>
-          </optgroup>
-          <optgroup label="Médio">
-            <option value="Bola defendida">Bola defendida</option>
-            <option value="Ataque amortecido">Ataque amortecido</option>
-          </optgroup>
-          <optgroup label="Negativo">
-            <option value="Erro (rede/fora)">Erro (rede/fora)</option>
-            <option value="Toco (bloqueado)">Toco (bloqueado)</option>
-          </optgroup>
+          <option value="Positivo — Ponto direto">Positivo — Ponto direto</option>
+          <option value="Médio — Ataque amortecido">Médio — Ataque amortecido</option>
+          <option value="Negativo — Erro (rede/fora)">Negativo — Erro (rede/fora)</option>
         </select>
       </div>
 

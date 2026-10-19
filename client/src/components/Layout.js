@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, Users, Calendar, Trophy, Bell, LogOut, Trash2, X, Sun, Moon, 
-  GraduationCap, Menu, BarChart3 
+  GraduationCap, Menu 
 } from 'lucide-react';
 import Logo from './Logo';
 import { getNotifications, markAllAsRead, clearNotifications } from '../utils/notifications';
@@ -211,16 +211,6 @@ const Layout = ({ children }) => {
             <span>Agenda</span>
           </Link>
 
-          {isStudent && (
-            <Link 
-              to="/analises" 
-              className={`sidebar-link ${isActive('/analises')}`}
-              aria-label="Análises"
-            >
-              <span className="sidebar-icon"><BarChart3 size={18} /></span>
-              <span>Análises</span>
-            </Link>
-          )}
 
           {!isStudent && (
             <Link 

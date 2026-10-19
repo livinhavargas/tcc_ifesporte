@@ -22,8 +22,12 @@ const VisualizarAnalise = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (isStudent) {
+      navigate('/', { replace: true });
+      return;
+    }
     fetchAnalysis();
-  }, [id]);
+  }, [id, isStudent]);
 
   const fetchAnalysis = async () => {
     try {
@@ -60,7 +64,6 @@ const VisualizarAnalise = () => {
   };
 
   const getBackUrl = () => {
-    if (isStudent) return '/analises';
     if (!analysis) return '/esportes';
     const sportRouteId = getSportRouteId(analysis.modalidade);
     let query = `tab=analises&genero=${encodeURIComponent(analysis.categoria || 'Geral')}`;
@@ -77,7 +80,6 @@ const VisualizarAnalise = () => {
   };
 
   const handleDelete = async () => {
-    if (isStudent) return;
     if (!window.confirm('Tem certeza que deseja excluir esta análise esportiva?')) return;
     try {
       const response = await fetch(apiUrl(`/api/analysis/${id}`), {
@@ -120,8 +122,8 @@ const VisualizarAnalise = () => {
             <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginBottom: '24px' }}>
               O registro que você está tentando acessar pode ter sido removido ou o link está incorreto.
             </p>
-            <Link to={isStudent ? "/analises" : "/esportes"} className="btn btn-primary" style={{ borderRadius: 'var(--radius-md)', padding: '8px 20px', fontWeight: 600 }}>
-              {isStudent ? 'Voltar para Análises' : 'Voltar para Esportes'}
+            <Link to="/esportes" className="btn btn-primary" style={{ borderRadius: 'var(--radius-md)', padding: '8px 20px', fontWeight: 600 }}>
+              Voltar para Esportes
             </Link>
           </div>
         </div>
@@ -141,31 +143,17 @@ const VisualizarAnalise = () => {
         
         {/* Breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-tertiary)', marginBottom: '16px' }} className="d-none-print">
-          {isStudent ? (
-            <>
-              <Link to="/analises" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
-                Análises
-              </Link>
-              <span>/</span>
-              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
-                {modalidade}
-              </span>
-            </>
-          ) : (
-            <>
-              <Link to="/esportes" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
-                Esportes
-              </Link>
-              <span>/</span>
-              <Link to={getBackUrl()} style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
-                {modalidade} ({categoria || 'Geral'})
-              </Link>
-              <span>/</span>
-              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
-                Registro de Partida / Prova
-              </span>
-            </>
-          )}
+          <Link to="/esportes" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
+            Esportes
+          </Link>
+          <span>/</span>
+          <Link to={getBackUrl()} style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
+            {modalidade} ({categoria || 'Geral'})
+          </Link>
+          <span>/</span>
+          <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
+            Registro de Partida / Prova
+          </span>
         </div>
 
         {/* Top Header Actions */}
