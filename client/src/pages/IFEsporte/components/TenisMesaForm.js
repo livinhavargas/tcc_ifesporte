@@ -4,11 +4,12 @@ import NumberStepper from '../../../components/NumberStepper';
 const TenisMesaForm = ({
   formData,
   setFormData,
-  onUpdateDados
+  onUpdateDados,
+  students = []
 }) => {
   const dados = formData.dadosEspecificos || {};
   const formato = dados.formatoPartida || 'Individual';
-  const isDupla = formato === 'Dupla';
+  const isDupla = formato === 'Dupla' || formato === 'Em Dupla';
 
   // Inicializa formatoPartida como 'Individual' se não existir
   useEffect(() => {
@@ -39,6 +40,46 @@ const TenisMesaForm = ({
           ...updates
         }
       }));
+    }
+  };
+
+  const handleGeneroChange = (novoGenero) => {
+    setFormData(prev => ({
+      ...prev,
+      categoria: novoGenero,
+      dadosEspecificos: {
+        ...(prev.dadosEspecificos || {}),
+        genero: novoGenero
+      }
+    }));
+  };
+
+  const currentNome = isDupla 
+    ? (dados.nomeDupla || '') 
+    : (dados.nomeAtleta || (typeof formData.aluno === 'object' ? formData.aluno?.nome : ''));
+
+  const handleNomeChange = (val) => {
+    const matched = students.find(s => s.nome && s.nome.toLowerCase() === val.trim().toLowerCase());
+    if (isDupla) {
+      updateDados({ nomeDupla: val });
+    } else {
+      updateDados({ nomeAtleta: val });
+      if (matched) {
+        setFormData(prev => ({ ...prev, aluno: matched._id }));
+      }
+    }
+  };
+
+  const handleSelectStudent = (studentId) => {
+    const st = students.find(s => s._id === studentId);
+    if (!st) return;
+    if (isDupla) {
+      const current = dados.nomeDupla || '';
+      const newNome = current ? `${current} e ${st.nome}` : st.nome;
+      updateDados({ nomeDupla: newNome });
+    } else {
+      updateDados({ nomeAtleta: st.nome });
+      setFormData(prev => ({ ...prev, aluno: st._id }));
     }
   };
 
@@ -113,17 +154,38 @@ const TenisMesaForm = ({
     }));
   };
 
+  const selectedGenero = dados.genero || (['Misto', 'Feminino', 'Masculino'].includes(formData.categoria) ? formData.categoria : '');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* Individual ou em Dupla */}
+      {/* 1. Gênero */}
+      <div>
+        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+          Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+        </label>
+        <select
+          className="form-select"
+          value={selectedGenero}
+          onChange={(e) => handleGeneroChange(e.target.value)}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          required
+        >
+          <option value="">Selecione o gênero</option>
+          <option value="Misto">Misto</option>
+          <option value="Feminino">Feminino</option>
+          <option value="Masculino">Masculino</option>
+        </select>
+      </div>
+
+      {/* 2. Individual ou em Dupla */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Individual ou em Dupla <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
         </label>
         <select
           className="form-select"
-          value={formato}
+          value={isDupla ? 'Dupla' : 'Individual'}
           onChange={(e) => handleFormatoChange(e.target.value)}
           style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
           required
@@ -133,7 +195,44 @@ const TenisMesaForm = ({
         </select>
       </div>
 
-      {/* Atleta Adversário ou Dupla Adversária */}
+      {/* 3. Nome do Atleta/Dupla (Nossa Equipe) */}
+      <div>
+        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+          {isDupla ? 'Nome da Dupla' : 'Nome do Atleta'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+        </label>
+        <div className="row g-2">
+          {students && students.length > 0 && (
+            <div className="col-12 col-md-6">
+              <select
+                className="form-select"
+                value={!isDupla && formData.aluno ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno) : ''}
+                onChange={(e) => handleSelectStudent(e.target.value)}
+                style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+              >
+                <option value="">-- Selecionar da lista de atletas --</option>
+                {students.map(st => (
+                  <option key={st._id} value={st._id}>
+                    {st.nome} {st.turma ? `(${st.turma})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className={students && students.length > 0 ? "col-12 col-md-6" : "col-12"}>
+            <input
+              type="text"
+              className="form-control"
+              placeholder={isDupla ? "Informe ou selecione o nome da dupla" : "Informe ou selecione o nome do atleta"}
+              value={currentNome}
+              onChange={(e) => handleNomeChange(e.target.value)}
+              style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Atleta Adversário ou Dupla Adversária */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           {isDupla ? 'Dupla Adversária' : 'Atleta Adversário'} <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
@@ -149,7 +248,7 @@ const TenisMesaForm = ({
         />
       </div>
 
-      {/* Resultado Final por Sets */}
+      {/* 5. Resultado Final por Sets */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Resultado Final por Sets <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
@@ -167,7 +266,7 @@ const TenisMesaForm = ({
         </select>
       </div>
 
-      {/* Placar dos Sets */}
+      {/* 6. Placar dos Sets */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '12px', display: 'block' }}>
           Placar dos Sets
@@ -232,7 +331,7 @@ const TenisMesaForm = ({
         </div>
       </div>
 
-      {/* Observações do treinador */}
+      {/* 7. Observações do treinador */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Observações do treinador

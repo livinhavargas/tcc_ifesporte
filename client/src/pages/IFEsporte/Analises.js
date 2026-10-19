@@ -40,6 +40,7 @@ const getCategoryGroup = (str) => {
   const norm = normalize(str);
   if (norm.startsWith('fem')) return 'Feminino';
   if (norm.startsWith('masc')) return 'Masculino';
+  if (norm.startsWith('mist')) return 'Misto';
   return 'Geral';
 };
 
@@ -355,6 +356,16 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
                   {/* Card Content */}
                   {!isAtletismo ? (
                     <div style={{ marginBottom: '16px' }}>
+                      {analysis.dadosEspecificos?.nomeAtleta && (
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                          Atleta: <strong style={{ color: 'var(--text)' }}>{analysis.dadosEspecificos.nomeAtleta}</strong>
+                        </div>
+                      )}
+                      {analysis.dadosEspecificos?.nomeDupla && (
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                          Dupla: <strong style={{ color: 'var(--text)' }}>{analysis.dadosEspecificos.nomeDupla}</strong>
+                        </div>
+                      )}
                       {analysis.equipeAdversaria && (
                         <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                           Adversário: <strong style={{ color: 'var(--text)' }}>{analysis.equipeAdversaria}</strong>

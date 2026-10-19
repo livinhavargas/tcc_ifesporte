@@ -10,7 +10,7 @@ import FutebolFutsalForm from './components/FutebolFutsalForm';
 import BasqueteForm from './components/BasqueteForm';
 import HandebolForm from './components/HandebolForm';
 import VoleiForm from './components/VoleiForm';
-import BadmintonTenisMesaForm from './components/BadmintonTenisMesaForm';
+import BadmintonForm from './components/BadmintonForm';
 import TenisMesaForm from './components/TenisMesaForm';
 import XadrezForm from './components/XadrezForm';
 import AtletismoForm, { isPrimeiroLugar } from './components/AtletismoForm';
@@ -115,6 +115,8 @@ const NovaAnalise = () => {
                 ? 'Feminino'
                 : (existingCat || '').toLowerCase().startsWith('masc')
                 ? 'Masculino'
+                : (existingCat || '').toLowerCase().startsWith('mist')
+                ? 'Misto'
                 : 'Geral');
 
           setFormData({
@@ -161,7 +163,7 @@ const NovaAnalise = () => {
 
   // Filtrar atletas disponíveis pelo esporte e gênero
   const filteredStudents = students.filter(student => {
-    if (formData.categoria && formData.categoria !== 'Geral' && student.sexo) {
+    if (formData.categoria && formData.categoria !== 'Geral' && formData.categoria !== 'Misto' && student.sexo) {
       if (student.sexo.toLowerCase() !== formData.categoria.toLowerCase()) {
         return false;
       }
@@ -259,7 +261,19 @@ const NovaAnalise = () => {
 
     // 2.1 TÊNIS DE MESA
     if (mod.includes('tenis de mesa') || mod.includes('tênis de mesa')) {
-      const isDupla = dados.formatoPartida === 'Dupla';
+      const isDupla = dados.formatoPartida === 'Dupla' || dados.formatoPartida === 'Em Dupla';
+      if (!dados.genero && !formData.categoria) {
+        return 'Selecione o gênero (Misto, Feminino ou Masculino).';
+      }
+      if (isDupla) {
+        if (!dados.nomeDupla || !String(dados.nomeDupla).trim()) {
+          return 'Informe ou selecione o nome da dupla.';
+        }
+      } else {
+        if (!dados.nomeAtleta && !formData.aluno) {
+          return 'Informe ou selecione o nome do atleta.';
+        }
+      }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
         return isDupla ? 'Informe a dupla adversária.' : 'Informe o atleta adversário.';
       }
@@ -290,20 +304,12 @@ const NovaAnalise = () => {
 
     // 2.2 BADMINTON
     if (mod.includes('badminton')) {
+      const isDupla = dados.formatoPartida === 'Em Dupla' || dados.formatoPartida === 'Dupla';
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return 'Informe o nome da equipe/atleta adversário.';
+        return isDupla ? 'Informe a dupla adversária.' : 'Informe o atleta adversário.';
       }
-      if (!formData.resultado) {
-        return 'Selecione o resultado da partida.';
-      }
-      const placar = typeof formData.placar === 'object' && formData.placar !== null ? formData.placar : { nos: 0, adv: 0 };
-      const totalSets = (parseInt(placar.nos, 10) || 0) + (parseInt(placar.adv, 10) || 0);
-      if (totalSets <= 0) {
-        return 'O placar em sets deve ser maior que zero (defina os sets da partida).';
-      }
-      const pontos = Array.isArray(dados.pontosCadaSet) ? dados.pontosCadaSet : [];
-      if (pontos.length < totalSets || pontos.slice(0, totalSets).some(p => !p || !String(p).trim())) {
-        return `É obrigatório preencher os pontos de todos os ${totalSets} sets disputados.`;
+      if (!formData.resultado || !['Vitória', 'Derrota'].includes(formData.resultado)) {
+        return 'Selecione o resultado da partida (Vitória ou Derrota).';
       }
       return null;
     }
@@ -357,6 +363,12 @@ const NovaAnalise = () => {
 
     // 6. XADREZ
     if (mod.includes('xadrez')) {
+      if (!dados.genero && !formData.categoria) {
+        return 'Selecione o gênero da partida de xadrez (Feminino ou Masculino).';
+      }
+      if (!dados.nomeAtleta && !formData.aluno) {
+        return 'Informe ou selecione o nome do atleta da nossa equipe.';
+      }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
         return 'Informe o adversário da partida de xadrez.';
       }
@@ -404,6 +416,32 @@ const NovaAnalise = () => {
         if (!payload.data) {
           payload.data = new Date().toISOString().split('T')[0];
         }
+      } else if (modLower.includes('badminton')) {
+        const dados = payload.dadosEspecificos || {};
+        let setsNos = 0;
+        let setsAdv = 0;
+        for (let s = 1; s <= 3; s++) {
+          const p = dados[`placarSet${s}`];
+          if (p && typeof p === 'object') {
+            const pNos = parseInt(p.nos, 10) || 0;
+            const pAdv = parseInt(p.adv, 10) || 0;
+            if (pNos > 0 || pAdv > 0) {
+              if (pNos > pAdv) setsNos++;
+              else if (pAdv > pNos) setsAdv++;
+            }
+          }
+        }
+        payload.placar = { nos: setsNos, adv: setsAdv };
+        if (!payload.resultado) {
+          if (setsNos > setsAdv) payload.resultado = 'Vitória';
+          else if (setsAdv > setsNos) payload.resultado = 'Derrota';
+        }
+        if (!payload.data) {
+          payload.data = new Date().toISOString().split('T')[0];
+        }
+        if (!payload.categoria) {
+          payload.categoria = 'Geral';
+        }
       } else if (modLower.includes('tenis de mesa')) {
         const dados = payload.dadosEspecificos || {};
         let setsNos = 0;
@@ -428,15 +466,20 @@ const NovaAnalise = () => {
         if (!payload.data) {
           payload.data = new Date().toISOString().split('T')[0];
         }
-        if (!payload.categoria) {
+        if (dados.genero) {
+          payload.categoria = dados.genero;
+        } else if (!payload.categoria) {
           payload.categoria = 'Geral';
         }
       } else if (modLower.includes('xadrez')) {
+        const dados = payload.dadosEspecificos || {};
         payload.placar = null;
         if (!payload.data) {
           payload.data = new Date().toISOString().split('T')[0];
         }
-        if (!payload.categoria) {
+        if (dados.genero) {
+          payload.categoria = dados.genero;
+        } else if (!payload.categoria) {
           payload.categoria = 'Geral';
         }
       } else {
@@ -507,7 +550,7 @@ const NovaAnalise = () => {
       return <TenisMesaForm {...commonProps} />;
     }
     if (mod.includes('badminton')) {
-      return <BadmintonTenisMesaForm {...commonProps} />;
+      return <BadmintonForm {...commonProps} />;
     }
     if (mod.includes('xadrez')) {
       return <XadrezForm {...commonProps} />;
@@ -525,10 +568,11 @@ const NovaAnalise = () => {
 
   const normMod = (formData.modalidade || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const isAtletismo = normMod.includes('atletismo');
+  const isBadminton = normMod.includes('badminton');
   const isTenisMesa = normMod.includes('tenis de mesa');
   const isXadrez = normMod.includes('xadrez');
   const isEquipe = normMod.includes('futebol') || normMod.includes('futsal') || normMod.includes('basquete') || normMod.includes('handebol') || normMod.includes('volei') || normMod.includes('voleibol');
-  const isIndividualSport = !isEquipe && !isAtletismo && !isTenisMesa && !isXadrez;
+  const isIndividualSport = !isEquipe && !isAtletismo && !isTenisMesa && !isXadrez && !isBadminton;
 
   if (loading) {
     return (
@@ -634,6 +678,22 @@ const NovaAnalise = () => {
               <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={18} style={{ color: 'var(--primary)' }} />
                 Análise — {formData.subtipoProva || 'Atletismo'}
+              </h5>
+
+              {renderSportForm()}
+            </div>
+          ) : isBadminton ? (
+            /* Se for Badminton: Card Único com exclusivamente os 8 campos solicitados nesta ordem */
+            <div style={{
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              border: '1px solid var(--border-light)',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Trophy size={18} style={{ color: 'var(--primary)' }} />
+                Análise — Badminton
               </h5>
 
               {renderSportForm()}

@@ -313,7 +313,7 @@ const VisualizarAnalise = () => {
 
         <div className="row g-4">
           {/* Card Atleta(s) Vinculado(s) */}
-          {(aluno || (Array.isArray(atletas) && atletas.length > 0)) && (
+          {(aluno || (Array.isArray(atletas) && atletas.length > 0) || dadosEspecificos?.nomeAtleta || dadosEspecificos?.nomeDupla) && (
             <div className="col-12">
               <div style={{
                 background: 'var(--bg-card)',
@@ -352,6 +352,35 @@ const VisualizarAnalise = () => {
                         </strong>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                           {aluno.turma || aluno.serie || 'Principal'} {aluno.matricula ? `· ${aluno.matricula}` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!aluno && (dadosEspecificos?.nomeAtleta || dadosEspecificos?.nomeDupla) && (
+                    <div style={{
+                      background: 'var(--bg)',
+                      padding: '12px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-light)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '38px', height: '38px', borderRadius: '50%',
+                        background: 'var(--primary)', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '0.9375rem'
+                      }}>
+                        {(dadosEspecificos.nomeAtleta || dadosEspecificos.nomeDupla).charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '0.875rem', color: 'var(--text)', display: 'block' }}>
+                          {dadosEspecificos.nomeAtleta || dadosEspecificos.nomeDupla}
+                        </strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                          {dadosEspecificos.nomeDupla ? 'Nossa Dupla' : 'Nosso Atleta'}
                         </span>
                       </div>
                     </div>
@@ -453,6 +482,8 @@ const VisualizarAnalise = () => {
                       lancesLivresContraQtd: 'Lances Livres Contra',
                       // Tênis de Mesa e Xadrez
                       formatoPartida: 'Individual ou em Dupla',
+                      nomeAtleta: 'Nome do Atleta',
+                      nomeDupla: 'Nome da Dupla',
                       corPecas: 'Cor com a qual o atleta está jogando',
                       cor: 'Cor com a qual o atleta está jogando',
                       // Voleibol, Vôlei de Praia e Tênis de Mesa
@@ -503,7 +534,26 @@ const VisualizarAnalise = () => {
                     const label = LABELS_MAP[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
                     let formatted = val;
 
-                    if (key === 'foiParaPenaltis') {
+                    if (key === 'qualidadeSaque') {
+                      const mapCat = {
+                        'Ace': 'Positivo — Ace',
+                        'Passe quebrado': 'Positivo — Passe quebrado',
+                        'Bola viva': 'Médio — Bola viva',
+                        'Saque fácil': 'Médio — Saque fácil',
+                        'Erro (rede/fora)': 'Negativo — Erro (rede/fora)'
+                      };
+                      formatted = mapCat[val] || val;
+                    } else if (key === 'qualidadeAtaque') {
+                      const mapCat = {
+                        'Ponto direto': 'Positivo — Ponto direto',
+                        'Bloqueio explorado': 'Positivo — Bloqueio explorado',
+                        'Bola defendida': 'Médio — Bola defendida',
+                        'Ataque amortecido': 'Médio — Ataque amortecido',
+                        'Erro (rede/fora)': 'Negativo — Erro (rede/fora)',
+                        'Toco (bloqueado)': 'Negativo — Toco (bloqueado)'
+                      };
+                      formatted = mapCat[val] || val;
+                    } else if (key === 'foiParaPenaltis') {
                       formatted = val ? 'Sim, decidida nos pênaltis' : 'Não';
                     } else if (key === 'distanciasTentativas' && Array.isArray(val)) {
                       const attempts = val.map((d, i) => d ? `T${i + 1}: ${d}` : null).filter(Boolean);

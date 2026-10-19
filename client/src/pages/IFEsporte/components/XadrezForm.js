@@ -3,30 +3,119 @@ import React from 'react';
 const XadrezForm = ({
   formData,
   setFormData,
-  onUpdateDados
+  onUpdateDados,
+  students = []
 }) => {
   const dados = formData.dadosEspecificos || {};
   const corSelecionada = dados.cor || dados.corPecas || '';
 
-  const handleCorChange = (cor) => {
+  const updateDados = (updates) => {
     if (onUpdateDados) {
-      onUpdateDados({ cor, corPecas: cor });
+      onUpdateDados(updates);
     } else {
       setFormData(prev => ({
         ...prev,
         dadosEspecificos: {
           ...(prev.dadosEspecificos || {}),
-          cor,
-          corPecas: cor
+          ...updates
         }
       }));
     }
   };
 
+  const handleGeneroChange = (novoGenero) => {
+    setFormData(prev => ({
+      ...prev,
+      categoria: novoGenero,
+      dadosEspecificos: {
+        ...(prev.dadosEspecificos || {}),
+        genero: novoGenero
+      }
+    }));
+  };
+
+  const currentNome = dados.nomeAtleta || (typeof formData.aluno === 'object' ? formData.aluno?.nome : '');
+
+  const handleNomeChange = (val) => {
+    updateDados({ nomeAtleta: val });
+    const matched = students.find(s => s.nome && s.nome.toLowerCase() === val.trim().toLowerCase());
+    if (matched) {
+      setFormData(prev => ({ ...prev, aluno: matched._id }));
+    }
+  };
+
+  const handleSelectStudent = (studentId) => {
+    const st = students.find(s => s._id === studentId);
+    if (!st) return;
+    updateDados({ nomeAtleta: st.nome });
+    setFormData(prev => ({ ...prev, aluno: st._id }));
+  };
+
+  const handleCorChange = (cor) => {
+    updateDados({ cor, corPecas: cor });
+  };
+
+  const selectedGenero = dados.genero || (['Feminino', 'Masculino'].includes(formData.categoria) ? formData.categoria : '');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* Adversário (com opção de cor: Brancas ou Pretas) */}
+      {/* 1. Gênero (Apenas Feminino e Masculino, sem Misto) */}
+      <div>
+        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+          Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+        </label>
+        <select
+          className="form-select"
+          value={selectedGenero}
+          onChange={(e) => handleGeneroChange(e.target.value)}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+          required
+        >
+          <option value="">Selecione o gênero</option>
+          <option value="Feminino">Feminino</option>
+          <option value="Masculino">Masculino</option>
+        </select>
+      </div>
+
+      {/* 2. Nome do Atleta (Nossa Equipe) */}
+      <div>
+        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+          Nome do Atleta <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+        </label>
+        <div className="row g-2">
+          {students && students.length > 0 && (
+            <div className="col-12 col-md-6">
+              <select
+                className="form-select"
+                value={formData.aluno ? (typeof formData.aluno === 'object' ? formData.aluno._id : formData.aluno) : ''}
+                onChange={(e) => handleSelectStudent(e.target.value)}
+                style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+              >
+                <option value="">-- Selecionar da lista de atletas --</option>
+                {students.map(st => (
+                  <option key={st._id} value={st._id}>
+                    {st.nome} {st.turma ? `(${st.turma})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className={students && students.length > 0 ? "col-12 col-md-6" : "col-12"}>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Informe ou selecione o nome do atleta"
+              value={currentNome}
+              onChange={(e) => handleNomeChange(e.target.value)}
+              style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Adversário (com opção de cor: Brancas ou Pretas) */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Adversário <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
@@ -99,7 +188,7 @@ const XadrezForm = ({
         </div>
       </div>
 
-      {/* Resultado Final */}
+      {/* 4. Resultado Final */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Resultado Final <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
@@ -118,7 +207,7 @@ const XadrezForm = ({
         </select>
       </div>
 
-      {/* Observações do treinador */}
+      {/* 5. Observações do treinador */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
           Observações do treinador

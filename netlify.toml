@@ -1,0 +1,36 @@
+# ==============================================================================
+# IFESPORTE - CONFIGURAÇÃO DE IMPLANTAÇÃO NETLIFY (netlify.toml)
+# ==============================================================================
+
+[build]
+  # Diretório base do frontend React
+  base = "client"
+  # Diretório de publicação gerado pelo build do Create React App
+  publish = "build"
+  # Comando de build do frontend
+  command = "npm run build"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# REGRA DE REDIRECIONAMENTO SPA (React Router)
+# Impede erros 404 ao atualizar a página (F5) ou acessar rotas diretas
+# ──────────────────────────────────────────────────────────────────────────────
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CABEÇALHOS DE SEGURANÇA E PERFORMANCE
+# ──────────────────────────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

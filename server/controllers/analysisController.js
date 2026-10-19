@@ -118,6 +118,17 @@ const validateAnalysisFields = (data) => {
     return null;
   }
 
+  // BADMINTON
+  if (modLower.includes('badminton')) {
+    if (!equipeAdversaria || !equipeAdversaria.trim()) {
+      return 'O nome do atleta adversário ou dupla adversária é obrigatório.';
+    }
+    if (!resultado || !['Vitória', 'Derrota'].includes(resultado)) {
+      return 'O resultado da partida de badminton deve ser Vitória ou Derrota.';
+    }
+    return null;
+  }
+
   // DEMAIS MODALIDADES (Confronto)
   if (!equipeAdversaria || !equipeAdversaria.trim()) {
     return 'O nome da equipe adversária é obrigatório.';
@@ -132,16 +143,9 @@ const validateAnalysisFields = (data) => {
     return null;
   }
 
-  // HANDEBOL, BASQUETE, FUTSAL, FUTEBOL, VOLEIBOL, VÔLEI DE PRAIA, BADMINTON
+  // HANDEBOL, BASQUETE, FUTSAL, FUTEBOL, VOLEIBOL, VÔLEI DE PRAIA
   if (placar === undefined || placar === null || placar === '') {
     return 'O placar da partida é obrigatório.';
-  }
-
-  // Modalidade baseada em sets legada (Badminton)
-  if (modLower.includes('badminton')) {
-    if (!dadosEspecificos.pontosCadaSet || (Array.isArray(dadosEspecificos.pontosCadaSet) && dadosEspecificos.pontosCadaSet.length === 0)) {
-      return 'Os pontos de cada set são obrigatórios.';
-    }
   }
 
   return null;
@@ -158,6 +162,23 @@ const resolvePlacar = (modalidade, placar, dadosEspecificos = {}) => {
     let nos = 0;
     let adv = 0;
     for (let s = 1; s <= 5; s++) {
+      const p = dadosEspecificos[`placarSet${s}`];
+      if (p && typeof p === 'object') {
+        const pNos = parseInt(p.nos, 10) || 0;
+        const pAdv = parseInt(p.adv, 10) || 0;
+        if (pNos > 0 || pAdv > 0) {
+          if (pNos > pAdv) nos += 1;
+          else if (pAdv > pNos) adv += 1;
+        }
+      }
+    }
+    return { nos, adv };
+  }
+  // Se for Badminton (placar de sets calculado a partir dos 3 sets)
+  if (modLower.includes('badminton')) {
+    let nos = 0;
+    let adv = 0;
+    for (let s = 1; s <= 3; s++) {
       const p = dadosEspecificos[`placarSet${s}`];
       if (p && typeof p === 'object') {
         const pNos = parseInt(p.nos, 10) || 0;
@@ -244,6 +265,9 @@ const createAnalysis = async (req, res) => {
 
     let resolvedResultado = resultado;
     let resolvedCategoria = categoria || 'Geral';
+    if (dadosEspecificos && dadosEspecificos.genero) {
+      resolvedCategoria = dadosEspecificos.genero;
+    }
 
     if (modalidade && modalidade.toLowerCase().includes('atletismo')) {
       if (dadosEspecificos.classificacaoFinalPontos && !dadosEspecificos.colocacao) {
@@ -319,6 +343,9 @@ const updateAnalysis = async (req, res) => {
 
     let resolvedResultado = resultado;
     let resolvedCategoria = categoria || 'Geral';
+    if (dadosEspecificos && dadosEspecificos.genero) {
+      resolvedCategoria = dadosEspecificos.genero;
+    }
 
     if (modalidade && modalidade.toLowerCase().includes('atletismo')) {
       if (dadosEspecificos.classificacaoFinalPontos && !dadosEspecificos.colocacao) {
