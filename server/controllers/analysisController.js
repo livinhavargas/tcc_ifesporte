@@ -195,10 +195,16 @@ const resolvePlacar = (modalidade, placar, dadosEspecificos = {}) => {
     return placar;
   }
   // Se houver placar de tempos (Basquete, Handebol, Futsal, Futebol)
-  if (dadosEspecificos && (dadosEspecificos.placar1Tempo || dadosEspecificos.placar2Tempo)) {
+  if (dadosEspecificos && (dadosEspecificos.placar1Tempo || dadosEspecificos.placar2Tempo || dadosEspecificos.tempoExtra?.placar)) {
+    const teNos = dadosEspecificos.tempoExtra?.placar?.nos !== undefined && dadosEspecificos.tempoExtra?.placar?.nos !== '' && dadosEspecificos.tempoExtra?.placar?.nos !== null
+      ? (parseInt(dadosEspecificos.tempoExtra.placar.nos, 10) || 0)
+      : 0;
+    const teAdv = dadosEspecificos.tempoExtra?.placar?.adv !== undefined && dadosEspecificos.tempoExtra?.placar?.adv !== '' && dadosEspecificos.tempoExtra?.placar?.adv !== null
+      ? (parseInt(dadosEspecificos.tempoExtra.placar.adv, 10) || 0)
+      : 0;
     return {
-      nos: (dadosEspecificos.placar1Tempo?.nos || 0) + (dadosEspecificos.placar2Tempo?.nos || 0),
-      adv: (dadosEspecificos.placar1Tempo?.adv || 0) + (dadosEspecificos.placar2Tempo?.adv || 0)
+      nos: (dadosEspecificos.placar1Tempo?.nos || 0) + (dadosEspecificos.placar2Tempo?.nos || 0) + teNos,
+      adv: (dadosEspecificos.placar1Tempo?.adv || 0) + (dadosEspecificos.placar2Tempo?.adv || 0) + teAdv
     };
   }
   // Se for Voleibol ou Vôlei de Praia (sets opcionais)
@@ -409,6 +415,8 @@ const getAnalysisByStudent = async (req, res) => {
         { 'dadosEspecificos.golsMarcados.atletaId': studentId },
         { 'dadosEspecificos.cestas.atletaId': studentId },
         { 'dadosEspecificos.cartoes.atletaId': studentId },
+        { 'dadosEspecificos.tempoExtra.cartoes.atletaId': studentId },
+        { 'dadosEspecificos.tempoExtra.gols7m.atletaId': studentId },
         { 'dadosEspecificos.faltasCometidas.atletas': studentId },
         { 'dadosEspecificos.atletasRevezamento': studentId }
       ]

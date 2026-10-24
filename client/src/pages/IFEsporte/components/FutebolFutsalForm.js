@@ -47,8 +47,15 @@ const FutebolFutsalForm = ({
     const nextVal = Math.max(0, val);
     const updated1 = tempo === 1 ? { ...placar1T, [team]: nextVal } : placar1T;
     const updated2 = tempo === 2 ? { ...placar2T, [team]: nextVal } : placar2T;
-    const totalNos = (updated1.nos || 0) + (updated2.nos || 0);
-    const totalAdv = (updated1.adv || 0) + (updated2.adv || 0);
+
+    const tePlacar = dados.tempoExtra?.placar;
+    const hasTeNos = tePlacar?.nos !== undefined && tePlacar?.nos !== '' && tePlacar?.nos !== null;
+    const hasTeAdv = tePlacar?.adv !== undefined && tePlacar?.adv !== '' && tePlacar?.adv !== null;
+    const teNos = hasTeNos ? (parseInt(tePlacar.nos, 10) || 0) : 0;
+    const teAdv = hasTeAdv ? (parseInt(tePlacar.adv, 10) || 0) : 0;
+
+    const totalNos = (updated1.nos || 0) + (updated2.nos || 0) + teNos;
+    const totalAdv = (updated1.adv || 0) + (updated2.adv || 0) + teAdv;
 
     setFormData(prev => ({
       ...prev,
@@ -223,8 +230,17 @@ const FutebolFutsalForm = ({
     }
   };
 
-  const totalPartidaNos = (placar1T.nos || 0) + (placar2T.nos || 0);
-  const totalPartidaAdv = (placar1T.adv || 0) + (placar2T.adv || 0);
+  const tePlacar = dados.tempoExtra?.placar;
+  const hasTeNos = tePlacar?.nos !== undefined && tePlacar?.nos !== '' && tePlacar?.nos !== null;
+  const hasTeAdv = tePlacar?.adv !== undefined && tePlacar?.adv !== '' && tePlacar?.adv !== null;
+  const teNos = hasTeNos ? (parseInt(tePlacar.nos, 10) || 0) : 0;
+  const teAdv = hasTeAdv ? (parseInt(tePlacar.adv, 10) || 0) : 0;
+
+  const regulamentarNos = (placar1T.nos || 0) + (placar2T.nos || 0);
+  const regulamentarAdv = (placar1T.adv || 0) + (placar2T.adv || 0);
+
+  const totalPartidaNos = regulamentarNos + teNos;
+  const totalPartidaAdv = regulamentarAdv + teAdv;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -370,6 +386,11 @@ const FutebolFutsalForm = ({
         {/* Total da partida */}
         <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px dashed var(--border-light)', fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
           Total acumulado da partida: <strong style={{ color: 'var(--text)', fontSize: '0.9375rem' }}>{totalPartidaNos} x {totalPartidaAdv}</strong>
+          {(hasTeNos || hasTeAdv) && (teNos > 0 || teAdv > 0) && (
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              (Tempo Regulamentar: {regulamentarNos} x {regulamentarAdv} + Tempo Extra: {teNos} x {teAdv})
+            </div>
+          )}
         </div>
       </div>
 

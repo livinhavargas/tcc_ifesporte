@@ -14,6 +14,7 @@ import BadmintonForm from './components/BadmintonForm';
 import TenisMesaForm from './components/TenisMesaForm';
 import XadrezForm from './components/XadrezForm';
 import AtletismoForm, { isPrimeiroLugar } from './components/AtletismoForm';
+import TempoExtraCard from './components/TempoExtraCard';
 
 const NovaAnalise = () => {
   const navigate = useNavigate();
@@ -514,15 +515,53 @@ const NovaAnalise = () => {
           payload.categoria = 'Geral';
         }
       } else {
+        const dados = payload.dadosEspecificos || {};
+        const tePlacar = dados.tempoExtra?.placar;
+        const hasTeNos = tePlacar?.nos !== undefined && tePlacar?.nos !== '' && tePlacar?.nos !== null;
+        const hasTeAdv = tePlacar?.adv !== undefined && tePlacar?.adv !== '' && tePlacar?.adv !== null;
+        const teNos = hasTeNos ? (parseInt(tePlacar.nos, 10) || 0) : 0;
+        const teAdv = hasTeAdv ? (parseInt(tePlacar.adv, 10) || 0) : 0;
+
         if (!payload.placar || payload.placar === '') {
-          const dados = payload.dadosEspecificos || {};
-          if (dados.placar1Tempo || dados.placar2Tempo) {
+          if (dados.placar1Tempo || dados.placar2Tempo || hasTeNos || hasTeAdv) {
             payload.placar = {
-              nos: (dados.placar1Tempo?.nos || 0) + (dados.placar2Tempo?.nos || 0),
-              adv: (dados.placar1Tempo?.adv || 0) + (dados.placar2Tempo?.adv || 0)
+              nos: (dados.placar1Tempo?.nos || 0) + (dados.placar2Tempo?.nos || 0) + teNos,
+              adv: (dados.placar1Tempo?.adv || 0) + (dados.placar2Tempo?.adv || 0) + teAdv
             };
           } else {
             payload.placar = { nos: 0, adv: 0 };
+          }
+        }
+
+        // Limpeza de Tempo Extra se não tiver sido preenchido
+        if (payload.dadosEspecificos?.tempoExtra) {
+          const te = payload.dadosEspecificos.tempoExtra;
+          const p = te.placar;
+          const hasScore = p && (
+            (p.nos !== undefined && p.nos !== '' && p.nos !== null) ||
+            (p.adv !== undefined && p.adv !== '' && p.adv !== null)
+          );
+
+          const hasCriteria = Object.entries(te).some(([k, v]) => {
+            if (k === 'placar') return false;
+            if (Array.isArray(v)) return v.length > 0;
+            if (typeof v === 'number') return v > 0;
+            if (typeof v === 'string') return v.trim() !== '' && v !== '0';
+            return false;
+          });
+
+          if (hasScore || hasCriteria) {
+            const cleanedPlacar = hasScore ? {
+              nos: (p?.nos !== undefined && p?.nos !== '' && p?.nos !== null) ? (parseInt(p.nos, 10) || 0) : 0,
+              adv: (p?.adv !== undefined && p?.adv !== '' && p?.adv !== null) ? (parseInt(p.adv, 10) || 0) : 0
+            } : undefined;
+
+            payload.dadosEspecificos.tempoExtra = {
+              ...te,
+              ...(cleanedPlacar ? { placar: cleanedPlacar } : {})
+            };
+          } else {
+            delete payload.dadosEspecificos.tempoExtra;
           }
         }
       }
@@ -602,7 +641,11 @@ const NovaAnalise = () => {
   const isBadminton = normMod.includes('badminton');
   const isTenisMesa = normMod.includes('tenis de mesa');
   const isXadrez = normMod.includes('xadrez');
-  const isEquipe = normMod.includes('futebol') || normMod.includes('futsal') || normMod.includes('basquete') || normMod.includes('handebol') || normMod.includes('volei') || normMod.includes('voleibol');
+  const isFutsalFutebol = normMod.includes('futsal') || normMod.includes('futebol');
+  const isHandebol = normMod.includes('handebol');
+  const isBasquete = normMod.includes('basquete');
+  const hasTempoExtraLayout = isFutsalFutebol || isHandebol || isBasquete;
+  const isEquipe = isFutsalFutebol || isBasquete || isHandebol || normMod.includes('volei') || normMod.includes('voleibol');
   const isIndividualSport = !isEquipe && !isAtletismo && !isTenisMesa && !isXadrez && !isBadminton;
 
   if (loading) {
@@ -617,7 +660,7 @@ const NovaAnalise = () => {
 
   return (
     <Layout>
-      <div style={{ width: '100%', maxWidth: '960px', margin: '0 auto', paddingBottom: '60px' }}>
+      <div style={{ width: '100%', maxWidth: hasTempoExtraLayout ? '1440px' : '960px', margin: '0 auto', paddingBottom: '60px' }}>
         
         {/* Breadcrumb Contextual */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-tertiary)', marginBottom: '16px' }} className="d-none-print">
@@ -761,6 +804,108 @@ const NovaAnalise = () => {
 
               {renderSportForm()}
             </div>
+          ) : hasTempoExtraLayout ? (
+            /* Layout de 2 colunas para Futsal, Futebol, Handebol e Basquete */
+            <>
+              <div className="analysis-two-col-layout">
+                {/* Coluna Esquerda: Análise Normal Completa */}
+                <div className="analysis-main-column">
+                  {/* Card 1: Informações Gerais do Registro */}
+                  <div style={{
+                    background: 'var(--bg-card)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '24px',
+                    border: '1px solid var(--border-light)',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}>
+                    <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Trophy size={18} style={{ color: 'var(--primary)' }} />
+                      1. Informações Gerais do Registro
+                    </h5>
+
+                    <div className="row g-3">
+                      <div className="col-12 col-md-6">
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                          Categoria / Gênero
+                        </label>
+                        <select
+                          className="form-select"
+                          value={formData.categoria}
+                          onChange={(e) => handleInputChange('categoria', e.target.value)}
+                          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem', fontWeight: 600 }}
+                          required
+                        >
+                          <option value="Feminino">Feminino</option>
+                          <option value="Masculino">Masculino</option>
+                          <option value="Geral">Geral / Misto</option>
+                        </select>
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                          Data da Partida <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={formData.data}
+                          onChange={(e) => handleInputChange('data', e.target.value)}
+                          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Dados Técnicos e Estatísticas do Esporte */}
+                  <div style={{
+                    background: 'var(--bg-card)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '24px',
+                    border: '1px solid var(--border-light)',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}>
+                    <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Users size={18} style={{ color: 'var(--primary)' }} />
+                      2. Dados Técnicos e Estatísticas de {formData.modalidade}
+                    </h5>
+
+                    {renderSportForm()}
+                  </div>
+                </div>
+
+                {/* Coluna Direita: Card Tempo Extra Independente */}
+                <div className="analysis-overtime-column">
+                  <TempoExtraCard
+                    formData={formData}
+                    setFormData={setFormData}
+                    students={filteredStudents}
+                  />
+                </div>
+              </div>
+
+              {/* Card 3: Observações do Treinador (Abaixo das duas colunas) */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '14px', fontSize: '1rem' }}>
+                  Observações do treinador
+                </h5>
+
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  placeholder="Digite aqui as observações..."
+                  value={formData.observacoes || ''}
+                  onChange={(e) => handleInputChange('observacoes', e.target.value)}
+                  style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+                />
+              </div>
+            </>
           ) : (
             <>
               {/* Card 1: Contexto e Informações Gerais */}

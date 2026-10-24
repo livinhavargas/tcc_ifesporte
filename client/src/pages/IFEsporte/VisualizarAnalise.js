@@ -6,7 +6,7 @@ import { addNotification } from '../../utils/notifications';
 import { apiUrl } from '../../services/api';
 import { 
   ArrowLeft, Edit2, Trash2, Calendar, 
-  Users, Activity, MessageSquare, AlertCircle 
+  Users, Activity, MessageSquare, AlertCircle, Timer 
 } from 'lucide-react';
 import { isPrimeiroLugar } from './components/AtletismoForm';
 
@@ -435,6 +435,7 @@ const VisualizarAnalise = () => {
                     if (key === 'atleta1Nome' || key === 'atleta2Nome' || key === 'nomeAtleta' || key === 'nomeDupla') return null;
                     if (key === 'penaltisCobrancas' && dadosEspecificos.penaltisParticipantes) return null;
                     if (key === 'cartoes' && (dadosEspecificos.cartoes1T || dadosEspecificos.cartoes2T)) return null;
+                    if (key === 'tempoExtra') return null;
                     if (key.startsWith('placarSet') && typeof val === 'object' && val !== null && (parseInt(val.nos, 10) || 0) === 0 && (parseInt(val.adv, 10) || 0) === 0) return null;
 
                     const LABELS_MAP = {
@@ -635,6 +636,95 @@ const VisualizarAnalise = () => {
               )}
             </div>
           </div>
+
+          {/* Card Tempo Extra (Exibido somente quando registrado) */}
+          {dadosEspecificos?.tempoExtra && (
+            <div className="col-12">
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                border: '1px solid var(--border-light)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '18px', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Timer size={18} style={{ color: 'var(--primary)' }} />
+                  Tempo Extra
+                </h5>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
+                  {/* Placar do Tempo Extra */}
+                  {dadosEspecificos.tempoExtra.placar && (
+                    <div style={{
+                      background: 'var(--bg)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '12px 16px',
+                      border: '1px solid var(--border-light)'
+                    }}>
+                      <span style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Placar do Tempo Extra
+                      </span>
+                      <strong style={{ fontSize: '1.125rem', color: 'var(--primary)', fontWeight: 800 }}>
+                        {dadosEspecificos.tempoExtra.placar.nos ?? 0} x {dadosEspecificos.tempoExtra.placar.adv ?? 0}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Demais critérios técnicos do Tempo Extra */}
+                  {Object.entries(dadosEspecificos.tempoExtra).map(([teKey, teVal]) => {
+                    if (teKey === 'placar') return null;
+                    if (teVal === '' || teVal === null || teVal === undefined) return null;
+                    if (Array.isArray(teVal) && teVal.length === 0) return null;
+
+                    const TE_LABELS = {
+                      penaltisSofridos: 'Pênaltis Sofridos',
+                      penaltisCometidos: 'Pênaltis Cometidos',
+                      penaltisErrados: 'Pênaltis Errados',
+                      penaltisDefendidos: 'Pênaltis Defendidos',
+                      faltasSofridas: 'Faltas Sofridas',
+                      faltasCometidas: 'Faltas Cometidas',
+                      cartoes: 'Cartões',
+                      gols7mSofridos: 'Gols de 7m Sofridos',
+                      gols7mMarcados: 'Gols de 7m Marcados',
+                      gols7m: 'Autores dos Gols de 7m',
+                      doisMinutosNos: 'Punições 2 Min (Nossa Equipe)',
+                      doisMinutosAdv: 'Punições 2 Min (Adversário)',
+                      cestas2PontosFeitas: 'Cestas de 2 Pontos Feitas',
+                      cestas2PontosSofridas: 'Cestas de 2 Pontos Sofridas',
+                      cestas3PontosFeitas: 'Cestas de 3 Pontos Feitas',
+                      cestas3PontosSofridas: 'Cestas de 3 Pontos Sofridas',
+                      lancesLivresFeitos: 'Lances Livres Feitos',
+                      lancesLivresSofridos: 'Lances Livres Sofridos'
+                    };
+
+                    const teLabel = TE_LABELS[teKey] || teKey;
+                    let teDisplay = teVal;
+                    if (teKey === 'cartoes' && Array.isArray(teVal)) {
+                      teDisplay = teVal.map(c => `${c.tipo === 'Vermelho' ? '🟥 Vermelho' : '🟨 Amarelo'}: ${c.atletaNome || c.equipe || 'Atleta'}`).join('; ');
+                    } else if (teKey === 'gols7m' && Array.isArray(teVal)) {
+                      teDisplay = teVal.map((g, i) => `Gol ${i + 1}: ${g.atletaNome || 'Atleta'}`).join('; ');
+                    }
+
+                    return (
+                      <div key={teKey} style={{
+                        background: 'var(--bg)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 16px',
+                        border: '1px solid var(--border-light)'
+                      }}>
+                        <span style={{ display: 'block', fontSize: '0.6875rem', color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
+                          {teLabel}
+                        </span>
+                        <strong style={{ fontSize: '0.9375rem', color: 'var(--text)', wordBreak: 'break-word' }}>
+                          {String(teDisplay)}
+                        </strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Observações do Treinador */}
           {observacoes && (

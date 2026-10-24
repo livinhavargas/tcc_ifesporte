@@ -11,14 +11,23 @@ const NumberStepper = ({
   ariaLabel = 'Número',
   size = 'md', // 'sm' | 'md' | 'lg'
   unit = '',
-  style = {}
+  style = {},
+  allowEmpty = false,
+  placeholder = '0'
 }) => {
-  const numValue = typeof value === 'number' ? value : (parseInt(value, 10) || 0);
+  const isEmpty = allowEmpty && (value === '' || value === null || value === undefined);
+  const numValue = isEmpty ? '' : (typeof value === 'number' ? value : (parseInt(value, 10) || 0));
 
   const handleDecrement = (e) => {
     e.preventDefault();
     if (disabled) return;
-    const nextVal = numValue - step;
+    if (isEmpty) {
+      const startVal = (min !== undefined && min >= 0) ? min : 0;
+      onChange(startVal);
+      return;
+    }
+    const current = typeof numValue === 'number' ? numValue : 0;
+    const nextVal = current - step;
     if (min !== undefined && nextVal < min) return;
     onChange(nextVal);
   };
@@ -26,7 +35,13 @@ const NumberStepper = ({
   const handleIncrement = (e) => {
     e.preventDefault();
     if (disabled) return;
-    const nextVal = numValue + step;
+    if (isEmpty) {
+      const startVal = (min !== undefined && min > 0) ? min : (0 + step);
+      onChange(startVal);
+      return;
+    }
+    const current = typeof numValue === 'number' ? numValue : 0;
+    const nextVal = current + step;
     if (max !== undefined && nextVal > max) return;
     onChange(nextVal);
   };
@@ -35,7 +50,7 @@ const NumberStepper = ({
     if (disabled) return;
     const raw = e.target.value;
     if (raw === '') {
-      onChange(0);
+      onChange(allowEmpty ? '' : 0);
       return;
     }
     const parsed = parseInt(raw, 10);
@@ -50,8 +65,8 @@ const NumberStepper = ({
     }
   };
 
-  const isMin = min !== undefined && numValue <= min;
-  const isMax = max !== undefined && numValue >= max;
+  const isMin = !isEmpty && min !== undefined && numValue <= min;
+  const isMax = !isEmpty && max !== undefined && numValue >= max;
 
   const heights = {
     sm: '32px',
@@ -119,6 +134,7 @@ const NumberStepper = ({
         <input
           type="number"
           value={numValue}
+          placeholder={placeholder}
           onChange={handleInputChange}
           disabled={disabled}
           min={min}

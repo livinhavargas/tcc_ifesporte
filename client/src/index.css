@@ -1444,4 +1444,29 @@ textarea.form-control {
   }
 }
 
+/* ── Layout de 2 Colunas para Criação/Edição de Análises (Futsal, Futebol, Handebol, Basquete) ── */
+.analysis-two-col-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.analysis-two-col-layout .analysis-main-column,
+.analysis-two-col-layout .analysis-overtime-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .analysis-two-col-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+
+
 
