@@ -89,10 +89,11 @@ const BasqueteForm = ({
         </div>
 
         <div className="col-12 col-md-6">
-          <label className="form-label" style={{ fontWeight: 700 }}>
+          <label htmlFor="select-resultado-final-basquete" className="form-label" style={{ fontWeight: 700 }}>
             Resultado Final <span style={{ color: 'var(--error)' }}>*</span>
           </label>
           <select
+            id="select-resultado-final-basquete"
             className="form-select"
             value={formData.resultado || ''}
             onChange={(e) => setFormData({ ...formData, resultado: e.target.value })}

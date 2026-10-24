@@ -526,11 +526,12 @@ const HandebolForm = ({
         </div>
 
         <div className="col-12 col-md-6">
-          <label className="form-label" style={{ fontWeight: 700 }}>
+          <label htmlFor="select-resultado-final-handebol" className="form-label" style={{ fontWeight: 700 }}>
             Resultado Final <span style={{ color: 'var(--error)' }}>*</span>
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <select
+              id="select-resultado-final-handebol"
               className="form-select"
               value={formData.resultado || ''}
               onChange={(e) => handleResultadoChange(e.target.value)}

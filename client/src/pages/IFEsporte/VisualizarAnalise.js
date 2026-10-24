@@ -9,6 +9,7 @@ import {
   Users, Activity, MessageSquare, AlertCircle, Timer 
 } from 'lucide-react';
 import { isPrimeiroLugar } from './components/AtletismoForm';
+import { hasTempoExtraData } from './NovaAnalise';
 
 const VisualizarAnalise = () => {
   const { id } = useParams();
@@ -638,7 +639,7 @@ const VisualizarAnalise = () => {
           </div>
 
           {/* Card Tempo Extra (Exibido somente quando registrado) */}
-          {dadosEspecificos?.tempoExtra && (
+          {hasTempoExtraData(dadosEspecificos?.tempoExtra) && (
             <div className="col-12">
               <div style={{
                 background: 'var(--bg-card)',

@@ -5,7 +5,8 @@ import { Timer, Plus, Trash2 } from 'lucide-react';
 const TempoExtraCard = ({
   formData,
   setFormData,
-  students = []
+  students = [],
+  onRemove
 }) => {
   const modLower = (formData.modalidade || '').toLowerCase();
   const isFutsalFutebol = modLower.includes('futsal') || modLower.includes('futebol');
@@ -68,7 +69,7 @@ const TempoExtraCard = ({
       const teNos = hasTeNos ? (parseInt(updatedTePlacar.nos, 10) || 0) : 0;
       const teAdv = hasTeAdv ? (parseInt(updatedTePlacar.adv, 10) || 0) : 0;
 
-      const p1 = prevDados.placar1Tempo || { nos: 0, adv: 0 };
+      const p1 = prevDados.placar1Tempo || (typeof prev.placar === 'object' && prev.placar !== null ? { nos: prev.placar.nos || 0, adv: prev.placar.adv || 0 } : { nos: 0, adv: 0 });
       const p2 = prevDados.placar2Tempo || { nos: 0, adv: 0 };
       const totalNos = (p1.nos || 0) + (p2.nos || 0) + teNos;
       const totalAdv = (p1.adv || 0) + (p2.adv || 0) + teAdv;
@@ -197,18 +198,39 @@ const TempoExtraCard = ({
       gap: '20px'
     }}>
       {/* Título do Card */}
-      <h5 style={{
-        fontWeight: 700,
-        color: 'var(--text)',
-        marginBottom: '2px',
-        fontSize: '1rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <Timer size={18} style={{ color: 'var(--primary)' }} />
-        Tempo Extra
-      </h5>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h5 style={{
+          fontWeight: 700,
+          color: 'var(--text)',
+          marginBottom: 0,
+          fontSize: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <Timer size={18} style={{ color: 'var(--primary)' }} />
+          Tempo Extra
+        </h5>
+        {onRemove && (
+          <button
+            type="button"
+            className="btn btn-sm text-danger"
+            onClick={onRemove}
+            title="Excluir tempo extra"
+            aria-label="Excluir tempo extra"
+            style={{
+              padding: '4px 8px',
+              background: 'transparent',
+              border: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
 
       {/* ── PLACAR DO TEMPO EXTRA (Comum a Futsal, Futebol, Handebol e Basquete) ── */}
       <div style={{
