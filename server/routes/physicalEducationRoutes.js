@@ -11,6 +11,9 @@ router.get('/cursos', authMiddleware, physicalEducationController.getCoursesSumm
 router.get('/cursos/:cursoSlug', authMiddleware, physicalEducationController.getTurmasByCourse);
 router.get('/turma/:id', authMiddleware, physicalEducationController.getTurmaDetail);
 
+// Edição do nome da turma cadastrada
+router.put('/turma/:id/nome', authMiddleware, physicalEducationController.updateTurmaNome);
+
 // Configuração de horários semanais
 router.put('/turma/:id/horarios', authMiddleware, physicalEducationController.updateSchedules);
 

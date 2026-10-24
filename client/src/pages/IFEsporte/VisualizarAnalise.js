@@ -434,7 +434,7 @@ const VisualizarAnalise = () => {
                     if (val === '' || val === null || val === undefined) return null;
                     if (key === 'atleta1' || key === 'atleta2') return null;
                     if (key === 'atleta1Nome' || key === 'atleta2Nome' || key === 'nomeAtleta' || key === 'nomeDupla') return null;
-                    if (key === 'penaltisCobrancas' && dadosEspecificos.penaltisParticipantes) return null;
+                    if ((key === 'penaltisCobrancas' || key === 'desempateSeteMetrosLista') && dadosEspecificos.penaltisParticipantes) return null;
                     if (key === 'cartoes' && (dadosEspecificos.cartoes1T || dadosEspecificos.cartoes2T)) return null;
                     if (key === 'tempoExtra') return null;
                     if (key.startsWith('placarSet') && typeof val === 'object' && val !== null && (parseInt(val.nos, 10) || 0) === 0 && (parseInt(val.adv, 10) || 0) === 0) return null;
@@ -592,16 +592,20 @@ const VisualizarAnalise = () => {
                           ? val.map(c => `${c.tipo === 'Vermelho' ? '🟥 Vermelho' : '🟨 Amarelo'}: ${c.atletaNome || 'Atleta'}`).join('; ')
                           : 'Nenhum';
                       }
-                    } else if (key === 'penaltisParticipantes') {
+                    } else if (key === 'penaltisParticipantes' || key === 'desempateSeteMetrosLista') {
                       if (Array.isArray(val)) {
-                        const cobrancas = Array.isArray(dadosEspecificos.penaltisCobrancas) ? dadosEspecificos.penaltisCobrancas : [];
-                        const nomes = val.map(id => {
-                          const c = cobrancas.find(x => x.atletaId === id);
-                          if (c && c.atletaNome) return c.atletaNome;
+                        const cobrancas = Array.isArray(dadosEspecificos.penaltisCobrancas) 
+                          ? dadosEspecificos.penaltisCobrancas 
+                          : (Array.isArray(dadosEspecificos.desempateSeteMetrosLista) ? dadosEspecificos.desempateSeteMetrosLista : []);
+                        const nomes = val.map((item) => {
+                          const id = typeof item === 'object' && item !== null ? item.atletaId : item;
+                          const c = cobrancas.find(x => x.atletaId === id) || (typeof item === 'object' ? item : null);
                           const a = (Array.isArray(atletas) ? atletas : []).find(x => (x._id || x) === id);
-                          return a ? (a.nome || a) : id;
+                          const nome = (c && c.atletaNome) || (a && a.nome) || (typeof item === 'object' && item.atletaNome) || id;
+                          const res = c && c.resultado ? (c.resultado === 'Gol' ? '⚽ Gol' : '❌ Não fez gol') : null;
+                          return res ? `${nome} (${res})` : nome;
                         });
-                        formatted = nomes.join(', ') || `${val.length} atletas`;
+                        formatted = nomes.join('; ') || `${val.length} atletas`;
                       }
                     } else if (Array.isArray(val)) {
                       formatted = val.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');

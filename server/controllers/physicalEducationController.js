@@ -23,6 +23,13 @@ const isTerceiroAno = (turmaStr) => {
   return /^3/i.test(clean);
 };
 
+// Helper para verificar se curso é Hospedagem/Eventos
+const isHospedagemCourse = (curso) => {
+  if (!curso) return false;
+  const c = curso.toLowerCase();
+  return c.includes('hospedagem') || c.includes('eventos');
+};
+
 // Cursos padrão e turmas padrão do IFesporte (Apenas 1º e 2º anos fazem Educação Física)
 const DEFAULT_COURSES = [
   {
@@ -36,9 +43,9 @@ const DEFAULT_COURSES = [
     ]
   },
   {
-    nome: 'Hospedagem',
+    nome: 'Hospedagem/Eventos',
     slug: 'hospedagem',
-    descricao: 'Curso Técnico Integrado ao Ensino Médio em Hospedagem',
+    descricao: 'Curso Técnico Integrado ao Ensino Médio em Hospedagem/Eventos',
     turmasPadrao: ['1º H', '2º H'],
     defaultHorarios: [
       { diaSemana: 'Segunda-feira', horario: '09:00', duracaoMinutos: 45 },
@@ -50,17 +57,28 @@ const DEFAULT_COURSES = [
 // Garantir que as turmas padrão existam no banco para os 2 cursos
 const ensureDefaultClasses = async () => {
   try {
+    // Atualizar turmas legadas 'Hospedagem' para o nome oficial 'Hospedagem/Eventos'
+    await PhysicalEducationClass.updateMany(
+      { curso: 'Hospedagem' },
+      { $set: { curso: 'Hospedagem/Eventos' } }
+    );
+
     for (const courseDef of DEFAULT_COURSES) {
       for (const tNome of courseDef.turmasPadrao) {
+        const queryCurso = courseDef.slug === 'hospedagem'
+          ? { $in: ['Hospedagem', 'Hospedagem/Eventos'] }
+          : courseDef.nome;
+
         const exists = await PhysicalEducationClass.findOne({
-          curso: courseDef.nome,
-          turma: tNome,
+          curso: queryCurso,
+          $or: [{ turma: tNome }, { turmaOriginal: tNome }],
           anoLetivo: '2026'
         });
         if (!exists) {
           await PhysicalEducationClass.create({
             curso: courseDef.nome,
             turma: tNome,
+            turmaOriginal: tNome,
             anoLetivo: '2026',
             horariosSemanais: courseDef.defaultHorarios,
             relatorios: []
@@ -90,19 +108,29 @@ exports.getCoursesSummary = async (req, res) => {
 
     const summary = DEFAULT_COURSES.map(courseDef => {
       // Filtrar apenas turmas de 1º e 2º ano
-      const courseClasses = allClasses.filter(c => c.curso === courseDef.nome && !isTerceiroAno(c.turma));
+      const courseClasses = allClasses.filter(c => {
+        const matchCurso = courseDef.slug === 'hospedagem'
+          ? isHospedagemCourse(c.curso)
+          : c.curso === courseDef.nome;
+        return matchCurso && !isTerceiroAno(c.turma);
+      });
       
       // Contar alunos associados a este curso nas turmas de 1º e 2º ano
       let totalStudentsInCourse = 0;
       courseClasses.forEach(cls => {
-        const regex = buildTurmaRegex(cls.turma);
+        const regexes = [buildTurmaRegex(cls.turma), cls.turmaOriginal ? buildTurmaRegex(cls.turmaOriginal) : null].filter(Boolean);
         const count = allStudents.filter(s => {
           if (isTerceiroAno(s.turma) || isTerceiroAno(s.serie)) return false;
-          if (s.curso && s.curso.toLowerCase() === courseDef.nome.toLowerCase()) {
-            if (regex && s.turma) return regex.test(s.turma);
-            return true;
+          const matchStudentCourse = courseDef.slug === 'hospedagem'
+            ? isHospedagemCourse(s.curso)
+            : s.curso && s.curso.toLowerCase() === courseDef.nome.toLowerCase();
+
+          if (matchStudentCourse) {
+            if (regexes.some(r => r.test(s.turma))) return true;
+            if (s.turma === cls.turma || (cls.turmaOriginal && s.turma === cls.turmaOriginal)) return true;
+            return false;
           }
-          if (regex && s.turma) return regex.test(s.turma);
+          if (regexes.some(r => r.test(s.turma))) return true;
           return false;
         }).length;
         totalStudentsInCourse += count;
@@ -132,7 +160,11 @@ exports.getCoursesSummary = async (req, res) => {
 exports.getTurmasByCourse = async (req, res) => {
   try {
     const { cursoSlug } = req.params;
-    const courseDef = DEFAULT_COURSES.find(c => c.slug === cursoSlug || c.nome.toLowerCase() === cursoSlug.toLowerCase());
+    const courseDef = DEFAULT_COURSES.find(c => 
+      c.slug === cursoSlug || 
+      c.nome.toLowerCase() === cursoSlug.toLowerCase() ||
+      (cursoSlug === 'hospedagem' && c.slug === 'hospedagem')
+    );
 
     if (!courseDef) {
       return res.status(404).json({ message: 'Curso não encontrado.' });
@@ -140,8 +172,12 @@ exports.getTurmasByCourse = async (req, res) => {
 
     await ensureDefaultClasses();
 
+    const queryCurso = courseDef.slug === 'hospedagem'
+      ? { $in: ['Hospedagem', 'Hospedagem/Eventos'] }
+      : courseDef.nome;
+
     const turmas = await PhysicalEducationClass.find({
-      curso: courseDef.nome,
+      curso: queryCurso,
       anoLetivo: '2026'
     }).sort({ turma: 1 });
 
@@ -151,21 +187,27 @@ exports.getTurmasByCourse = async (req, res) => {
     const allStudents = await Student.find({}).select('nome matricula turma curso esportes modalidades');
 
     const result = filteredTurmas.map(t => {
-      const regex = buildTurmaRegex(t.turma);
+      const regexes = [buildTurmaRegex(t.turma), t.turmaOriginal ? buildTurmaRegex(t.turmaOriginal) : null].filter(Boolean);
       const studentCount = allStudents.filter(s => {
         if (isTerceiroAno(s.turma) || isTerceiroAno(s.serie)) return false;
-        if (s.curso && s.curso.toLowerCase() === courseDef.nome.toLowerCase()) {
-          if (regex && s.turma) return regex.test(s.turma);
-          return true;
+        const matchStudentCourse = courseDef.slug === 'hospedagem'
+          ? isHospedagemCourse(s.curso)
+          : s.curso && s.curso.toLowerCase() === courseDef.nome.toLowerCase();
+
+        if (matchStudentCourse) {
+          if (regexes.some(r => r.test(s.turma))) return true;
+          if (s.turma === t.turma || (t.turmaOriginal && s.turma === t.turmaOriginal)) return true;
+          return false;
         }
-        if (regex && s.turma) return regex.test(s.turma);
+        if (regexes.some(r => r.test(s.turma))) return true;
         return false;
       }).length;
 
       return {
         _id: t._id,
-        curso: t.curso,
+        curso: t.curso === 'Hospedagem' ? 'Hospedagem/Eventos' : t.curso,
         turma: t.turma,
+        turmaOriginal: t.turmaOriginal || t.turma,
         anoLetivo: t.anoLetivo,
         horariosSemanais: t.horariosSemanais || [],
         totalAlunos: studentCount,
@@ -197,16 +239,19 @@ exports.getTurmaDetail = async (req, res) => {
       return res.status(404).json({ message: 'Turma de Educação Física não encontrada ou não participa de Educação Física (3ºs anos não possuem Educação Física).' });
     }
 
-    // Buscar alunos reais vinculados à turma
-    const regex = buildTurmaRegex(turmaDoc.turma);
-    const alunos = await Student.find({
-      $or: [
-        { turma: regex },
-        { turma: turmaDoc.turma },
-        { serie: regex },
-        { serie: turmaDoc.turma }
-      ]
-    }).select('nome matricula foto sexo dataNascimento turma curso modalidades esportes telefone email')
+    // Buscar alunos reais vinculados à turma (suportando nome atual e turmaOriginal)
+    const nomesBusca = [turmaDoc.turma, turmaDoc.turmaOriginal].filter(Boolean);
+    const orConds = [];
+    nomesBusca.forEach(name => {
+      const regex = buildTurmaRegex(name);
+      if (regex) {
+        orConds.push({ turma: regex }, { serie: regex });
+      }
+      orConds.push({ turma: name }, { serie: name });
+    });
+
+    const alunos = await Student.find({ $or: orConds })
+      .select('nome matricula foto sexo dataNascimento turma curso modalidades esportes telefone email')
       .sort({ nome: 1 });
 
     // Ordenar relatórios da aula mais recente para a mais antiga
@@ -214,8 +259,9 @@ exports.getTurmaDetail = async (req, res) => {
 
     res.json({
       _id: turmaDoc._id,
-      curso: turmaDoc.curso,
+      curso: turmaDoc.curso === 'Hospedagem' ? 'Hospedagem/Eventos' : turmaDoc.curso,
       turma: turmaDoc.turma,
+      turmaOriginal: turmaDoc.turmaOriginal || turmaDoc.turma,
       anoLetivo: turmaDoc.anoLetivo,
       professorResponsavel: turmaDoc.professorResponsavel,
       horariosSemanais: turmaDoc.horariosSemanais || [],
@@ -225,6 +271,59 @@ exports.getTurmaDetail = async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar detalhes da turma:', error);
     res.status(500).json({ message: 'Erro ao buscar detalhes da turma.', error: error.message });
+  }
+};
+
+// 3.1. Permitir editar o nome da turma cadastrada (preservando _id, vínculos e histórico)
+exports.updateTurmaNome = async (req, res) => {
+  try {
+    if (req.userTipo === 'estudante') {
+      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação.' });
+    }
+
+    const { id } = req.params;
+    const { turma } = req.body;
+
+    if (!turma || !String(turma).trim()) {
+      return res.status(400).json({ message: 'O nome da turma não pode ficar em branco.' });
+    }
+
+    const turmaDoc = await PhysicalEducationClass.findById(id);
+    if (!turmaDoc) {
+      return res.status(404).json({ message: 'Turma não encontrada.' });
+    }
+
+    const novoNome = turma.trim();
+
+    // Se já tinha nome original, preserva-o; caso contrário, define o nome atual como original
+    if (!turmaDoc.turmaOriginal) {
+      turmaDoc.turmaOriginal = turmaDoc.turma;
+    }
+
+    // Verificar se já existe outra turma com este mesmo nome no mesmo curso e ano letivo
+    const conflito = await PhysicalEducationClass.findOne({
+      _id: { $ne: id },
+      curso: turmaDoc.curso,
+      turma: novoNome,
+      anoLetivo: turmaDoc.anoLetivo || '2026'
+    });
+
+    if (conflito) {
+      return res.status(400).json({ message: `Já existe uma turma cadastrada com o nome "${novoNome}" neste curso.` });
+    }
+
+    turmaDoc.turma = novoNome;
+    await turmaDoc.save();
+
+    res.json({
+      message: 'Nome da turma atualizado com sucesso.',
+      turma: turmaDoc.turma,
+      turmaOriginal: turmaDoc.turmaOriginal,
+      turmaDoc
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar nome da turma:', error);
+    res.status(500).json({ message: 'Erro ao atualizar nome da turma.', error: error.message });
   }
 };
 

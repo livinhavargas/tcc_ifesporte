@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import NumberStepper from '../../../components/NumberStepper';
 import { Plus, Trash2 } from 'lucide-react';
+import DisputaDesempateCobrancas from './DisputaDesempateCobrancas';
 
 const FutebolFutsalForm = ({
   formData,
@@ -100,29 +101,24 @@ const FutebolFutsalForm = ({
     return true; // Geral / Misto
   });
 
-  // Atletas selecionados no desempate
-  const selectedShootoutAthletes = Array.isArray(dados.penaltisParticipantes)
-    ? dados.penaltisParticipantes
-    : (Array.isArray(dados.penaltisCobrancas) ? dados.penaltisCobrancas.map(c => c.atletaId).filter(Boolean) : []);
+  // Atletas selecionados no desempate (Cobranças de Pênaltis)
+  const penaltisCobrancas = Array.isArray(dados.penaltisCobrancas) && dados.penaltisCobrancas.length > 0
+    ? dados.penaltisCobrancas
+    : (Array.isArray(dados.penaltisParticipantes) && dados.penaltisParticipantes.length > 0
+        ? dados.penaltisParticipantes.map(id => {
+            const at = eligibleStudents.find(s => s._id === id) || students.find(s => s._id === id);
+            return {
+              atletaId: id,
+              atletaNome: at ? at.nome : '',
+              resultado: 'Gol'
+            };
+          })
+        : []);
 
-  const toggleShootoutAthlete = (atletaId) => {
-    const isSelected = selectedShootoutAthletes.includes(atletaId);
-    const updated = isSelected 
-      ? selectedShootoutAthletes.filter(id => id !== atletaId)
-      : [...selectedShootoutAthletes, atletaId];
-
-    const cobrancas = updated.map(id => {
-      const at = eligibleStudents.find(s => s._id === id) || students.find(s => s._id === id);
-      return {
-        atletaId: id,
-        atletaNome: at ? at.nome : '',
-        resultado: 'Participou'
-      };
-    });
-
+  const handleCobrancasChange = (updatedCobrancas) => {
     updateDados({
-      penaltisParticipantes: updated,
-      penaltisCobrancas: cobrancas
+      penaltisCobrancas: updatedCobrancas,
+      penaltisParticipantes: updatedCobrancas.map(c => c.atletaId).filter(Boolean)
     });
   };
 
@@ -451,80 +447,12 @@ const FutebolFutsalForm = ({
           <div style={{ width: '100%', height: '1px', background: 'rgba(251, 146, 60, 0.25)', margin: '4px 0 16px' }} />
 
           {/* Jogadores que participaram da cobrança */}
-          <div style={{ width: '100%', textAlign: 'left' }}>
-            <h6 style={{
-              fontWeight: 700,
-              color: 'var(--text)',
-              fontSize: '0.875rem',
-              marginBottom: '12px',
-              textAlign: 'center'
-            }}>
-              Jogadores que participaram da cobrança
-            </h6>
-
-            {eligibleStudents.length === 0 ? (
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', textAlign: 'center', margin: 0 }}>
-                Nenhum jogador encontrado para a categoria selecionada.
-              </p>
-            ) : (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '8px',
-                width: '100%'
-              }}>
-                {eligibleStudents.map((st) => {
-                  const isSelected = selectedShootoutAthletes.includes(st._id);
-                  return (
-                    <label
-                      key={st._id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '8px 12px',
-                        borderRadius: 'var(--radius-md)',
-                        background: isSelected ? 'rgba(251, 146, 60, 0.08)' : 'var(--bg-card)',
-                        border: isSelected ? '1px solid #fb923c' : '1px solid var(--border-light)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        userSelect: 'none'
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleShootoutAthlete(st._id)}
-                        style={{
-                          accentColor: '#f97316',
-                          width: '16px',
-                          height: '16px',
-                          cursor: 'pointer'
-                        }}
-                      />
-                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                        <span style={{
-                          fontSize: '0.8125rem',
-                          fontWeight: isSelected ? 700 : 500,
-                          color: 'var(--text)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {st.nome}
-                        </span>
-                        {st.turma && (
-                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>
-                            {st.turma}
-                          </span>
-                        )}
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <DisputaDesempateCobrancas
+            cobrancas={penaltisCobrancas}
+            onChange={handleCobrancasChange}
+            eligibleStudents={eligibleStudents}
+            modalidade={formData.modalidade || 'Futebol'}
+          />
         </div>
       )}
 

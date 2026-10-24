@@ -21,15 +21,15 @@ const CourseLogo = ({
 
   const norm = String(course).toLowerCase().trim();
   const isInfo = norm.includes('informatica') || norm.includes('informática') || norm.includes('internet');
-  const isHosp = norm.includes('hospedagem') || norm.includes('hotel');
+  const isHosp = norm.includes('hospedagem') || norm.includes('hotel') || norm.includes('eventos');
 
   if (!isInfo && !isHosp) {
     return null;
   }
 
   const logoSrc = isInfo ? '/images/logo_informatica.svg' : '/images/logo_hospedagem.svg';
-  const logoAlt = alt || (isInfo ? 'Logo Informática para Internet' : 'Logo Hospedagem');
-  const courseTitle = isInfo ? 'Informática para Internet' : 'Hospedagem';
+  const logoAlt = alt || (isInfo ? 'Logo Informática para Internet' : 'Logo Hospedagem/Eventos');
+  const courseTitle = isInfo ? 'Informática para Internet' : 'Hospedagem/Eventos';
 
   const numericSize = typeof size === 'number' ? size : parseInt(size, 10) || 32;
   const calculatedWidth = Math.round(numericSize * 1.25);

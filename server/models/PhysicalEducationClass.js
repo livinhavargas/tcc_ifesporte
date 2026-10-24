@@ -4,11 +4,15 @@ const physicalEducationClassSchema = new mongoose.Schema({
   curso: {
     type: String,
     required: true,
-    enum: ['Hospedagem', 'Informática para Internet', 'Outro']
+    enum: ['Hospedagem', 'Hospedagem/Eventos', 'Informática para Internet', 'Outro']
   },
   turma: {
     type: String,
     required: true,
+    trim: true
+  },
+  turmaOriginal: {
+    type: String,
     trim: true
   },
   anoLetivo: {

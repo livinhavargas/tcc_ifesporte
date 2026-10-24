@@ -67,6 +67,65 @@ export default function EducacaoFisica() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState(null);
 
+  // Edição do Nome da Turma
+  const [isEditingClassName, setIsEditingClassName] = useState(false);
+  const [newClassName, setNewClassName] = useState('');
+
+  const handleStartEditClassName = () => {
+    if (currentClassData) {
+      setNewClassName(currentClassData.turma || '');
+      setIsEditingClassName(true);
+    }
+  };
+
+  const handleCancelEditClassName = () => {
+    setIsEditingClassName(false);
+    setNewClassName('');
+  };
+
+  const handleSaveClassName = async () => {
+    if (!newClassName || !newClassName.trim()) {
+      setMessage('O nome da turma não pode ficar em branco.');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const res = await fetch(apiUrl(`/api/educacao-fisica/turma/${selectedClassId}/nome`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ turma: newClassName.trim() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCurrentClassData(prev => ({
+          ...prev,
+          turma: data.turma
+        }));
+        if (currentCourseData && currentCourseData.turmas) {
+          setCurrentCourseData(prev => ({
+            ...prev,
+            turmas: prev.turmas.map(t => t._id === selectedClassId ? { ...t, turma: data.turma } : t)
+          }));
+        }
+        setIsEditingClassName(false);
+        setMessage('✅ Nome da turma atualizado com sucesso!');
+        setTimeout(() => setMessage(''), 4000);
+      } else {
+        setMessage(data.message || 'Erro ao atualizar nome da turma.');
+        setTimeout(() => setMessage(''), 4000);
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar nome da turma:', err);
+      setMessage('Erro de conexão ao salvar alteração do nome.');
+      setTimeout(() => setMessage(''), 4000);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // 1. Carregar Resumo dos Cursos
   const fetchCoursesSummary = useCallback(async () => {
     try {
@@ -444,6 +503,8 @@ export default function EducacaoFisica() {
               <div className="row g-4">
                 {coursesSummary.map((c) => {
                   const isInfo = c.slug.includes('informatica');
+                  const courseDisplayName = (c.nome || '').toLowerCase().includes('hospedagem') ? 'Hospedagem/Eventos' : c.nome;
+                  const courseDisplayDesc = (c.descricao || '').replace(/Hospedagem(?!\/Eventos)/g, 'Hospedagem/Eventos');
                   return (
                     <div key={c.slug} className="col-md-6">
                       <div
@@ -492,10 +553,10 @@ export default function EducacaoFisica() {
                           </div>
 
                           <h4 style={{ fontWeight: 800, color: 'var(--text)', marginBottom: '8px', fontSize: '1.25rem' }}>
-                            {c.nome}
+                            {courseDisplayName}
                           </h4>
                           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '24px', lineHeight: '1.5' }}>
-                            {c.descricao}
+                            {courseDisplayDesc}
                           </p>
                         </div>
 
@@ -530,7 +591,7 @@ export default function EducacaoFisica() {
                             fontWeight: 700,
                             fontSize: '0.875rem'
                           }}>
-                            <span>Acessar Turmas de {c.nome.split(' ')[0]}</span>
+                            <span>Acessar Turmas de {courseDisplayName.includes('Hospedagem') ? 'Hospedagem/Eventos' : courseDisplayName.split(' ')[0]}</span>
                             <ChevronRight size={18} />
                           </div>
                         </div>
@@ -570,13 +631,13 @@ export default function EducacaoFisica() {
                   </button>
                   <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>/</span>
                   <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.8125rem' }}>
-                    {currentCourseData?.curso || selectedCourseSlug}
+                    {(currentCourseData?.curso || selectedCourseSlug || '').toLowerCase().includes('hospedagem') ? 'Hospedagem/Eventos' : (currentCourseData?.curso || selectedCourseSlug)}
                   </span>
                 </div>
 
                 <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <CourseLogo course={currentCourseData?.curso || selectedCourseSlug} size={28} />
-                  <span>Turmas de {currentCourseData?.curso}</span>
+                  <span>Turmas de {(currentCourseData?.curso || '').toLowerCase().includes('hospedagem') ? 'Hospedagem/Eventos' : currentCourseData?.curso}</span>
                 </h3>
               </div>
             </div>
@@ -753,7 +814,7 @@ export default function EducacaoFisica() {
                   </button>
                   <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>/</span>
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
-                    {currentClassData.curso}
+                    {(currentClassData.curso || '').toLowerCase().includes('hospedagem') ? 'Hospedagem/Eventos' : currentClassData.curso}
                   </span>
                   <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>/</span>
                   <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.8125rem' }}>
@@ -761,9 +822,85 @@ export default function EducacaoFisica() {
                   </span>
                 </div>
 
-                <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <CourseLogo course={currentClassData.curso} size={28} />
-                  <span>{currentClassData.turma} — {currentClassData.curso}</span>
+                  {!isEditingClassName ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span>{currentClassData.turma} — {(currentClassData.curso || '').toLowerCase().includes('hospedagem') ? 'Hospedagem/Eventos' : currentClassData.curso}</span>
+                      <button
+                        type="button"
+                        onClick={handleStartEditClassName}
+                        className="btn btn-outline-secondary btn-sm"
+                        title="Editar nome da turma"
+                        aria-label="Editar nome da turma"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          padding: '2px 8px',
+                          fontWeight: 600,
+                          borderRadius: 'var(--radius-sm)'
+                        }}
+                      >
+                        <Pencil size={12} /> Editar Nome
+                      </button>
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        value={newClassName}
+                        onChange={(e) => setNewClassName(e.target.value)}
+                        placeholder="Nome da turma"
+                        aria-label="Novo nome da turma"
+                        style={{
+                          width: '180px',
+                          fontSize: '0.9375rem',
+                          fontWeight: 700,
+                          borderRadius: 'var(--radius-sm)'
+                        }}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveClassName();
+                          if (e.key === 'Escape') handleCancelEditClassName();
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveClassName}
+                        disabled={actionLoading || !newClassName.trim()}
+                        className="btn btn-primary btn-sm"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          padding: '3px 10px',
+                          fontWeight: 600,
+                          borderRadius: 'var(--radius-sm)'
+                        }}
+                      >
+                        <CheckCircle2 size={13} /> Salvar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEditClassName}
+                        className="btn btn-outline-secondary btn-sm"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          padding: '3px 10px',
+                          borderRadius: 'var(--radius-sm)'
+                        }}
+                      >
+                        <X size={13} /> Cancelar
+                      </button>
+                    </span>
+                  )}
                 </h3>
               </div>
             </div>
