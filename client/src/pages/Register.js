@@ -262,7 +262,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 <input type="text" className="form-control" name="codigoConvite" value={formData.codigoConvite} onChange={handleInputChange} placeholder="Ex: 123" />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Telefone (Opcional)</label>
+                <label className="form-label">Telefone</label>
                 <input type="text" className="form-control" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" />
               </div>
             </div>
@@ -289,7 +289,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 <input type="date" className="form-control bg-light border-0" name="dataNascimento" value={formData.dataNascimento} onChange={handleInputChange} />
               </div>
               <div className="col-md-4">
-                <label className="form-label fw-bold small text-muted">Turma (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Turma</label>
                 <select className="form-select bg-light border-0" name="turma" value={formData.turma} onChange={handleInputChange}>
                   <option value="">Selecione...</option>
                   {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
@@ -308,11 +308,11 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 <input type="text" className="form-control bg-light border-0" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">RG (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">RG</label>
                 <input type="text" className="form-control bg-light border-0" name="rg" value={formData.rg} onChange={handleInputChange} placeholder="00.000.000-0" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Logradouro (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Logradouro</label>
                 <input type="text" className="form-control bg-light border-0" name="endereco" value={formData.endereco} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" />
               </div>
               <div className="col-md-4">
@@ -324,19 +324,19 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 <input type="text" className="form-control bg-light border-0" name="estado" value={formData.estado} onChange={handleInputChange} placeholder="Ex: ES" maxLength="2" style={{ textTransform: 'uppercase' }} />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Peso em kg (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Peso em kg</label>
                 <input type="number" step="0.1" className="form-control bg-light border-0" name="peso" value={formData.peso} onChange={handleInputChange} placeholder="Ex: 65.5" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Altura em metros (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Altura em metros</label>
                 <input type="number" step="0.01" className="form-control bg-light border-0" name="altura" value={formData.altura} onChange={handleInputChange} placeholder="Ex: 1.75" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Nome do Responsável (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Nome do Responsável</label>
                 <input type="text" className="form-control bg-light border-0" name="nomeResponsavel" value={formData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do pai, mãe ou responsável" />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Telefone do Responsável (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Telefone do Responsável</label>
                 <input type="text" className="form-control bg-light border-0" name="telefoneResponsavel" value={formData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" />
               </div>
               
@@ -344,15 +344,15 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 <h6 style={{ fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} style={{ color: 'var(--primary)' }} />Informações Esportivas</h6>
               </div>
               <div className="col-md-3">
-                <label className="form-label fw-bold small text-muted">Nº da Camiseta (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Nº da Camiseta</label>
                 <input type="number" className="form-control bg-light border-0" name="numeroCamisa" value={formData.numeroCamisa} onChange={handleInputChange} placeholder="Ex: 10" />
               </div>
               <div className="col-md-3">
-                <label className="form-label fw-bold small text-muted">Nº do Calçado (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Nº do Calçado</label>
                 <input type="number" className="form-control bg-light border-0" name="numeroCalcado" value={formData.numeroCalcado} onChange={handleInputChange} placeholder="Ex: 40" />
               </div>
               <div className="col-md-3">
-                <label className="form-label fw-bold small text-muted">Tamanho da Camisa (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Tamanho da Camisa</label>
                 <select className="form-select bg-light border-0" name="tamanhoCamisa" value={formData.tamanhoCamisa} onChange={handleInputChange}>
                   <option value="">Selecione...</option>
                   <option value="P">P</option>
@@ -362,7 +362,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 </select>
               </div>
               <div className="col-md-3">
-                <label className="form-label fw-bold small text-muted">Tamanho do Calção (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Tamanho do Calção</label>
                 <select className="form-select bg-light border-0" name="tamanhoCalcao" value={formData.tamanhoCalcao} onChange={handleInputChange}>
                   <option value="">Selecione...</option>
                   <option value="P">P</option>
@@ -376,20 +376,20 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 <h6 style={{ fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><HeartPulse size={18} style={{ color: 'var(--error)' }} />Informações Médicas</h6>
               </div>
               <div className="col-md-12">
-                <label className="form-label fw-bold small text-muted">Alergias (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Alergias</label>
                 <input type="text" className="form-control bg-light border-0" name="alergias" value={formData.alergias} onChange={handleInputChange} placeholder="Ex: Rinite, Medicamentos..." />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Lesões Anteriores (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Lesões Anteriores</label>
                 <textarea className="form-control bg-light border-0" name="lesoesAnteriores" rows="2" value={formData.lesoesAnteriores} onChange={handleInputChange} placeholder="Descreva se houver"></textarea>
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">Restrições Médicas (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">Restrições Médicas</label>
                 <textarea className="form-control bg-light border-0" name="restricoesMedicas" rows="2" value={formData.restricoesMedicas} onChange={handleInputChange} placeholder="Descreva se houver"></textarea>
               </div>
             </div>
             <hr className="my-4 text-muted" />
-            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} style={{ color: 'var(--primary)' }} />Modalidade(s) de Interesse (Opcional)</h6>
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} style={{ color: 'var(--primary)' }} />Modalidade(s) de Interesse</h6>
             <ModalidadesSelector 
               selected={formData.modalidades}
               onChange={(novos) => setFormData(prev => ({ ...prev, modalidades: novos }))}

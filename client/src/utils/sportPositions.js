@@ -97,12 +97,41 @@ export const getPositionsForSport = (sportName) => {
 };
 
 /**
- * Obtém a posição vinculada de um atleta para um determinado esporte/modalidade
+ * Obtém a lista de posições vinculadas de um atleta para um determinado esporte/modalidade como array de strings
+ */
+export const getStudentPositionsForSport = (student, sportName) => {
+  if (!student) return [];
+  const sportKey = normalizeSportKey(sportName);
+  if (!sportKey) return [];
+
+  const list = student.posicoesPorModalidade || [];
+  const item = list.find(p => normalizeSportKey(p.modalidade) === sportKey);
+
+  if (item) {
+    if (Array.isArray(item.posicoes) && item.posicoes.length > 0) {
+      return item.posicoes.filter(p => p && p !== 'Indefinido' && p !== 'Não sei');
+    }
+    if (typeof item.posicao === 'string' && item.posicao && item.posicao !== 'Indefinido' && item.posicao !== 'Não sei') {
+      return item.posicao.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+
+  return [];
+};
+
+/**
+ * Obtém a posição vinculada de um atleta para um determinado esporte/modalidade como string
+ * Se houver múltiplas posições, retorna-as separadas por vírgula para manter compatibilidade
  */
 export const getStudentPositionForSport = (student, sportName) => {
   if (!student) return null;
   const sportKey = normalizeSportKey(sportName);
   if (!sportKey) return null;
+
+  const positions = getStudentPositionsForSport(student, sportName);
+  if (positions.length > 0) {
+    return positions.join(', ');
+  }
 
   const list = student.posicoesPorModalidade || [];
   const item = list.find(p => normalizeSportKey(p.modalidade) === sportKey);

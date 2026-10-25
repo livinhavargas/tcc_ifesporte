@@ -48,7 +48,8 @@ const userSchema = new mongoose.Schema({
   esportes: [{ type: String }], 
   posicoesPorModalidade: [{
     modalidade: { type: String, required: true },
-    posicao: { type: String, default: 'Indefinido' }
+    posicao: { type: String, default: 'Indefinido' },
+    posicoes: [{ type: String }]
   }],
   foto: { type: String }, 
 

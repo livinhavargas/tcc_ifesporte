@@ -98,6 +98,7 @@ const getPositionsForSport = (sportName) => {
 
 /**
  * Valida a lista de posicoesPorModalidade contra as modalidades do atleta.
+ * Suporta tanto uma única posição (string) quanto múltiplas posições (array ou string separada por vírgula).
  * Retorna { isValid: boolean, error?: string }
  */
 const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade = []) => {
@@ -112,7 +113,7 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
 
     const sportKey = normalizeSportKey(item.modalidade);
     
-    // Se a modalidade não suporta posições, não deve ter posição vinculada diferente de 'Indefinido' / 'Não sei' ou vazia
+    // Se a modalidade não suporta posições, não deve ter posição vinculada
     if (!sportKey) {
       return { 
         isValid: false, 
@@ -120,15 +121,25 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
       };
     }
 
-    const validPositions = SPORT_POSITIONS_MAP[sportKey];
-    let pos = (item.posicao || '').trim();
-    if (pos === 'Não sei') pos = 'Indefinido';
+    const validPositions = SPORT_POSITIONS_MAP[sportKey] || [];
+    
+    // Extrai posições a validar (array ou string)
+    let positionsToValidate = [];
+    if (Array.isArray(item.posicoes)) {
+      positionsToValidate = item.posicoes;
+    } else if (typeof item.posicao === 'string' && item.posicao.trim()) {
+      positionsToValidate = item.posicao.split(',').map(s => s.trim()).filter(Boolean);
+    }
 
-    if (pos && !validPositions.includes(pos)) {
-      return {
-        isValid: false,
-        error: `A posição "${pos}" não é válida para a modalidade "${item.modalidade}". Posições permitidas: ${validPositions.join(', ')}.`
-      };
+    for (let pos of positionsToValidate) {
+      if (typeof pos === 'string') pos = pos.trim();
+      if (pos === 'Não sei') pos = 'Indefinido';
+      if (pos && !validPositions.includes(pos)) {
+        return {
+          isValid: false,
+          error: `A posição "${pos}" não é válida para a modalidade "${item.modalidade}". Posições permitidas: ${validPositions.join(', ')}.`
+        };
+      }
     }
   }
 
@@ -137,8 +148,10 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
 
 /**
  * Normaliza e sincroniza posicoesPorModalidade com as modalidades atuais.
+ * - Suporta múltiplas posições preservando retrocompatibilidade com campo string `posicao`
+ * - Popula `posicoes` (array) e `posicao` (string formatada com vírgula ou 'Indefinido')
  * - Remove modalidades excluídas
- * - Adiciona "Indefinido" para modalidades novas com posições
+ * - Adiciona "Indefinido" e posicoes: [] para modalidades novas com suporte a posições
  */
 const sanitizePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade = []) => {
   const sanitized = [];
@@ -149,9 +162,13 @@ const sanitizePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
       if (item && item.modalidade) {
         const sportKey = normalizeSportKey(item.modalidade);
         if (sportKey) {
-          let pos = item.posicao || 'Indefinido';
-          if (pos === 'Não sei') pos = 'Indefinido';
-          currentPositionsMap.set(sportKey, pos);
+          let list = [];
+          if (Array.isArray(item.posicoes)) {
+            list = item.posicoes;
+          } else if (typeof item.posicao === 'string' && item.posicao.trim()) {
+            list = item.posicao.split(',').map(s => s.trim()).filter(Boolean);
+          }
+          currentPositionsMap.set(sportKey, list);
         }
       }
     }
@@ -160,16 +177,28 @@ const sanitizePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
   for (const mod of modalidades) {
     const sportKey = normalizeSportKey(mod);
     if (sportKey) {
-      let existingPos = currentPositionsMap.get(sportKey);
-      if (existingPos === 'Não sei') existingPos = 'Indefinido';
-      const validPositions = SPORT_POSITIONS_MAP[sportKey];
-      const finalPos = existingPos && validPositions.includes(existingPos) ? existingPos : 'Indefinido';
+      const validPositions = SPORT_POSITIONS_MAP[sportKey] || [];
+      const rawList = currentPositionsMap.get(sportKey) || [];
+
+      const filtered = [];
+      for (let p of rawList) {
+        if (typeof p === 'string') p = p.trim();
+        if (p === 'Não sei') p = 'Indefinido';
+        if (p && validPositions.includes(p) && p !== 'Indefinido') {
+          if (!filtered.includes(p)) {
+            filtered.push(p);
+          }
+        }
+      }
+
+      const finalPosicao = filtered.length > 0 ? filtered.join(', ') : 'Indefinido';
 
       // Evita duplicação no array
       if (!sanitized.some(s => normalizeSportKey(s.modalidade) === sportKey)) {
         sanitized.push({
           modalidade: mod,
-          posicao: finalPos
+          posicao: finalPosicao,
+          posicoes: filtered
         });
       }
     }

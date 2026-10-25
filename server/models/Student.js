@@ -29,7 +29,8 @@ const studentSchema = new mongoose.Schema({
   modalidades: [{ type: String }], // Novo formato
   posicoesPorModalidade: [{
     modalidade: { type: String, required: true },
-    posicao: { type: String, default: 'Indefinido' }
+    posicao: { type: String, default: 'Indefinido' },
+    posicoes: [{ type: String }]
   }],
   categoria: { type: String },
   posicao: { type: String },
