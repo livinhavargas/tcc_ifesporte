@@ -1,7 +1,7 @@
 const PhysicalAssessment = require('../models/PhysicalAssessment');
 const Student = require('../models/Student');
 const User = require('../models/User');
-const { calculateAge, classifyPROESP } = require('../utils/proespCalculator');
+const { calculateAge, classifyPROESP, validateStudentForPROESP } = require('../utils/proespCalculator');
 
 // Obter histórico de avaliações de um estudante
 exports.getByStudent = async (req, res) => {
@@ -81,9 +81,37 @@ exports.create = async (req, res) => {
       studentUser = await User.findById(student.usuario);
     }
 
-    const sexo = student?.sexo || studentUser?.sexo || req.body.sexo || null;
-    const dataNasc = student?.dataNascimento || studentUser?.dataNascimento || null;
-    const idade = calculateAge(dataNasc, dataAvaliacao) ?? (student?.idade || studentUser?.idade || null);
+    const studentForValidation = {
+      sexo: student?.sexo || studentUser?.sexo || req.body.sexo || null,
+      dataNascimento: student?.dataNascimento || studentUser?.dataNascimento || null
+    };
+
+    const validation = validateStudentForPROESP(studentForValidation, dataAvaliacao);
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.message });
+    }
+
+    const { sexo, idade } = validation;
+
+    // Validações específicas do teste de Corrida/Caminhada de 6 min
+    if (testes.corrida6Min) {
+      const v = testes.corrida6Min.voltas !== undefined && testes.corrida6Min.voltas !== '' ? Number(testes.corrida6Min.voltas) : null;
+      const p = testes.corrida6Min.perimetroPista !== undefined && testes.corrida6Min.perimetroPista !== '' ? Number(testes.corrida6Min.perimetroPista) : 200;
+      const u = testes.corrida6Min.metrosUltimaVolta !== undefined && testes.corrida6Min.metrosUltimaVolta !== '' ? Number(testes.corrida6Min.metrosUltimaVolta) : null;
+
+      if (v !== null && v < 0) {
+        return res.status(400).json({ message: 'O número de voltas na Corrida de 6 min não pode ser negativo.' });
+      }
+      if (p <= 0) {
+        return res.status(400).json({ message: 'O perímetro da pista deve ser maior que zero metros.' });
+      }
+      if (u !== null && u < 0) {
+        return res.status(400).json({ message: 'A distância da última volta não pode ser negativa.' });
+      }
+      if (u !== null && p > 0 && u >= p) {
+        return res.status(400).json({ message: `A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m).` });
+      }
+    }
 
     // Processar cálculos e classificações no backend
     const proespResult = classifyPROESP({
@@ -194,9 +222,37 @@ exports.update = async (req, res) => {
     }
 
     const targetDate = dataAvaliacao || assessment.dataAvaliacao;
-    const sexo = student?.sexo || studentUser?.sexo || req.body.sexo || null;
-    const dataNasc = student?.dataNascimento || studentUser?.dataNascimento || null;
-    const idade = calculateAge(dataNasc, targetDate) ?? (student?.idade || studentUser?.idade || null);
+    const studentForValidation = {
+      sexo: student?.sexo || studentUser?.sexo || req.body.sexo || null,
+      dataNascimento: student?.dataNascimento || studentUser?.dataNascimento || null
+    };
+
+    const validation = validateStudentForPROESP(studentForValidation, targetDate);
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.message });
+    }
+
+    const { sexo, idade } = validation;
+
+    // Validações específicas do teste de Corrida/Caminhada de 6 min
+    if (testes.corrida6Min) {
+      const v = testes.corrida6Min.voltas !== undefined && testes.corrida6Min.voltas !== '' ? Number(testes.corrida6Min.voltas) : null;
+      const p = testes.corrida6Min.perimetroPista !== undefined && testes.corrida6Min.perimetroPista !== '' ? Number(testes.corrida6Min.perimetroPista) : 200;
+      const u = testes.corrida6Min.metrosUltimaVolta !== undefined && testes.corrida6Min.metrosUltimaVolta !== '' ? Number(testes.corrida6Min.metrosUltimaVolta) : null;
+
+      if (v !== null && v < 0) {
+        return res.status(400).json({ message: 'O número de voltas na Corrida de 6 min não pode ser negativo.' });
+      }
+      if (p <= 0) {
+        return res.status(400).json({ message: 'O perímetro da pista deve ser maior que zero metros.' });
+      }
+      if (u !== null && u < 0) {
+        return res.status(400).json({ message: 'A distância da última volta não pode ser negativa.' });
+      }
+      if (u !== null && p > 0 && u >= p) {
+        return res.status(400).json({ message: `A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m).` });
+      }
+    }
 
     const proespResult = classifyPROESP({
       idade,

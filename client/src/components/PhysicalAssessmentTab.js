@@ -10,7 +10,8 @@ import {
 import { apiUrl } from '../services/api';
 import { 
   calculateAge, 
-  classifyPROESP 
+  classifyPROESP,
+  validateStudentForPROESP
 } from '../utils/proespCalculator';
 import SportIcon from './SportIcon';
 import IMCBadge, { renderIMCBadgeHtml } from './IMCBadge';
@@ -663,11 +664,16 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
     fetchAssessments();
   }, [fetchAssessments]);
 
+  // Validação dos dados cadastrais do aluno para o protocolo PROESP-Br
+  const studentValidation = useMemo(() => {
+    return validateStudentForPROESP(student, formData.dataAvaliacao || new Date());
+  }, [student, formData.dataAvaliacao]);
+
   // Cálculos dinâmicos em tempo real enquanto o treinador preenche
   const liveCalculations = useMemo(() => {
     const dataNasc = student?.dataNascimento;
-    const idade = calculateAge(dataNasc, formData.dataAvaliacao) ?? (student?.idade ? Number(student.idade) : null);
-    const sexo = student?.sexo || 'M';
+    const idade = calculateAge(dataNasc, formData.dataAvaliacao);
+    const sexo = student?.sexo || null; // Sem fallback silencioso para 'M'
 
     return classifyPROESP({
       idade,
@@ -684,6 +690,13 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
 
   // Inicializar modo de criação
   const handleStartNew = () => {
+    const validation = validateStudentForPROESP(student, new Date());
+    if (!validation.isValid) {
+      alert(`Não é possível iniciar a avaliação física:\n\n${validation.message}`);
+      setMessage(`⚠️ ${validation.message}`);
+      return;
+    }
+
     let initialMod = '';
     if (studentModalidades.length > 0) {
       setSelectedStudentModalidades([...studentModalidades]);
@@ -709,6 +722,14 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
 
   // Inicializar modo de edição
   const handleStartEdit = (assessment) => {
+    const evalDate = assessment.dataAvaliacao || new Date();
+    const validation = validateStudentForPROESP(student, evalDate);
+    if (!validation.isValid) {
+      alert(`Não é possível editar esta avaliação física:\n\n${validation.message}`);
+      setMessage(`⚠️ ${validation.message}`);
+      return;
+    }
+
     const currentMod = assessment.modalidade || '';
     if (studentModalidades.length > 0) {
       const matched = studentModalidades.filter(m => currentMod.includes(m));
@@ -813,6 +834,42 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
     e.preventDefault();
     setSubmitting(true);
     setMessage('');
+
+    const validation = validateStudentForPROESP(student, formData.dataAvaliacao);
+    if (!validation.isValid) {
+      alert(`Não é possível salvar a avaliação física:\n\n${validation.message}`);
+      setMessage(`❌ ${validation.message}`);
+      setSubmitting(false);
+      return;
+    }
+
+    // Validações da Corrida de 6 min
+    if (formData.testes?.corrida6Min) {
+      const v = formData.testes.corrida6Min.voltas !== '' ? Number(formData.testes.corrida6Min.voltas) : null;
+      const p = formData.testes.corrida6Min.perimetroPista !== '' ? Number(formData.testes.corrida6Min.perimetroPista) : 200;
+      const u = formData.testes.corrida6Min.metrosUltimaVolta !== '' ? Number(formData.testes.corrida6Min.metrosUltimaVolta) : null;
+
+      if (v !== null && v < 0) {
+        alert('O número de voltas na Corrida de 6 min não pode ser negativo.');
+        setSubmitting(false);
+        return;
+      }
+      if (p <= 0) {
+        alert('O perímetro da pista deve ser maior que zero metros.');
+        setSubmitting(false);
+        return;
+      }
+      if (u !== null && u < 0) {
+        alert('A distância da última volta não pode ser negativa.');
+        setSubmitting(false);
+        return;
+      }
+      if (u !== null && p > 0 && u >= p) {
+        alert(`A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m).`);
+        setSubmitting(false);
+        return;
+      }
+    }
 
     let finalMod = formData.modalidade;
     if (studentModalidades.length > 0) {
@@ -1429,6 +1486,18 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                             />
                           </div>
                         </div>
+                        {(() => {
+                          const p = Number(formData.testes.corrida6Min.perimetroPista) || 200;
+                          const u = Number(formData.testes.corrida6Min.metrosUltimaVolta);
+                          if (formData.testes.corrida6Min.metrosUltimaVolta !== '' && !isNaN(u) && u >= p) {
+                            return (
+                              <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '-6px', marginBottom: '10px', fontWeight: 600 }}>
+                                ⚠️ A última volta ({u}m) deve ser menor que o perímetro da pista ({p}m).
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                       <div style={calculatedBoxStyle}>
                         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -2260,24 +2329,8 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
               </p>
             </div>
 
-            {/* AÇÕES CENTRALIZADAS (BOTÃO ÚNICO NOVO + BOTÃO ÚNICO EXPORTAR PDF) */}
+            {/* AÇÕES CENTRALIZADAS (BOTÃO NOVA AVALIAÇÃO) */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button 
-                type="button" 
-                className="btn btn-outline-secondary"
-                onClick={() => {
-                  if (assessments.length > 0) {
-                    exportAssessmentToPDF(assessments[0], student);
-                  } else {
-                    alert('Nenhuma avaliação física cadastrada para este atleta.');
-                  }
-                }}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600, padding: '8px 16px', borderRadius: 'var(--radius-md)' }}
-                title="Exportar Ficha de Aptidão Física em PDF"
-              >
-                <Printer size={16} /> Exportar PDF
-              </button>
-
               {!isReadOnly && (
                 <button 
                   type="button" 
@@ -2290,6 +2343,28 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
               )}
             </div>
           </div>
+
+          {/* AVISO DE CADASTRO INCOMPLETO PARA PROESP-BR */}
+          {!studentValidation.isValid && (
+            <div 
+              style={{ 
+                background: 'rgba(239, 68, 68, 0.08)', 
+                border: '1px solid rgba(239, 68, 68, 0.25)', 
+                borderRadius: 'var(--radius-md)', 
+                padding: '12px 16px', 
+                marginBottom: '16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '12px' 
+              }}
+            >
+              <AlertCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+              <div style={{ fontSize: '0.875rem', color: 'var(--text)' }}>
+                <strong>Atenção ao cadastro do aluno: </strong>
+                {studentValidation.message}
+              </div>
+            </div>
+          )}
 
           {/* NAVEGAÇÃO DE SUB-VISÕES: LISTA / COMPARAR / EVOLUÇÃO TEMPORAL */}
           {assessments.length > 0 && (
