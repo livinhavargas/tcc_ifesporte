@@ -148,6 +148,80 @@ const FutebolFutsalForm = ({
     updateDados(updates);
   };
 
+  // Autores dos Gols de Pênaltis (1º e 2º Tempo) — Seguindo exatamente o padrão do Handebol
+  const getGolsList = (list, qtd) => {
+    let arr = Array.isArray(list) ? [...list] : [];
+    if (qtd !== undefined && qtd !== null && !isNaN(qtd)) {
+      if (arr.length > qtd) {
+        arr = arr.slice(0, qtd);
+      }
+      while (arr.length < qtd) {
+        arr.push({ atletaId: '', atletaNome: '' });
+      }
+    }
+    return arr;
+  };
+
+  const rawGolsPenalti1T = Array.isArray(dados.golsPenalti1T) 
+    ? dados.golsPenalti1T 
+    : (Array.isArray(dados.autoresGolsPenalti1T) ? dados.autoresGolsPenalti1T : (Array.isArray(dados.autoresGols1T) ? dados.autoresGols1T : []));
+
+  const rawGolsPenalti2T = Array.isArray(dados.golsPenalti2T) 
+    ? dados.golsPenalti2T 
+    : (Array.isArray(dados.autoresGolsPenalti2T) ? dados.autoresGolsPenalti2T : (Array.isArray(dados.autoresGols2T) ? dados.autoresGols2T : []));
+
+  const golsPenalti1T = getGolsList(rawGolsPenalti1T, dados.golsPenaltiMarcados1T ?? dados.penaltisMarcados1T);
+  const golsPenalti2T = getGolsList(rawGolsPenalti2T, dados.golsPenaltiMarcados2T ?? dados.penaltisMarcados2T);
+
+  const handleGolsPenaltiMarcadosQtdChange = (tempo, qtd) => {
+    const targetQtd = Math.max(0, qtd);
+    const currentList = tempo === 1 ? [...golsPenalti1T] : [...golsPenalti2T];
+
+    if (targetQtd > currentList.length) {
+      while (currentList.length < targetQtd) {
+        currentList.push({ atletaId: '', atletaNome: '' });
+      }
+    } else {
+      currentList.splice(targetQtd);
+    }
+
+    if (tempo === 1) {
+      updateDados({
+        golsPenalti1T: currentList,
+        golsPenaltiMarcados1T: targetQtd,
+        penaltisMarcados1T: targetQtd,
+        autoresGolsPenalti1T: currentList
+      });
+    } else {
+      updateDados({
+        golsPenalti2T: currentList,
+        golsPenaltiMarcados2T: targetQtd,
+        penaltisMarcados2T: targetQtd,
+        autoresGolsPenalti2T: currentList
+      });
+    }
+  };
+
+  const handleGolPenaltiJogadorChange = (tempo, idx, atletaId) => {
+    const at = students.find(s => s._id === atletaId);
+    const item = { atletaId, atletaNome: at ? at.nome : '' };
+    if (tempo === 1) {
+      const updated = [...golsPenalti1T];
+      updated[idx] = item;
+      updateDados({
+        golsPenalti1T: updated,
+        autoresGolsPenalti1T: updated
+      });
+    } else {
+      const updated = [...golsPenalti2T];
+      updated[idx] = item;
+      updateDados({
+        golsPenalti2T: updated,
+        autoresGolsPenalti2T: updated
+      });
+    }
+  };
+
   // Faltas
   const handleFaltasChange = (field, val) => {
     const nextVal = Math.max(0, val);
@@ -517,6 +591,69 @@ const FutebolFutsalForm = ({
                     ariaLabel="Pênaltis defendidos no 1º tempo"
                   />
                 </div>
+
+                {/* Separador visual discreto */}
+                <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0' }} />
+
+                {/* Gols Marcados (Autores dos Gols de Pênalti) */}
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                      Gols Marcados
+                    </span>
+                    <NumberStepper
+                      value={golsPenalti1T.length}
+                      onChange={(v) => handleGolsPenaltiMarcadosQtdChange(1, v)}
+                      min={0}
+                      ariaLabel="Gols marcados 1º tempo"
+                    />
+                  </div>
+
+                  {/* Seletores de jogadores (quando quantidade > 0) */}
+                  {golsPenalti1T.length > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      marginTop: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px dashed var(--border-light)'
+                    }}>
+                      {golsPenalti1T.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                            minWidth: '45px',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            Gol {idx + 1}:
+                          </span>
+                          <select
+                            className="form-select form-select-sm"
+                            value={item.atletaId || ''}
+                            onChange={(e) => handleGolPenaltiJogadorChange(1, idx, e.target.value)}
+                            style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                            aria-label={`Autor do gol ${idx + 1} 1º tempo`}
+                          >
+                            <option value="">Selecionar Jogador</option>
+                            {eligibleStudents.map(s => (
+                              <option key={s._id} value={s._id}>
+                                {s.nome} {s.turma ? `(${s.turma})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -569,6 +706,69 @@ const FutebolFutsalForm = ({
                     min={0}
                     ariaLabel="Pênaltis defendidos no 2º tempo"
                   />
+                </div>
+
+                {/* Separador visual discreto */}
+                <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0' }} />
+
+                {/* Gols Marcados (Autores dos Gols de Pênalti) */}
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                      Gols Marcados
+                    </span>
+                    <NumberStepper
+                      value={golsPenalti2T.length}
+                      onChange={(v) => handleGolsPenaltiMarcadosQtdChange(2, v)}
+                      min={0}
+                      ariaLabel="Gols marcados 2º tempo"
+                    />
+                  </div>
+
+                  {/* Seletores de jogadores (quando quantidade > 0) */}
+                  {golsPenalti2T.length > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      marginTop: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px dashed var(--border-light)'
+                    }}>
+                      {golsPenalti2T.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                            minWidth: '45px',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            Gol {idx + 1}:
+                          </span>
+                          <select
+                            className="form-select form-select-sm"
+                            value={item.atletaId || ''}
+                            onChange={(e) => handleGolPenaltiJogadorChange(2, idx, e.target.value)}
+                            style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                            aria-label={`Autor do gol ${idx + 1} 2º tempo`}
+                          >
+                            <option value="">Selecionar Jogador</option>
+                            {eligibleStudents.map(s => (
+                              <option key={s._id} value={s._id}>
+                                {s.nome} {s.turma ? `(${s.turma})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -170,8 +170,8 @@ const DisputaDesempateCobrancas = ({
                   }}
                   aria-label={`Resultado cobrança ${idx + 1}`}
                 >
-                  <option value="Gol">⚽ Gol</option>
-                  <option value="Não fez gol">❌ Não fez gol</option>
+                  <option value="Gol">Gol</option>
+                  <option value="Não fez gol">Não fez gol</option>
                 </select>
 
                 {/* Botão de remoção */}

@@ -397,5 +397,118 @@ describe('Ajustes no Portal do Treinador — Educação Física e Disputas de De
       const resultadoCob2 = screen.getByLabelText(/Resultado cobrança 2/i);
       expect(resultadoCob2.value).toBe('Não fez gol');
     });
+
+    test('Opções de resultado de cobrança não possuem emojis', () => {
+      render(
+        <DisputaDesempateCobrancas
+          cobrancas={[{ atletaId: 'atleta-1', atletaNome: 'Carlos Silva', resultado: 'Gol' }]}
+          onChange={() => {}}
+          eligibleStudents={mockStudents}
+          modalidade="Futebol"
+        />
+      );
+
+      const selectResultado = screen.getByLabelText(/Resultado cobrança 1/i);
+      const options = Array.from(selectResultado.querySelectorAll('option')).map(o => o.textContent);
+
+      expect(options).toEqual(['Gol', 'Não fez gol']);
+      expect(options[0]).not.toMatch(/[⚽\uD800-\uDBFF\uDC00-\uDFFF]/);
+      expect(options[1]).not.toMatch(/[❌\uD800-\uDBFF\uDC00-\uDFFF]/);
+    });
+
+    test('Futsal: Campo Autores dos Gols de Pênalti no Tempo Regulamentar segue padrão do Handebol', () => {
+      let currentFormData = {
+        modalidade: 'Futsal',
+        categoria: 'Masculino',
+        placar: { nos: 2, adv: 1 },
+        dadosEspecificos: {
+          foiParaPenaltis: false
+        }
+      };
+
+      const setFormData = jest.fn((action) => {
+        if (typeof action === 'function') {
+          currentFormData = action(currentFormData);
+        } else {
+          currentFormData = action;
+        }
+      });
+
+      const { rerender } = render(
+        <FutebolFutsalForm
+          formData={currentFormData}
+          setFormData={setFormData}
+          students={mockStudents}
+        />
+      );
+
+      // Card Pênaltis (Tempo Regulamentar) está visível mesmo sem desempate
+      expect(screen.getByText('Pênaltis (Tempo Regulamentar)')).toBeInTheDocument();
+
+      // Stepper Gols marcados 1º tempo
+      const stepperGols1T = screen.getByLabelText('Gols marcados 1º tempo');
+      expect(stepperGols1T).toBeInTheDocument();
+
+      // Define 2 gols marcados de pênalti no 1º tempo
+      fireEvent.change(stepperGols1T, { target: { value: '2' } });
+
+      rerender(
+        <FutebolFutsalForm
+          formData={currentFormData}
+          setFormData={setFormData}
+          students={mockStudents}
+        />
+      );
+
+      // Aparece Gol 1: e Gol 2:
+      expect(screen.getByText('Gol 1:')).toBeInTheDocument();
+      expect(screen.getByText('Gol 2:')).toBeInTheDocument();
+
+      // Seleciona autor do Gol 1
+      const selectGol1 = screen.getByLabelText('Autor do gol 1 1º tempo');
+      fireEvent.change(selectGol1, { target: { value: 'atleta-1' } });
+
+      expect(currentFormData.dadosEspecificos.golsPenalti1T[0].atletaId).toBe('atleta-1');
+      expect(currentFormData.dadosEspecificos.golsPenalti1T[0].atletaNome).toBe('Carlos Silva');
+      expect(currentFormData.dadosEspecificos.golsPenaltiMarcados1T).toBe(2);
+    });
+
+    test('Futebol: Autores dos gols no tempo regulamentar e cobranças no desempate são independentes', () => {
+      let currentFormData = {
+        modalidade: 'Futebol',
+        categoria: 'Masculino',
+        placar: { nos: 1, adv: 1 },
+        dadosEspecificos: {
+          foiParaPenaltis: true,
+          golsPenalti1T: [{ atletaId: 'atleta-1', atletaNome: 'Carlos Silva' }],
+          golsPenaltiMarcados1T: 1,
+          penaltisCobrancas: [
+            { atletaId: 'atleta-3', atletaNome: 'Gabriel Santos', resultado: 'Gol' }
+          ]
+        }
+      };
+
+      const setFormData = jest.fn();
+      render(
+        <FutebolFutsalForm
+          formData={currentFormData}
+          setFormData={setFormData}
+          students={mockStudents}
+        />
+      );
+
+      // Desempate possui atleta-3 (Gabriel)
+      expect(screen.getByText(/Placar de desempate - Disputa de Pênaltis/i)).toBeInTheDocument();
+      const cobrancaDesempate = screen.getByLabelText(/Atleta cobrança 1/i);
+      expect(cobrancaDesempate.value).toBe('atleta-3');
+
+      // Tempo regulamentar possui atleta-1 (Carlos) como autor do gol
+      const autorGol1T = screen.getByLabelText('Autor do gol 1 1º tempo');
+      expect(autorGol1T.value).toBe('atleta-1');
+
+      // Confirma que os registros não se misturam
+      expect(cobrancaDesempate.value).not.toBe(autorGol1T.value);
+    });
   });
 });
+

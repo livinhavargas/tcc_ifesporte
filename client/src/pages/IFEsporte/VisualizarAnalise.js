@@ -436,6 +436,10 @@ const VisualizarAnalise = () => {
                     if (key === 'atleta1Nome' || key === 'atleta2Nome' || key === 'nomeAtleta' || key === 'nomeDupla') return null;
                     if ((key === 'penaltisCobrancas' || key === 'desempateSeteMetrosLista') && dadosEspecificos.penaltisParticipantes) return null;
                     if (key === 'cartoes' && (dadosEspecificos.cartoes1T || dadosEspecificos.cartoes2T)) return null;
+                    if (key === 'autoresGolsPenalti1T' && dadosEspecificos.golsPenalti1T) return null;
+                    if (key === 'autoresGolsPenalti2T' && dadosEspecificos.golsPenalti2T) return null;
+                    if (key === 'autoresGols7m1T' && dadosEspecificos.gols7m1T) return null;
+                    if (key === 'autoresGols7m2T' && dadosEspecificos.gols7m2T) return null;
                     if (key === 'tempoExtra') return null;
                     if (key.startsWith('placarSet') && typeof val === 'object' && val !== null && (parseInt(val.nos, 10) || 0) === 0 && (parseInt(val.adv, 10) || 0) === 0) return null;
 
@@ -453,6 +457,22 @@ const VisualizarAnalise = () => {
                       penaltisCometidos2T: 'Pênaltis Cometidos (2º Tempo)',
                       penaltisErrados2T: 'Pênaltis Errados (2º Tempo)',
                       penaltisDefendidos2T: 'Pênaltis Defendidos (2º Tempo)',
+                      golsPenaltiMarcados1T: 'Gols de Pênalti Marcados (1º Tempo)',
+                      golsPenaltiMarcados2T: 'Gols de Pênalti Marcados (2º Tempo)',
+                      penaltisMarcados1T: 'Pênaltis Marcados (1º Tempo)',
+                      penaltisMarcados2T: 'Pênaltis Marcados (2º Tempo)',
+                      golsPenalti1T: 'Autores dos Gols de Pênalti (1º Tempo)',
+                      golsPenalti2T: 'Autores dos Gols de Pênalti (2º Tempo)',
+                      autoresGolsPenalti1T: 'Autores dos Gols de Pênalti (1º Tempo)',
+                      autoresGolsPenalti2T: 'Autores dos Gols de Pênalti (2º Tempo)',
+                      gols7mMarcados1T: 'Gols de 7m Marcados (1º Tempo)',
+                      gols7mMarcados2T: 'Gols de 7m Marcados (2º Tempo)',
+                      gols7m1T: 'Autores dos Gols de 7m (1º Tempo)',
+                      gols7m2T: 'Autores dos Gols de 7m (2º Tempo)',
+                      autoresGols7m1T: 'Autores dos Gols de 7m (1º Tempo)',
+                      autoresGols7m2T: 'Autores dos Gols de 7m (2º Tempo)',
+                      gols7mSofridos1T: 'Gols de 7m Sofridos (1º Tempo)',
+                      gols7mSofridos2T: 'Gols de 7m Sofridos (2º Tempo)',
                       faltasSofridas1T: 'Faltas Sofridas (1º Tempo)',
                       faltasCometidas1T: 'Faltas Cometidas (1º Tempo)',
                       faltasSofridas2T: 'Faltas Sofridas (2º Tempo)',
@@ -592,6 +612,15 @@ const VisualizarAnalise = () => {
                           ? val.map(c => `${c.tipo === 'Vermelho' ? '🟥 Vermelho' : '🟨 Amarelo'}: ${c.atletaNome || 'Atleta'}`).join('; ')
                           : 'Nenhum';
                       }
+                    } else if ((key === 'golsPenalti1T' || key === 'golsPenalti2T' || key === 'autoresGolsPenalti1T' || key === 'autoresGolsPenalti2T' || key === 'gols7m1T' || key === 'gols7m2T' || key === 'autoresGols7m1T' || key === 'autoresGols7m2T') && Array.isArray(val)) {
+                      formatted = val.length > 0
+                        ? val.map((g, i) => {
+                            const id = typeof g === 'object' && g !== null ? g.atletaId : g;
+                            const at = (Array.isArray(atletas) ? atletas : []).find(a => (a._id || a) === id);
+                            const nome = (g && g.atletaNome) || (at && at.nome) || 'Não informado';
+                            return `Gol ${i + 1}: ${nome}`;
+                          }).join('; ')
+                        : 'Nenhum';
                     } else if (key === 'penaltisParticipantes' || key === 'desempateSeteMetrosLista') {
                       if (Array.isArray(val)) {
                         const cobrancas = Array.isArray(dadosEspecificos.penaltisCobrancas) 
@@ -602,7 +631,7 @@ const VisualizarAnalise = () => {
                           const c = cobrancas.find(x => x.atletaId === id) || (typeof item === 'object' ? item : null);
                           const a = (Array.isArray(atletas) ? atletas : []).find(x => (x._id || x) === id);
                           const nome = (c && c.atletaNome) || (a && a.nome) || (typeof item === 'object' && item.atletaNome) || id;
-                          const res = c && c.resultado ? (c.resultado === 'Gol' ? '⚽ Gol' : '❌ Não fez gol') : null;
+                          const res = c && c.resultado ? (c.resultado === 'Gol' ? 'Gol' : 'Não fez gol') : null;
                           return res ? `${nome} (${res})` : nome;
                         });
                         formatted = nomes.join('; ') || `${val.length} atletas`;
