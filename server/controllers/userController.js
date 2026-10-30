@@ -353,7 +353,9 @@ const registerUser = async (req, res) => {
       mensagem: 'Usuário cadastrado com sucesso! Enviamos um e-mail de confirmação para o seu endereço.',
       tipo,
       emailEnviado: emailResult.sent,
-      emailSimulado: emailResult.simulated
+      emailSimulado: emailResult.simulated,
+      emailErro: emailResult.error || null,
+      verificationUrl: emailResult.simulated ? emailResult.verificationUrl : undefined
     });
   } catch (erro) {
     console.error("!!! ERRO CRÍTICO NO REGISTRO !!!");
@@ -444,7 +446,8 @@ const resendVerificationEmail = async (req, res) => {
     res.json({
       mensagem: 'E-mail de verificação reenviado com sucesso! Verifique sua caixa de entrada.',
       emailEnviado: emailResult.sent,
-      emailSimulado: emailResult.simulated
+      emailSimulado: emailResult.simulated,
+      verificationUrl: emailResult.simulated ? emailResult.verificationUrl : undefined
     });
   } catch (erro) {
     console.error('ERRO AO REENVIAR VERIFICAÇÃO:', erro);

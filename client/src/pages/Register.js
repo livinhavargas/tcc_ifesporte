@@ -23,6 +23,8 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
   const [error, setError] = useState('');
   const [showLgpdModal, setShowLgpdModal] = useState(false);
   const [registrationCompleted, setRegistrationCompleted] = useState(false);
+  const [simulatedVerificationUrl, setSimulatedVerificationUrl] = useState('');
+  const [emailWarning, setEmailWarning] = useState('');
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -178,6 +180,12 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
       const data = await response.json();
       if (response.ok) {
         addNotification('Novo Cadastro Realizado', `O usuário ${formData.nome} (${resolvedTipo}) cadastrou-se no sistema.`);
+        if (data.emailSimulado && data.verificationUrl) {
+          setSimulatedVerificationUrl(data.verificationUrl);
+        }
+        if (data.emailErro) {
+          setEmailWarning(data.emailErro);
+        }
         if (isEmbedded && onSuccess) {
           onSuccess();
         } else {
@@ -193,9 +201,6 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
       setLoading(false);
     }
   };
-
-  const emailTrimmed = formData.email.trim();
-  const isTrainerRecognized = isInstitutionalTrainerEmail(emailTrimmed);
 
   return (
     <div className={isEmbedded ? "w-100" : ""} style={isEmbedded ? {} : { minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 'clamp(24px, 4vw, 48px) clamp(12px, 3vw, 24px)', position: 'relative' }}>
@@ -272,6 +277,38 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 Seu aceite aos <strong>Termos de Uso e Política de Privacidade (LGPD – Lei nº 13.709/2018)</strong> foi registrado com segurança. Você já pode acessar sua conta normalmente.
               </span>
             </div>
+            {simulatedVerificationUrl && (
+              <div
+                style={{
+                  maxWidth: '520px',
+                  margin: '0 auto 24px',
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px 16px',
+                  fontSize: '0.8rem',
+                  color: 'var(--text)',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: '4px' }}>
+                  {emailWarning ? 'Atenção no Envio SMTP (Gmail):' : 'Modo de Teste Local (SMTP ainda não configurado no .env):'}
+                </div>
+                <div style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                  {emailWarning || (
+                    <>
+                      Para receber e-mails reais na caixa de entrada, preencha <code>SMTP_USER</code> e <code>SMTP_PASS</code> em <code>server/.env</code>. Você pode testar a confirmação agora clicando abaixo:
+                    </>
+                  )}
+                </div>
+                <a
+                  href={simulatedVerificationUrl}
+                  style={{ color: 'var(--primary)', fontWeight: 700, wordBreak: 'break-all' }}
+                >
+                  Confirmar E-mail Agora (Link de Teste)
+                </a>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => navigate('/login')}
@@ -306,30 +343,6 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                   <div className="col-md-12">
                     <label className="form-label">E-mail *</label>
                     <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@instituicao.edu.br" />
-                    <div
-                      style={{
-                        marginTop: '6px',
-                        fontSize: '0.78rem',
-                        color: isTrainerRecognized ? 'var(--success-text)' : 'var(--text-tertiary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: isTrainerRecognized ? 600 : 500
-                      }}
-                    >
-                      {isTrainerRecognized ? (
-                        <>
-                          <CheckCircle2 size={14} style={{ color: 'var(--success)' }} />
-                          <span>E-mail institucional (@ifc.edu.br) reconhecido: perfil de Treinador.</span>
-                        </>
-                      ) : (
-                        <span>
-                          {emailTrimmed.includes('@')
-                            ? 'Perfil identificado: Estudante / Atleta (treinadores são reconhecidos pelo e-mail @ifc.edu.br).'
-                            : 'Treinadores são identificados automaticamente pelo e-mail institucional (@ifc.edu.br).'}
-                        </span>
-                      )}
-                    </div>
                   </div>
                   <div className="col-md-6">
                     <label className="form-label">Senha *</label>

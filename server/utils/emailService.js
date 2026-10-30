@@ -178,10 +178,17 @@ const sendWelcomeAndVerificationEmail = async ({
   } catch (error) {
     console.error(`⚠️ Falha ao enviar e-mail via SMTP para ${to}:`, error.message);
     console.log(`🔗 Link de verificação gerado (fallback log): ${verificationUrl}`);
+    const isGmailAuthError =
+      String(error.message || '').includes('535') ||
+      String(error.message || '').includes('Username and Password not accepted') ||
+      String(error.message || '').includes('Application-specific password required');
+
     return {
       sent: false,
       simulated: true,
-      error: error.message,
+      error: isGmailAuthError
+        ? 'O Google não permite usar a senha normal do Gmail para envio de sistemas. Entre na conta ifesportee@gmail.com em myaccount.google.com/apppasswords, gere uma "Senha de App" de 16 letras e substitua no SMTP_PASS do arquivo server/.env.'
+        : error.message,
       verificationUrl
     };
   }
