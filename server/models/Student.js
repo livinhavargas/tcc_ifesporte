@@ -63,6 +63,13 @@ const studentSchema = new mongoose.Schema({
     enum: ['Ativo', 'Inativo', 'Afastado', 'Lesionado', 'Transferido'], 
     default: 'Ativo' 
   },
+
+  // Conformidade LGPD (Lei nº 13.709/2018)
+  lgpdConsent: {
+    aceito: { type: Boolean, default: false },
+    dataAceite: { type: Date, default: null },
+    versaoTermos: { type: String, default: '1.0' }
+  },
   
   adicionadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { 

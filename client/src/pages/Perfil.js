@@ -3,13 +3,14 @@ import {
   Pencil, X, Save, Camera, User, Phone, Mail, GraduationCap, 
   HeartPulse, Trophy, IdCard, BadgeInfo, Shirt, ShieldAlert, 
   Activity, CheckCircle2, AlertTriangle, MapPin, 
-  PhoneCall, Scale, Ruler, Calendar, UserCheck
+  PhoneCall, Scale, Ruler, Calendar, UserCheck, ShieldCheck, FileText, Send
 } from 'lucide-react';
 import Layout from '../components/Layout';
 import SportIcon from '../components/SportIcon';
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
 import ModalidadePosicaoSelector from '../components/ModalidadePosicaoSelector';
+import LgpdTermsModal from '../components/LgpdTermsModal';
 import { getStudentPositionForSport, isSportWithPositions } from '../utils/sportPositions';
 import IMCCard from '../components/IMCCard';
 import PhysicalAssessmentTab from '../components/PhysicalAssessmentTab';
@@ -22,6 +23,8 @@ const Perfil = () => {
   const [loading, setLoading] = useState(true);
   const [mensagem, setMensagem] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [showLgpdModal, setShowLgpdModal] = useState(false);
 
   const [profileData, setProfileData] = useState({
     nome: '',
@@ -47,7 +50,10 @@ const Perfil = () => {
     numeroCamisa: '',
     numeroCalcado: '',
     tamanhoCamisa: '',
-    tamanhoCalcao: ''
+    tamanhoCalcao: '',
+    emailVerificado: false,
+    emailVerificadoEm: null,
+    lgpdConsent: null
   });
 
   const turmasDisponiveis = ['1A', '1B', '1H', '2A', '2B', '2H', '3A', '3B', '3C', '3H'];
@@ -89,12 +95,41 @@ const Perfil = () => {
         numeroCamisa: data.numeroCamisa || '',
         numeroCalcado: data.numeroCalcado || '',
         tamanhoCamisa: data.tamanhoCamisa || '',
-        tamanhoCalcao: data.tamanhoCalcao || ''
+        tamanhoCalcao: data.tamanhoCalcao || '',
+        emailVerificado: Boolean(data.emailVerificado),
+        emailVerificadoEm: data.emailVerificadoEm || null,
+        lgpdConsent: data.lgpdConsent || null
       });
       setLoading(false);
     } catch (error) {
       console.error(error);
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendingEmail(true);
+    setMensagem('');
+    try {
+      const response = await fetch(apiUrl('/api/users/resend-verification'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ email: profileData.email })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMensagem(`✅ ${data.mensagem || 'E-mail de confirmação reenviado com sucesso!'}`);
+        setTimeout(() => setMensagem(''), 5000);
+      } else {
+        setMensagem(`❌ ${data.mensagem || 'Não foi possível reenviar o e-mail de confirmação.'}`);
+      }
+    } catch (err) {
+      setMensagem('❌ Erro de conexão ao solicitar reenvio de e-mail.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -133,8 +168,6 @@ const Perfil = () => {
       [name]: value
     }));
   };
-
-
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -234,7 +267,9 @@ const Perfil = () => {
             fontSize: '0.8125rem',
             fontWeight: 600,
             marginBottom: '24px',
-            display: 'flex', alignItems: 'center', gap: '8px'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}>
             {mensagem.includes('✅') ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
             <span>{mensagem}</span>
@@ -304,9 +339,63 @@ const Perfil = () => {
                     <input type="text" name="nome" value={profileData.nome} onChange={handleInputChange} required readOnly={!isEditing} style={fieldStyle} />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small mb-1" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Mail size={14} /> E-mail
-                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
+                      <label className="form-label text-muted small mb-0" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Mail size={14} /> E-mail
+                      </label>
+                      {profileData.emailVerificado ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          color: 'var(--success-text)',
+                          background: 'var(--success-light)',
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-full)'
+                        }}>
+                          <CheckCircle2 size={12} /> E-mail Verificado
+                        </span>
+                      ) : (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            color: '#b45309',
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            padding: '2px 8px',
+                            borderRadius: 'var(--radius-full)'
+                          }}>
+                            <AlertTriangle size={12} /> Verificação Pendente
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={resendingEmail}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              color: 'var(--primary)',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              cursor: resendingEmail ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              textDecoration: 'underline'
+                            }}
+                          >
+                            <Send size={11} />
+                            {resendingEmail ? 'Reenviando...' : 'Reenviar link'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <input type="email" name="email" value={profileData.email} onChange={handleInputChange} required readOnly={!isEditing} style={fieldStyle} />
                   </div>
 
@@ -556,7 +645,7 @@ const Perfil = () => {
                     </div>
                     <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Minhas Modalidades e Posições</h6>
                   </div>
-                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px' }}>
+                  <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px' }}>
                     {isEditing ? (
                       <div>
                         <ModalidadesSelector 
@@ -615,6 +704,39 @@ const Perfil = () => {
                 </>
               )}
 
+              {/* Privacidade e Conformidade LGPD */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ShieldCheck size={16} />
+                </div>
+                <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '0.875rem' }}>Privacidade e Proteção de Dados (LGPD)</h6>
+              </div>
+              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <div>
+                    <strong>Status do Consentimento (Lei nº 13.709/2018):</strong>{' '}
+                    <span style={{ color: 'var(--success-text)', fontWeight: 700 }}>Ativo</span>
+                    {profileData.lgpdConsent?.dataAceite && (
+                      <span>
+                        {' '}• Aceito em {new Date(profileData.lgpdConsent.dataAceite).toLocaleString('pt-BR')} (Termos v{profileData.lgpdConsent.versaoTermos || '1.0'})
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem' }}>
+                    Seus dados são protegidos e utilizados exclusivamente para as finalidades esportivas e acadêmicas do IFesporte.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLgpdModal(true)}
+                  className="btn btn-sm btn-outline-primary fw-bold rounded-3"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <FileText size={14} />
+                  Consultar Termos e Política LGPD
+                </button>
+              </div>
+
               {/* Save button */}
               {isEditing && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '32px', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
@@ -645,6 +767,11 @@ const Perfil = () => {
           />
         </div>
       )}
+
+      <LgpdTermsModal
+        isOpen={showLgpdModal}
+        onClose={() => setShowLgpdModal(false)}
+      />
     </Layout>
   );
 };

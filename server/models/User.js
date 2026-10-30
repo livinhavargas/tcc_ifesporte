@@ -53,6 +53,24 @@ const userSchema = new mongoose.Schema({
   }],
   foto: { type: String }, 
 
+  // Verificação de E-mail
+  emailVerificado: { type: Boolean, default: false },
+  emailVerificadoEm: { type: Date, default: null },
+  emailVerificationToken: { type: String, default: null },
+  emailVerificationExpires: { type: Date, default: null },
+
+  // Conformidade LGPD (Lei nº 13.709/2018)
+  lgpdConsent: {
+    aceito: { type: Boolean, default: false },
+    dataAceite: { type: Date, default: null },
+    versaoTermos: { type: String, default: '1.0' },
+    ipRegistro: { type: String, default: null },
+    finalidade: {
+      type: String,
+      default: 'Gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica (Lei nº 13.709/2018)'
+    }
+  }
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

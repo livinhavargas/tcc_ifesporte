@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -7,6 +8,12 @@ const {
   validatePosicoesPorModalidade, 
   sanitizePosicoesPorModalidade 
 } = require('../utils/sportPositions');
+const { sendWelcomeAndVerificationEmail } = require('../utils/emailService');
+
+const isInstitutionalTrainerEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  return email.trim().toLowerCase().endsWith('@ifc.edu.br');
+};
 
 const mapLegacyToNewModality = (mod) => {
   const legacyMap = {
@@ -126,7 +133,16 @@ const loginUser = async (req, res) => {
       { expiresIn: '2h' }
     );
 
-    res.json({ mensagem: 'Login bem-sucedido', token, tipo: usuario.tipo, nome: usuario.nome, email: usuario.email, id: usuario._id, foto: usuario.foto });
+    res.json({
+      mensagem: 'Login bem-sucedido',
+      token,
+      tipo: usuario.tipo,
+      nome: usuario.nome,
+      email: usuario.email,
+      id: usuario._id,
+      foto: usuario.foto,
+      emailVerificado: Boolean(usuario.emailVerificado)
+    });
   } catch (erro) {
     console.error("ERRO NO LOGIN:", erro);
     res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
@@ -136,14 +152,24 @@ const loginUser = async (req, res) => {
 // Realizar registro
 const registerUser = async (req, res) => {
   const { 
-    nome, email, senha, tipo, 
+    nome, email, senha, tipo: tipoInformado, 
     telefone, sexo, idade, turma, matricula, peso, altura, modalidades, posicoesPorModalidade,
-    codigoConvite, cpf, rg, endereco, cidade, estado, dataNascimento, nomeResponsavel, telefoneResponsavel,
+    cpf, rg, endereco, cidade, estado, dataNascimento, nomeResponsavel, telefoneResponsavel,
     alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
-    numeroCalcado, tamanhoCamisa, tamanhoCalcao
+    numeroCalcado, tamanhoCamisa, tamanhoCalcao,
+    aceiteLgpd, versaoTermos, lgpdConsent
   } = req.body;
+
+  // Reconhecimento automático de Treinador pelo domínio institucional @ifc.edu.br
+  const emailEhIfc = isInstitutionalTrainerEmail(email);
+  if (tipoInformado === 'Treinador' && !emailEhIfc) {
+    return res.status(400).json({
+      mensagem: 'Para cadastro como Treinador, utilize seu e-mail institucional (@ifc.edu.br).'
+    });
+  }
+  const tipo = emailEhIfc ? 'Treinador' : 'estudante';
   
-  console.log(`[Registro] Tentativa para: ${email}, Tipo: ${tipo}`);
+  console.log(`[Registro] Tentativa para: ${email}, Tipo reconhecido: ${tipo}`);
 
   try {
     // Verificar se o mongoose está conectado
@@ -152,11 +178,12 @@ const registerUser = async (req, res) => {
       return res.status(500).json({ mensagem: 'Banco de dados offline. Tente novamente em instantes.' });
     }
 
-    // Backend validation for Treinador
-    if (tipo === 'Treinador') {
-      if (codigoConvite !== '123') {
-        return res.status(400).json({ mensagem: 'Código de Acesso inválido para Treinador.' });
-      }
+    // Validação de consentimento LGPD (Lei nº 13.709/2018)
+    const consentimentoAceito = aceiteLgpd === true || (lgpdConsent && lgpdConsent.aceito === true);
+    if (!consentimentoAceito) {
+      return res.status(400).json({
+        mensagem: 'É obrigatório aceitar os Termos de Uso e a Política de Privacidade (LGPD) para realizar o cadastro.'
+      });
     }
 
     const userExistente = await User.findOne({ email });
@@ -189,6 +216,22 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash(senha, salt);
 
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+    const dataAceite = new Date();
+    const versaoAceita = versaoTermos || (lgpdConsent && lgpdConsent.versaoTermos) || '1.0';
+    const ipCliente = req.headers['x-forwarded-for']
+      ? String(req.headers['x-forwarded-for']).split(',')[0].trim()
+      : (req.ip || null);
+
+    const dadosLgpd = {
+      aceito: true,
+      dataAceite,
+      versaoTermos: versaoAceita,
+      ipRegistro: ipCliente,
+      finalidade: 'Gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica (Lei nº 13.709/2018)'
+    };
+
     const novoUsuario = new User({
       nome, email, senha: senhaHash, tipo, telefone, sexo, cpf, rg, endereco, cidade, estado,
       dataNascimento: dataNascimento === '' ? null : dataNascimento,
@@ -202,6 +245,10 @@ const registerUser = async (req, res) => {
       peso: (tipo === 'estudante' && peso !== '') ? peso : undefined,
       altura: (tipo === 'estudante' && altura !== '') ? altura : undefined,
       idade: (idade !== undefined && idade !== '') ? idade : undefined,
+      emailVerificado: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
+      lgpdConsent: dadosLgpd
     });
 
     await novoUsuario.save();
@@ -249,6 +296,11 @@ const registerUser = async (req, res) => {
         estudanteExistente.esportes = mods;
         estudanteExistente.modalidades = mods;
         estudanteExistente.posicoesPorModalidade = sanitizedPos;
+        estudanteExistente.lgpdConsent = {
+          aceito: true,
+          dataAceite,
+          versaoTermos: versaoAceita
+        };
         estudanteExistente.adicionadoPor = novoUsuario._id;
         
         await estudanteExistente.save();
@@ -275,18 +327,128 @@ const registerUser = async (req, res) => {
           telefoneResponsavel,
           alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
           numeroCalcado, tamanhoCamisa, tamanhoCalcao,
+          lgpdConsent: {
+            aceito: true,
+            dataAceite,
+            versaoTermos: versaoAceita
+          },
           adicionadoPor: novoUsuario._id
         });
         await novoEstudante.save();
       }
     }
 
-    console.log(`✅ Usuário ${email} cadastrado com sucesso!`);
-    res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso' });
+    // Dispara o e-mail de boas-vindas e verificação de endereço
+    const emailResult = await sendWelcomeAndVerificationEmail({
+      to: email,
+      nome,
+      tipo,
+      verificationToken,
+      lgpdConsentDate: dataAceite,
+      versaoTermos: versaoAceita
+    });
+
+    console.log(`✅ Usuário ${email} (${tipo}) cadastrado com sucesso!`);
+    res.status(201).json({
+      mensagem: 'Usuário cadastrado com sucesso! Enviamos um e-mail de confirmação para o seu endereço.',
+      tipo,
+      emailEnviado: emailResult.sent,
+      emailSimulado: emailResult.simulated
+    });
   } catch (erro) {
     console.error("!!! ERRO CRÍTICO NO REGISTRO !!!");
     console.error("Mensagem:", erro.message);
     res.status(500).json({ mensagem: 'Erro no servidor', detalhe: erro.message });
+  }
+};
+
+// Verificar e-mail a partir do token enviado no link
+const verifyEmail = async (req, res) => {
+  const token = req.params.token || req.body.token || req.query.token;
+
+  if (!token) {
+    return res.status(400).json({ mensagem: 'Token de verificação não informado.' });
+  }
+
+  try {
+    const usuario = await User.findOne({ emailVerificationToken: token });
+
+    if (!usuario) {
+      return res.status(400).json({
+        mensagem: 'Link de verificação inválido ou já utilizado.'
+      });
+    }
+
+    if (usuario.emailVerificationExpires && usuario.emailVerificationExpires < new Date()) {
+      return res.status(400).json({
+        mensagem: 'O link de verificação expirou. Solicite um novo envio no seu perfil ou na tela de login.'
+      });
+    }
+
+    usuario.emailVerificado = true;
+    usuario.emailVerificadoEm = new Date();
+    usuario.emailVerificationToken = null;
+    usuario.emailVerificationExpires = null;
+    await usuario.save();
+
+    res.json({
+      mensagem: 'E-mail verificado com sucesso! Sua conta está confirmada.',
+      emailVerificado: true,
+      nome: usuario.nome,
+      email: usuario.email
+    });
+  } catch (erro) {
+    console.error('ERRO AO VERIFICAR E-MAIL:', erro);
+    res.status(500).json({ mensagem: 'Erro ao verificar e-mail.', detalhe: erro.message });
+  }
+};
+
+// Reenviar e-mail de verificação
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const userId = req.user && req.user.userId;
+    const { email } = req.body || {};
+
+    let usuario = null;
+    if (userId) {
+      usuario = await User.findById(userId);
+    } else if (email) {
+      usuario = await User.findOne({ email });
+    }
+
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    }
+
+    if (usuario.emailVerificado) {
+      return res.status(200).json({
+        mensagem: 'Este endereço de e-mail já está verificado.',
+        emailVerificado: true
+      });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    usuario.emailVerificationToken = verificationToken;
+    usuario.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await usuario.save();
+
+    const emailResult = await sendWelcomeAndVerificationEmail({
+      to: usuario.email,
+      nome: usuario.nome,
+      tipo: usuario.tipo,
+      verificationToken,
+      lgpdConsentDate: usuario.lgpdConsent?.dataAceite || usuario.createdAt || new Date(),
+      versaoTermos: usuario.lgpdConsent?.versaoTermos || '1.0'
+    });
+
+    res.json({
+      mensagem: 'E-mail de verificação reenviado com sucesso! Verifique sua caixa de entrada.',
+      emailEnviado: emailResult.sent,
+      emailSimulado: emailResult.simulated
+    });
+  } catch (erro) {
+    console.error('ERRO AO REENVIAR VERIFICAÇÃO:', erro);
+    res.status(500).json({ mensagem: 'Erro ao reenviar e-mail de verificação.', detalhe: erro.message });
   }
 };
 
@@ -295,7 +457,7 @@ const getUserById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    let usuario = await User.findById(id).select('-senha').lean();
+    let usuario = await User.findById(id).select('-senha -emailVerificationToken').lean();
 
     if (!usuario) {
       return res.status(404).json({ mensagem: 'Usuário não encontrado' });
@@ -379,8 +541,13 @@ const updateUser = async (req, res) => {
       }
     }
 
+    const emailAnterior = usuario.email;
     if (nome) usuario.nome = nome;
-    if (email) usuario.email = email;
+    if (email && email !== emailAnterior) {
+      usuario.email = email;
+      usuario.emailVerificado = false;
+      usuario.emailVerificadoEm = null;
+    }
     if (foto) usuario.foto = foto;
     let mods = req.body.modalidades || req.body.esportes;
     if (mods) {
@@ -466,6 +633,9 @@ const updateUser = async (req, res) => {
 module.exports = {
   loginUser,
   registerUser,
+  verifyEmail,
+  resendVerificationEmail,
   getUserById,
   updateUser,
+  isInstitutionalTrainerEmail,
 };

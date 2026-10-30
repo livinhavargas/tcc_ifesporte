@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import Perfil from './pages/Perfil';
 import Alunos from './pages/IFEsporte/Alunos';
 import Agenda from './pages/IFEsporte/Agenda';
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/" element={token ? <Home /> : <Navigate to="/login" replace />} />
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verificar-email" element={<VerifyEmail />} />
         <Route path="/perfil" element={token ? <Perfil /> : <Navigate to="/login" replace />} />
         
         {/* Rotas Restritas para Staff */}
