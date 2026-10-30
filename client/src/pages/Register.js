@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, ArrowRight, ArrowLeft, Lock, User, HeartPulse, 
-  Trophy, CheckCircle2, Check, Sun, Moon, ShieldCheck, MailCheck, FileText 
+  Trophy, CheckCircle2, Check, Sun, Moon, ShieldCheck, FileText 
 } from 'lucide-react';
 import { addNotification } from '../utils/notifications';
 import ModalidadesSelector from '../components/ModalidadesSelector';
@@ -22,9 +22,6 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showLgpdModal, setShowLgpdModal] = useState(false);
-  const [registrationCompleted, setRegistrationCompleted] = useState(false);
-  const [simulatedVerificationUrl, setSimulatedVerificationUrl] = useState('');
-  const [emailWarning, setEmailWarning] = useState('');
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -180,16 +177,11 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
       const data = await response.json();
       if (response.ok) {
         addNotification('Novo Cadastro Realizado', `O usuário ${formData.nome} (${resolvedTipo}) cadastrou-se no sistema.`);
-        if (data.emailSimulado && data.verificationUrl) {
-          setSimulatedVerificationUrl(data.verificationUrl);
-        }
-        if (data.emailErro) {
-          setEmailWarning(data.emailErro);
-        }
         if (isEmbedded && onSuccess) {
           onSuccess();
         } else {
-          setRegistrationCompleted(true);
+          sessionStorage.setItem('registerSuccessMessage', 'Cadastro realizado com Sucesso!');
+          navigate('/login', { state: { successMessage: 'Cadastro realizado com Sucesso!' } });
         }
       } else {
         setError(data.message || data.mensagem || 'Erro ao realizar cadastro');
@@ -232,94 +224,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
         </button>
       )}
       <div style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: 'clamp(20px, 4vw, 40px)', boxShadow: isEmbedded ? 'none' : 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
-        
-        {registrationCompleted ? (
-          <div style={{ textAlign: 'center', padding: '16px 8px' }}>
-            <div
-              style={{
-                width: '68px',
-                height: '68px',
-                borderRadius: '50%',
-                background: 'var(--success-light)',
-                color: 'var(--success)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px'
-              }}
-            >
-              <MailCheck size={34} />
-            </div>
-            <h3 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.35rem', marginBottom: '10px' }}>
-              Cadastro Realizado com Sucesso!
-            </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', maxWidth: '540px', margin: '0 auto 20px', lineHeight: 1.6 }}>
-              Enviamos um e-mail de confirmação do seu cadastro para <strong>{formData.email}</strong> com o link para verificar seu endereço eletrônico e o resumo de privacidade da sua conta.
-            </p>
-            <div
-              style={{
-                maxWidth: '520px',
-                margin: '0 auto 28px',
-                background: 'var(--bg)',
-                border: '1px solid var(--border-light)',
-                borderRadius: 'var(--radius-md)',
-                padding: '14px 18px',
-                fontSize: '0.825rem',
-                color: 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                textAlign: 'left'
-              }}
-            >
-              <ShieldCheck size={22} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-              <span>
-                Seu aceite aos <strong>Termos de Uso e Política de Privacidade (LGPD – Lei nº 13.709/2018)</strong> foi registrado com segurança. Você já pode acessar sua conta normalmente.
-              </span>
-            </div>
-            {simulatedVerificationUrl && (
-              <div
-                style={{
-                  maxWidth: '520px',
-                  margin: '0 auto 24px',
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  border: '1px solid rgba(245, 158, 11, 0.35)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px 16px',
-                  fontSize: '0.8rem',
-                  color: 'var(--text)',
-                  textAlign: 'left'
-                }}
-              >
-                <div style={{ fontWeight: 700, marginBottom: '4px' }}>
-                  {emailWarning ? 'Atenção no Envio SMTP (Gmail):' : 'Modo de Teste Local (SMTP ainda não configurado no .env):'}
-                </div>
-                <div style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                  {emailWarning || (
-                    <>
-                      Para receber e-mails reais na caixa de entrada, preencha <code>SMTP_USER</code> e <code>SMTP_PASS</code> em <code>server/.env</code>. Você pode testar a confirmação agora clicando abaixo:
-                    </>
-                  )}
-                </div>
-                <a
-                  href={simulatedVerificationUrl}
-                  style={{ color: 'var(--primary)', fontWeight: 700, wordBreak: 'break-all' }}
-                >
-                  Confirmar E-mail Agora (Link de Teste)
-                </a>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="btn btn-primary fw-bold px-5 py-2 rounded-3"
-            >
-              Ir para o Login <ArrowRight size={16} className="ms-2" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
               <h2 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.375rem', marginBottom: '8px' }}>Criação de Conta</h2>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '0 0 20px' }}>
                 {step === 1 && 'Etapa 1 de 3: Informações de Acesso'}
@@ -672,8 +577,6 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
                 </div>
               </div>
             )}
-          </>
-        )}
       </div>
 
       <LgpdTermsModal

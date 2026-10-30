@@ -24,6 +24,7 @@ const getBaseClientUrl = () => {
 };
 
 const isSmtpConfigured = () => {
+  if (process.env.NODE_ENV === 'test') return false;
   return Boolean(nodemailer && SMTP_HOST && SMTP_USER && SMTP_PASS);
 };
 

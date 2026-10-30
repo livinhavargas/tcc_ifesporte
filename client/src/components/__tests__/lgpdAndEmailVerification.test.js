@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Register, { isInstitutionalTrainerEmail } from '../../pages/Register';
+import Login from '../../pages/Login';
 
 jest.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
@@ -100,9 +101,10 @@ describe('Verificação de E-mail, Reconhecimento @ifc.edu.br e Conformidade LGP
     expect(bodySent.versaoTermos).toBe('1.0');
     expect(bodySent.codigoConvite).toBeUndefined();
 
-    // Tela de confirmação de envio do e-mail
-    expect(await screen.findByText(/Cadastro Realizado com Sucesso!/i)).toBeInTheDocument();
-    expect(screen.getByText(/maria@ifc\.edu\.br/i)).toBeInTheDocument();
+    // Redireciona para o Login e exibe a mensagem "Cadastro realizado com Sucesso!" acima do formulário
+    expect(sessionStorage.getItem('registerSuccessMessage')).toBe('Cadastro realizado com Sucesso!');
+    render(<Login onLogin={jest.fn()} />);
+    expect(screen.getByText('Cadastro realizado com Sucesso!')).toBeInTheDocument();
   });
 
   test('emailService gera URL de verificação de e-mail com token e informações da LGPD', async () => {

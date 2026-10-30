@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, AlertTriangle, Sun, Moon } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, AlertTriangle, CheckCircle2, Sun, Moon } from 'lucide-react';
 import Logo from '../components/Logo';
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../services/api';
@@ -12,11 +12,13 @@ const Login = ({ onLogin }) => {
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -24,7 +26,14 @@ const Login = ({ onLogin }) => {
       setFormData(prev => ({ ...prev, email: savedEmail }));
       setRememberMe(true);
     }
-  }, []);
+
+    const msgFromState = location?.state?.successMessage;
+    const msgFromStorage = sessionStorage.getItem('registerSuccessMessage');
+    if (msgFromState || msgFromStorage) {
+      setSuccessMessage(msgFromState || msgFromStorage);
+      sessionStorage.removeItem('registerSuccessMessage');
+    }
+  }, [location]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -54,6 +63,7 @@ const Login = ({ onLogin }) => {
     
     setLoading(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const response = await fetch(apiUrl('/api/users/login'), {
@@ -80,7 +90,7 @@ const Login = ({ onLogin }) => {
         onLogin(data.token, data.tipo, data.email);
         navigate('/');
       } else {
-        setError(data.message || 'Erro ao realizar login. Verifique suas credenciais.');
+        setError(data.message || data.mensagem || 'Erro ao realizar login. Verifique suas credenciais.');
       }
     } catch (err) {
       setError('Erro de conexão ao servidor.');
@@ -179,6 +189,25 @@ const Login = ({ onLogin }) => {
               Faça login para continuar.
             </p>
           </div>
+
+          {/* Success Message after Registration */}
+          {successMessage && (
+            <div style={{
+              background: 'var(--success-light)',
+              color: 'var(--success-text)',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px 16px',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <CheckCircle2 size={18} style={{ flexShrink: 0, color: 'var(--success)' }} />
+              <span>{successMessage}</span>
+            </div>
+          )}
 
           {/* Error */}
           {error && (
