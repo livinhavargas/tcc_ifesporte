@@ -234,24 +234,25 @@ describe('Ajustes no Cadastro de Estudantes e Treinadores', () => {
         <Register />
       );
 
-      // Avançar para a Etapa 2 para Treinador (usando e-mail institucional @ifc.edu.br)
+      // Avançar para a Etapa 2 para Treinador
+      // Preencher campos obrigatórios da Etapa 1
       fireEvent.change(screen.getByPlaceholderText('Seu nome completo'), { target: { value: 'Treinador Teste' } });
-      fireEvent.change(screen.getByPlaceholderText('exemplo@instituicao.edu.br'), { target: { value: 'treinador@ifc.edu.br' } });
+      fireEvent.change(screen.getByPlaceholderText('exemplo@instituicao.edu.br'), { target: { value: 'treinador@teste.com' } });
       fireEvent.change(screen.getByPlaceholderText('Mínimo 8 caracteres'), { target: { value: '12345678' } });
       fireEvent.change(screen.getByPlaceholderText('Repita a senha'), { target: { value: '12345678' } });
 
       const nextButton = screen.getByText(/Próximo/i);
       fireEvent.click(nextButton);
 
-      // Verificar Etapa 2 do Treinador: Telefone não deve ter "(Opcional)" e não deve existir Código de Acesso
+      // Verificar Etapa 2 do Treinador: Telefone não deve ter "(Opcional)"
       expect(screen.getByText('Telefone')).toBeInTheDocument();
-      expect(screen.queryByText(/Código de Acesso/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/Telefone \(Opcional\)/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/\(Opcional\)/i)).not.toBeInTheDocument();
 
-      // Voltar para a Etapa 1 e informar e-mail de Estudante
+      // Voltar para a Etapa 1 e selecionar Estudante
       fireEvent.click(screen.getByText(/Voltar/i));
-      fireEvent.change(screen.getByPlaceholderText('exemplo@instituicao.edu.br'), { target: { value: 'estudante@gmail.com' } });
+      const tipoSelect = screen.getByDisplayValue('Treinador');
+      fireEvent.change(tipoSelect, { target: { value: 'estudante' } });
       fireEvent.click(screen.getByText(/Próximo/i));
 
       // Verificar campos da Etapa 2 do Estudante

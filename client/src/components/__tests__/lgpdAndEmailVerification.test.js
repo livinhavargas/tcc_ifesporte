@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import Register, { isInstitutionalTrainerEmail } from '../../pages/Register';
+import Register from '../../pages/Register';
 import Login from '../../pages/Login';
 
 jest.mock('react-router-dom', () => ({
@@ -12,7 +12,7 @@ jest.mock('react-router-dom', () => ({
 
 const { sendWelcomeAndVerificationEmail } = require('../../../../server/utils/emailService');
 
-describe('Verificação de E-mail, Reconhecimento @ifc.edu.br e Conformidade LGPD no Cadastro', () => {
+describe('Verificação de E-mail e Conformidade LGPD no Cadastro', () => {
   beforeEach(() => {
     global.fetch = jest.fn();
   });
@@ -21,26 +21,18 @@ describe('Verificação de E-mail, Reconhecimento @ifc.edu.br e Conformidade LGP
     jest.restoreAllMocks();
   });
 
-  test('Reconhece automaticamente @ifc.edu.br como Treinador e outros domínios como Estudante', () => {
-    expect(isInstitutionalTrainerEmail('professor@ifc.edu.br')).toBe(true);
-    expect(isInstitutionalTrainerEmail('TREINADOR@IFC.EDU.BR')).toBe(true);
-    expect(isInstitutionalTrainerEmail('aluno@gmail.com')).toBe(false);
-    expect(isInstitutionalTrainerEmail('aluno@estudante.ifc.edu.br')).toBe(false);
-  });
-
   test('Bloqueia o envio do cadastro na Etapa 3 se os Termos de Uso e Política de Privacidade (LGPD) não forem aceitos', async () => {
     render(<Register />);
 
-    // Etapa 1 com e-mail institucional @ifc.edu.br (reconhecido como Treinador sem seletor manual)
+    // Etapa 1
     fireEvent.change(screen.getByPlaceholderText('Seu nome completo'), { target: { value: 'Treinador LGPD' } });
-    fireEvent.change(screen.getByPlaceholderText('exemplo@instituicao.edu.br'), { target: { value: 'lgpd@ifc.edu.br' } });
+    fireEvent.change(screen.getByPlaceholderText('exemplo@instituicao.edu.br'), { target: { value: 'lgpd@ifesporte.edu.br' } });
     fireEvent.change(screen.getByPlaceholderText('Mínimo 8 caracteres'), { target: { value: '12345678' } });
     fireEvent.change(screen.getByPlaceholderText('Repita a senha'), { target: { value: '12345678' } });
     fireEvent.click(screen.getByText(/Próximo/i));
 
-    // Etapa 2 (Treinador - sem Código de Acesso)
-    expect(screen.queryByPlaceholderText('Ex: 123')).not.toBeInTheDocument();
-    expect(screen.getByText(/Perfil de Treinador confirmado automaticamente/i)).toBeInTheDocument();
+    // Etapa 2 (Treinador - Código de Acesso IF3SPORTE2026!)
+    fireEvent.change(screen.getByPlaceholderText('Digite o código de acesso'), { target: { value: 'IF3SPORTE2026!' } });
     fireEvent.click(screen.getByText(/Próximo/i));
 
     // Etapa 3 - Tentar finalizar sem aceitar LGPD
@@ -53,7 +45,7 @@ describe('Verificação de E-mail, Reconhecimento @ifc.edu.br e Conformidade LGP
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  test('Permite ler e aceitar os Termos LGPD no modal, envia aceiteLgpd=true e tipo=Treinador para @ifc.edu.br', async () => {
+  test('Permite ler e aceitar os Termos LGPD no modal, envia aceiteLgpd=true e redireciona ao Login com mensagem de sucesso', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -67,12 +59,13 @@ describe('Verificação de E-mail, Reconhecimento @ifc.edu.br e Conformidade LGP
 
     // Etapa 1
     fireEvent.change(screen.getByPlaceholderText('Seu nome completo'), { target: { value: 'Maria Treinadora' } });
-    fireEvent.change(screen.getByPlaceholderText('exemplo@instituicao.edu.br'), { target: { value: 'maria@ifc.edu.br' } });
+    fireEvent.change(screen.getByPlaceholderText('exemplo@instituicao.edu.br'), { target: { value: 'maria@ifesporte.edu.br' } });
     fireEvent.change(screen.getByPlaceholderText('Mínimo 8 caracteres'), { target: { value: '12345678' } });
     fireEvent.change(screen.getByPlaceholderText('Repita a senha'), { target: { value: '12345678' } });
     fireEvent.click(screen.getByText(/Próximo/i));
 
-    // Etapa 2 (Treinador reconhecido pelo @ifc.edu.br)
+    // Etapa 2 (Treinador - Código de Acesso IF3SPORTE2026!)
+    fireEvent.change(screen.getByPlaceholderText('Digite o código de acesso'), { target: { value: 'IF3SPORTE2026!' } });
     fireEvent.click(screen.getByText(/Próximo/i));
 
     // Abrir modal da LGPD e clicar em "Li e Concordo com os Termos"
@@ -97,9 +90,9 @@ describe('Verificação de E-mail, Reconhecimento @ifc.edu.br e Conformidade LGP
     expect(url).toContain('/api/users/register');
     const bodySent = JSON.parse(options.body);
     expect(bodySent.tipo).toBe('Treinador');
+    expect(bodySent.codigoConvite).toBe('IF3SPORTE2026!');
     expect(bodySent.aceiteLgpd).toBe(true);
     expect(bodySent.versaoTermos).toBe('1.0');
-    expect(bodySent.codigoConvite).toBeUndefined();
 
     // Redireciona para o Login e exibe a mensagem "Cadastro realizado com Sucesso!" acima do formulário
     expect(sessionStorage.getItem('registerSuccessMessage')).toBe('Cadastro realizado com Sucesso!');

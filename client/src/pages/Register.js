@@ -12,11 +12,6 @@ import { getStudentPositionForSport, isSportWithPositions } from '../utils/sport
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../services/api';
 
-export const isInstitutionalTrainerEmail = (email) => {
-  if (!email || typeof email !== 'string') return false;
-  return email.trim().toLowerCase().endsWith('@ifc.edu.br');
-};
-
 const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCancel = null }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -30,7 +25,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
     email: '',
     senha: '',
     confirmarSenha: '',
-    tipo: defaultType || 'estudante',
+    tipo: defaultType || 'Treinador',
     telefone: '',
     sexo: 'Feminino',
     dataNascimento: '',
@@ -54,6 +49,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
     tamanhoCalcao: '',
     modalidades: [],
     posicoesPorModalidade: [],
+    codigoConvite: '',
     aceiteLgpd: false,
     versaoTermos: LGPD_TERMS_VERSION
   });
@@ -98,16 +94,10 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
       value = value.replace(/(\d)(\d{4})$/, '$1-$2');
     }
 
-    const updatedData = {
+    setFormData({
       ...formData,
       [name]: value
-    };
-
-    if (name === 'email') {
-      updatedData.tipo = isInstitutionalTrainerEmail(value) ? 'Treinador' : 'estudante';
-    }
-
-    setFormData(updatedData);
+    });
   };
 
   const nextStep = () => {
@@ -125,13 +115,18 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
         setError('As senhas não coincidem.');
         return;
       }
-      const resolvedTipo = isInstitutionalTrainerEmail(formData.email) ? 'Treinador' : 'estudante';
-      if (formData.tipo !== resolvedTipo) {
-        setFormData(prev => ({ ...prev, tipo: resolvedTipo }));
-      }
     }
     if (step === 2) {
-      if (formData.tipo === 'estudante') {
+      if (formData.tipo === 'Treinador') {
+        if (!formData.codigoConvite) {
+          setError('O Código de Acesso é obrigatório para Treinadores.');
+          return;
+        }
+        if (formData.codigoConvite !== 'IF3SPORTE2026!') {
+          setError('Código de Acesso inválido.');
+          return;
+        }
+      } else if (formData.tipo === 'estudante') {
         if (!formData.sexo || !formData.dataNascimento || !formData.matricula || !formData.telefone || !formData.cpf || !formData.cidade || !formData.estado) {
           setError('Preencha os campos obrigatórios: Gênero, Data de Nascimento, Matrícula, Telefone, CPF, Cidade e Estado.');
           return;
@@ -165,8 +160,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
 
     setLoading(true);
     setError('');
-    const resolvedTipo = isInstitutionalTrainerEmail(formData.email) ? 'Treinador' : 'estudante';
-    const payload = { ...formData, tipo: resolvedTipo };
+    const payload = { ...formData };
     delete payload.confirmarSenha;
     try {
       const response = await fetch(apiUrl('/api/users/register'), {
@@ -176,7 +170,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
       });
       const data = await response.json();
       if (response.ok) {
-        addNotification('Novo Cadastro Realizado', `O usuário ${formData.nome} (${resolvedTipo}) cadastrou-se no sistema.`);
+        addNotification('Novo Cadastro Realizado', `O usuário ${formData.nome} (${formData.tipo}) cadastrou-se no sistema.`);
         if (isEmbedded && onSuccess) {
           onSuccess();
         } else {
@@ -225,358 +219,355 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
       )}
       <div style={{ width: '100%', maxWidth: isEmbedded ? '100%' : '850px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: 'clamp(20px, 4vw, 40px)', boxShadow: isEmbedded ? 'none' : 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-              <h2 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.375rem', marginBottom: '8px' }}>Criação de Conta</h2>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '0 0 20px' }}>
-                {step === 1 && 'Etapa 1 de 3: Informações de Acesso'}
-                {step === 2 && 'Etapa 2 de 3: Dados Complementares'}
-                {step === 3 && 'Etapa 3 de 3: Confirmação dos Dados e LGPD'}
-              </p>
-              <div style={{ maxWidth: '300px', margin: '0 auto', height: '6px', background: 'var(--border-light)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                <div style={{ width: `${(step / 3) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: 'var(--radius-full)', transition: 'width 0.3s ease' }}></div>
+          <h2 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.375rem', marginBottom: '8px' }}>Criação de Conta</h2>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '0 0 20px' }}>
+            {step === 1 && 'Etapa 1 de 3: Informações de Acesso'}
+            {step === 2 && 'Etapa 2 de 3: Dados Complementares'}
+            {step === 3 && 'Etapa 3 de 3: Confirmação dos Dados e LGPD'}
+          </p>
+          <div style={{ maxWidth: '300px', margin: '0 auto', height: '6px', background: 'var(--border-light)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+            <div style={{ width: `${(step / 3) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: 'var(--radius-full)', transition: 'width 0.3s ease' }}></div>
+          </div>
+        </div>
+
+        {error && <div style={{ background: 'var(--error-light)', color: 'var(--error-text)', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} />{error}</div>}
+
+        {step === 1 && (
+          <div>
+            <div className="row g-3 mb-4">
+              <div className="col-md-12">
+                <label className="form-label">Tipo de Usuário *</label>
+                <select className="form-select" name="tipo" value={formData.tipo} onChange={handleInputChange} disabled={isEmbedded}>
+                  <option value="Treinador">Treinador</option>
+                  <option value="estudante">Estudante / Atleta</option>
+                </select>
+              </div>
+              <div className="col-md-12">
+                <label className="form-label">Nome Completo *</label>
+                <input type="text" className="form-control" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Seu nome completo" />
+              </div>
+              <div className="col-md-12">
+                <label className="form-label">E-mail *</label>
+                <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@instituicao.edu.br" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Senha *</label>
+                <input type="password" className="form-control" name="senha" value={formData.senha} onChange={handleInputChange} placeholder="Mínimo 8 caracteres" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Confirmar Senha *</label>
+                <input type="password" className="form-control" name="confirmarSenha" value={formData.confirmarSenha} onChange={handleInputChange} placeholder="Repita a senha" />
+              </div>
+            </div>
+            <div className="d-flex justify-content-between mt-5">
+              {isEmbedded && onCancel ? (
+                <button type="button" onClick={onCancel} className="btn btn-outline-secondary fw-bold px-4 rounded-3">Cancelar</button>
+              ) : (
+                <Link to="/login" className="btn btn-outline-secondary fw-bold px-4 rounded-3">Cancelar</Link>
+              )}
+              <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <ArrowRight size={16} className="ms-2" /></button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && formData.tipo === 'Treinador' && (
+          <div>
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Lock size={18} style={{ color: 'var(--primary)' }} />Validação de Acesso</h6>
+            <div className="row g-3 mb-4">
+              <div className="col-md-6">
+                <label className="form-label">Código de Acesso (Fornecido pela direção) *</label>
+                <input type="text" className="form-control" name="codigoConvite" value={formData.codigoConvite} onChange={handleInputChange} placeholder="Digite o código de acesso" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Telefone</label>
+                <input type="text" className="form-control" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" />
+              </div>
+            </div>
+            <div className="d-flex justify-content-between mt-5">
+              <button onClick={prevStep} className="btn btn-outline-secondary fw-bold px-4 rounded-3"><ArrowLeft size={16} className="me-2" />Voltar</button>
+              <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <ArrowRight size={16} className="ms-2" /></button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && formData.tipo === 'estudante' && (
+          <div>
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><User size={18} style={{ color: 'var(--primary)' }} />Dados do Estudante</h6>
+            <div className="row g-3 mb-4">
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Gênero *</label>
+                <select className="form-select bg-light border-0" name="sexo" value={formData.sexo} onChange={handleInputChange}>
+                  <option value="Feminino">Feminino</option>
+                  <option value="Masculino">Masculino</option>
+                </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Data de Nascimento *</label>
+                <input type="date" className="form-control bg-light border-0" name="dataNascimento" value={formData.dataNascimento} onChange={handleInputChange} />
+              </div>
+              <div className="col-md-4">
+                <label className="form-label fw-bold small text-muted">Turma</label>
+                <select className="form-select bg-light border-0" name="turma" value={formData.turma} onChange={handleInputChange}>
+                  <option value="">Selecione...</option>
+                  {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="col-md-4">
+                <label className="form-label fw-bold small text-muted">Matrícula *</label>
+                <input type="text" className="form-control bg-light border-0" name="matricula" value={formData.matricula} onChange={handleInputChange} />
+              </div>
+              <div className="col-md-4">
+                <label className="form-label fw-bold small text-muted">Telefone *</label>
+                <input type="text" className="form-control bg-light border-0" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">CPF *</label>
+                <input type="text" className="form-control bg-light border-0" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">RG</label>
+                <input type="text" className="form-control bg-light border-0" name="rg" value={formData.rg} onChange={handleInputChange} placeholder="00.000.000-0" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Logradouro</label>
+                <input type="text" className="form-control bg-light border-0" name="endereco" value={formData.endereco} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" />
+              </div>
+              <div className="col-md-4">
+                <label className="form-label fw-bold small text-muted">Cidade *</label>
+                <input type="text" className="form-control bg-light border-0" name="cidade" value={formData.cidade} onChange={handleInputChange} placeholder="Ex: Vitória" />
+              </div>
+              <div className="col-md-2">
+                <label className="form-label fw-bold small text-muted">Estado *</label>
+                <input type="text" className="form-control bg-light border-0" name="estado" value={formData.estado} onChange={handleInputChange} placeholder="Ex: ES" maxLength="2" style={{ textTransform: 'uppercase' }} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Peso em kg</label>
+                <input type="number" step="0.1" className="form-control bg-light border-0" name="peso" value={formData.peso} onChange={handleInputChange} placeholder="Ex: 65.5" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Altura em metros</label>
+                <input type="number" step="0.01" className="form-control bg-light border-0" name="altura" value={formData.altura} onChange={handleInputChange} placeholder="Ex: 1.75" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Nome do Responsável</label>
+                <input type="text" className="form-control bg-light border-0" name="nomeResponsavel" value={formData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do pai, mãe ou responsável" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Telefone do Responsável</label>
+                <input type="text" className="form-control bg-light border-0" name="telefoneResponsavel" value={formData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" />
+              </div>
+              
+              <div className="col-md-12 mt-4 mb-2">
+                <h6 style={{ fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} style={{ color: 'var(--primary)' }} />Informações Esportivas</h6>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label fw-bold small text-muted">Nº da Camiseta</label>
+                <input type="number" className="form-control bg-light border-0" name="numeroCamisa" value={formData.numeroCamisa} onChange={handleInputChange} placeholder="Ex: 10" />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label fw-bold small text-muted">Nº do Calçado</label>
+                <input type="number" className="form-control bg-light border-0" name="numeroCalcado" value={formData.numeroCalcado} onChange={handleInputChange} placeholder="Ex: 40" />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label fw-bold small text-muted">Tamanho da Camisa</label>
+                <select className="form-select bg-light border-0" name="tamanhoCamisa" value={formData.tamanhoCamisa} onChange={handleInputChange}>
+                  <option value="">Selecione...</option>
+                  <option value="P">P</option>
+                  <option value="M">M</option>
+                  <option value="G">G</option>
+                  <option value="GG">GG</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label fw-bold small text-muted">Tamanho do Calção</label>
+                <select className="form-select bg-light border-0" name="tamanhoCalcao" value={formData.tamanhoCalcao} onChange={handleInputChange}>
+                  <option value="">Selecione...</option>
+                  <option value="P">P</option>
+                  <option value="M">M</option>
+                  <option value="G">G</option>
+                  <option value="GG">GG</option>
+                </select>
+              </div>
+
+              <div className="col-md-12 mt-4 mb-2">
+                <h6 style={{ fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><HeartPulse size={18} style={{ color: 'var(--error)' }} />Informações Médicas</h6>
+              </div>
+              <div className="col-md-12">
+                <label className="form-label fw-bold small text-muted">Alergias</label>
+                <input type="text" className="form-control bg-light border-0" name="alergias" value={formData.alergias} onChange={handleInputChange} placeholder="Ex: Rinite, Medicamentos..." />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Lesões Anteriores</label>
+                <textarea className="form-control bg-light border-0" name="lesoesAnteriores" rows="2" value={formData.lesoesAnteriores} onChange={handleInputChange} placeholder="Descreva se houver"></textarea>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">Restrições Médicas</label>
+                <textarea className="form-control bg-light border-0" name="restricoesMedicas" rows="2" value={formData.restricoesMedicas} onChange={handleInputChange} placeholder="Descreva se houver"></textarea>
+              </div>
+            </div>
+            <hr className="my-4 text-muted" />
+            <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} style={{ color: 'var(--primary)' }} />Modalidade(s) de Interesse</h6>
+            <ModalidadesSelector 
+              selected={formData.modalidades}
+              onChange={(novos) => setFormData(prev => ({ ...prev, modalidades: novos }))}
+              gender={formData.sexo}
+            />
+            <ModalidadePosicaoSelector
+              selectedModalidades={formData.modalidades}
+              posicoesPorModalidade={formData.posicoesPorModalidade}
+              onChange={(novasPos) => setFormData(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
+            />
+            <div className="d-flex justify-content-between mt-5">
+              <button onClick={prevStep} className="btn btn-outline-secondary fw-bold px-4 rounded-3"><ArrowLeft size={16} className="me-2" />Voltar</button>
+              <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <ArrowRight size={16} className="ms-2" /></button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div>
+            <div style={{ background: 'var(--success-light)', borderRadius: 'var(--radius-md)', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <CheckCircle2 size={24} style={{ color: 'var(--success)' }} />
+              <div>
+                <h6 style={{ fontWeight: 700, color: 'var(--success-text)', marginBottom: '2px', fontSize: '0.9375rem' }}>Quase lá, {formData.nome.split(' ')[0]}!</h6>
+                <small style={{ color: 'var(--success-text)', opacity: 0.8 }}>Confirme se os dados abaixo estão corretos e aceite os termos de privacidade (LGPD) antes de finalizar.</small>
+              </div>
+            </div>
+            <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
+              <div className="row g-3 text-muted small">
+                <div className="col-6"><strong>Nome:</strong> {formData.nome}</div>
+                <div className="col-6"><strong>Email:</strong> {formData.email}</div>
+                <div className="col-6"><strong>Tipo de Conta:</strong> {formData.tipo === 'estudante' ? 'Estudante / Atleta' : 'Treinador'}</div>
+                {formData.tipo === 'estudante' && (
+                  <>
+                    <div className="col-6"><strong>Gênero:</strong> {formData.sexo}</div>
+                    <div className="col-6"><strong>Data Nasc.:</strong> {formData.dataNascimento ? new Date(formData.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</div>
+                    <div className="col-6"><strong>CPF:</strong> {formData.cpf}</div>
+                    <div className="col-6"><strong>RG:</strong> {formData.rg}</div>
+                    <div className="col-6"><strong>Matrícula:</strong> {formData.matricula}</div>
+                    <div className="col-6"><strong>Telefone:</strong> {formData.telefone}</div>
+                    <div className="col-6"><strong>Turma:</strong> {formData.turma || '-'}</div>
+                    <div className="col-6"><strong>Peso:</strong> {formData.peso ? formData.peso + ' kg' : '-'}</div>
+                    <div className="col-6"><strong>Altura:</strong> {formData.altura ? formData.altura + ' m' : '-'}</div>
+                    <div className="col-6"><strong>Nome Responsável:</strong> {formData.nomeResponsavel || '-'}</div>
+                    <div className="col-6"><strong>Tel. Responsável:</strong> {formData.telefoneResponsavel || '-'}</div>
+                    <div className="col-12"><strong>Logradouro:</strong> {formData.endereco ? `${formData.endereco}, ` : ''}{formData.cidade || '-'}{formData.estado ? ` - ${formData.estado}` : ''}</div>
+                    <div className="col-3"><strong>Nº Camisa:</strong> {formData.numeroCamisa || '-'}</div>
+                    <div className="col-3"><strong>Nº Calçado:</strong> {formData.numeroCalcado || '-'}</div>
+                    <div className="col-3"><strong>Tam. Camisa:</strong> {formData.tamanhoCamisa || '-'}</div>
+                    <div className="col-3"><strong>Tam. Calção:</strong> {formData.tamanhoCalcao || '-'}</div>
+                    <div className="col-12"><strong>Alergias:</strong> {formData.alergias || '-'}</div>
+                    <div className="col-6"><strong>Lesões Anteriores:</strong> {formData.lesoesAnteriores || '-'}</div>
+                    <div className="col-6"><strong>Restrições Médicas:</strong> {formData.restricoesMedicas || '-'}</div>
+                    <div className="col-12">
+                      <strong>Modalidades e Posições:</strong> {formData.modalidades.length > 0 ? (
+                        formData.modalidades.map(m => {
+                          const pos = getStudentPositionForSport(formData, m);
+                          return isSportWithPositions(m) ? `${m} (${pos || 'Indefinido'})` : m;
+                        }).join(', ')
+                      ) : 'Nenhuma'}
+                    </div>
+                  </>
+                )}
+                {formData.tipo === 'Treinador' && (
+                  <>
+                    <div className="col-6"><strong>Telefone:</strong> {formData.telefone || '-'}</div>
+                    <div className="col-6"><strong>Código Informado:</strong> {formData.codigoConvite}</div>
+                  </>
+                )}
               </div>
             </div>
 
-            {error && <div style={{ background: 'var(--error-light)', color: 'var(--error-text)', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} />{error}</div>}
-
-            {step === 1 && (
-              <div>
-                <div className="row g-3 mb-4">
-                  <div className="col-md-12">
-                    <label className="form-label">Nome Completo *</label>
-                    <input type="text" className="form-control" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Seu nome completo" />
-                  </div>
-                  <div className="col-md-12">
-                    <label className="form-label">E-mail *</label>
-                    <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@instituicao.edu.br" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">Senha *</label>
-                    <input type="password" className="form-control" name="senha" value={formData.senha} onChange={handleInputChange} placeholder="Mínimo 8 caracteres" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">Confirmar Senha *</label>
-                    <input type="password" className="form-control" name="confirmarSenha" value={formData.confirmarSenha} onChange={handleInputChange} placeholder="Repita a senha" />
-                  </div>
+            {/* Seção de Verificação de E-mail e Conformidade LGPD */}
+            <div
+              style={{
+                background: 'var(--bg)',
+                border: '1.5px solid var(--border-light)',
+                borderRadius: 'var(--radius-md)',
+                padding: '20px',
+                marginBottom: '24px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={20} style={{ color: 'var(--primary)' }} />
+                  <h6 style={{ margin: 0, fontWeight: 700, fontSize: '0.925rem', color: 'var(--text)' }}>
+                    Proteção de Dados Pessoais (LGPD) e Confirmação por E-mail
+                  </h6>
                 </div>
-                <div className="d-flex justify-content-between mt-5">
-                  {isEmbedded && onCancel ? (
-                    <button type="button" onClick={onCancel} className="btn btn-outline-secondary fw-bold px-4 rounded-3">Cancelar</button>
-                  ) : (
-                    <Link to="/login" className="btn btn-outline-secondary fw-bold px-4 rounded-3">Cancelar</Link>
-                  )}
-                  <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <ArrowRight size={16} className="ms-2" /></button>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && formData.tipo === 'Treinador' && (
-              <div>
-                <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Lock size={18} style={{ color: 'var(--primary)' }} />Dados do Treinador</h6>
-                <div
-                  style={{
-                    background: 'var(--success-light)',
-                    color: 'var(--success-text)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '12px 16px',
-                    fontSize: '0.825rem',
-                    fontWeight: 600,
-                    marginBottom: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                  }}
+                <button
+                  type="button"
+                  onClick={() => setShowLgpdModal(true)}
+                  className="btn btn-sm btn-outline-primary fw-bold rounded-3"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
                 >
-                  <CheckCircle2 size={18} style={{ color: 'var(--success)', flexShrink: 0 }} />
-                  <span>Perfil de Treinador confirmado automaticamente pelo e-mail institucional ({formData.email}).</span>
-                </div>
-                <div className="row g-3 mb-4">
-                  <div className="col-md-6">
-                    <label className="form-label">Telefone</label>
-                    <input type="text" className="form-control" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" />
-                  </div>
-                </div>
-                <div className="d-flex justify-content-between mt-5">
-                  <button onClick={prevStep} className="btn btn-outline-secondary fw-bold px-4 rounded-3"><ArrowLeft size={16} className="me-2" />Voltar</button>
-                  <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <ArrowRight size={16} className="ms-2" /></button>
-                </div>
+                  <FileText size={14} />
+                  Ler Termos e Política de Privacidade
+                </button>
               </div>
-            )}
 
-            {step === 2 && formData.tipo === 'estudante' && (
-              <div>
-                <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><User size={18} style={{ color: 'var(--primary)' }} />Dados do Estudante</h6>
-                <div className="row g-3 mb-4">
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Gênero *</label>
-                    <select className="form-select bg-light border-0" name="sexo" value={formData.sexo} onChange={handleInputChange}>
-                      <option value="Feminino">Feminino</option>
-                      <option value="Masculino">Masculino</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Data de Nascimento *</label>
-                    <input type="date" className="form-control bg-light border-0" name="dataNascimento" value={formData.dataNascimento} onChange={handleInputChange} />
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold small text-muted">Turma</label>
-                    <select className="form-select bg-light border-0" name="turma" value={formData.turma} onChange={handleInputChange}>
-                      <option value="">Selecione...</option>
-                      {turmasDisponiveis.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold small text-muted">Matrícula *</label>
-                    <input type="text" className="form-control bg-light border-0" name="matricula" value={formData.matricula} onChange={handleInputChange} />
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold small text-muted">Telefone *</label>
-                    <input type="text" className="form-control bg-light border-0" name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 00000-0000" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">CPF *</label>
-                    <input type="text" className="form-control bg-light border-0" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">RG</label>
-                    <input type="text" className="form-control bg-light border-0" name="rg" value={formData.rg} onChange={handleInputChange} placeholder="00.000.000-0" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Logradouro</label>
-                    <input type="text" className="form-control bg-light border-0" name="endereco" value={formData.endereco} onChange={handleInputChange} placeholder="Rua, Bairro, Nº" />
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold small text-muted">Cidade *</label>
-                    <input type="text" className="form-control bg-light border-0" name="cidade" value={formData.cidade} onChange={handleInputChange} placeholder="Ex: Vitória" />
-                  </div>
-                  <div className="col-md-2">
-                    <label className="form-label fw-bold small text-muted">Estado *</label>
-                    <input type="text" className="form-control bg-light border-0" name="estado" value={formData.estado} onChange={handleInputChange} placeholder="Ex: ES" maxLength="2" style={{ textTransform: 'uppercase' }} />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Peso em kg</label>
-                    <input type="number" step="0.1" className="form-control bg-light border-0" name="peso" value={formData.peso} onChange={handleInputChange} placeholder="Ex: 65.5" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Altura em metros</label>
-                    <input type="number" step="0.01" className="form-control bg-light border-0" name="altura" value={formData.altura} onChange={handleInputChange} placeholder="Ex: 1.75" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Nome do Responsável</label>
-                    <input type="text" className="form-control bg-light border-0" name="nomeResponsavel" value={formData.nomeResponsavel} onChange={handleInputChange} placeholder="Nome do pai, mãe ou responsável" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Telefone do Responsável</label>
-                    <input type="text" className="form-control bg-light border-0" name="telefoneResponsavel" value={formData.telefoneResponsavel} onChange={handleInputChange} placeholder="(00) 00000-0000" />
-                  </div>
-                  
-                  <div className="col-md-12 mt-4 mb-2">
-                    <h6 style={{ fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} style={{ color: 'var(--primary)' }} />Informações Esportivas</h6>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-bold small text-muted">Nº da Camiseta</label>
-                    <input type="number" className="form-control bg-light border-0" name="numeroCamisa" value={formData.numeroCamisa} onChange={handleInputChange} placeholder="Ex: 10" />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-bold small text-muted">Nº do Calçado</label>
-                    <input type="number" className="form-control bg-light border-0" name="numeroCalcado" value={formData.numeroCalcado} onChange={handleInputChange} placeholder="Ex: 40" />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-bold small text-muted">Tamanho da Camisa</label>
-                    <select className="form-select bg-light border-0" name="tamanhoCamisa" value={formData.tamanhoCamisa} onChange={handleInputChange}>
-                      <option value="">Selecione...</option>
-                      <option value="P">P</option>
-                      <option value="M">M</option>
-                      <option value="G">G</option>
-                      <option value="GG">GG</option>
-                    </select>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-bold small text-muted">Tamanho do Calção</label>
-                    <select className="form-select bg-light border-0" name="tamanhoCalcao" value={formData.tamanhoCalcao} onChange={handleInputChange}>
-                      <option value="">Selecione...</option>
-                      <option value="P">P</option>
-                      <option value="M">M</option>
-                      <option value="G">G</option>
-                      <option value="GG">GG</option>
-                    </select>
-                  </div>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '14px' }}>
+                Em conformidade com a <strong>Lei Geral de Proteção de Dados (Lei nº 13.709/2018)</strong>, seus dados serão utilizados exclusivamente para gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica. Ao concluir o cadastro, enviaremos um <strong>e-mail de confirmação</strong> para <strong>{formData.email}</strong> com um link de verificação.
+              </p>
 
-                  <div className="col-md-12 mt-4 mb-2">
-                    <h6 style={{ fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><HeartPulse size={18} style={{ color: 'var(--error)' }} />Informações Médicas</h6>
-                  </div>
-                  <div className="col-md-12">
-                    <label className="form-label fw-bold small text-muted">Alergias</label>
-                    <input type="text" className="form-control bg-light border-0" name="alergias" value={formData.alergias} onChange={handleInputChange} placeholder="Ex: Rinite, Medicamentos..." />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Lesões Anteriores</label>
-                    <textarea className="form-control bg-light border-0" name="lesoesAnteriores" rows="2" value={formData.lesoesAnteriores} onChange={handleInputChange} placeholder="Descreva se houver"></textarea>
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-muted">Restrições Médicas</label>
-                    <textarea className="form-control bg-light border-0" name="restricoesMedicas" rows="2" value={formData.restricoesMedicas} onChange={handleInputChange} placeholder="Descreva se houver"></textarea>
-                  </div>
-                </div>
-                <hr className="my-4 text-muted" />
-                <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} style={{ color: 'var(--primary)' }} />Modalidade(s) de Interesse</h6>
-                <ModalidadesSelector 
-                  selected={formData.modalidades}
-                  onChange={(novos) => setFormData(prev => ({ ...prev, modalidades: novos }))}
-                  gender={formData.sexo}
+              <label
+                htmlFor="aceiteLgpd"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  fontSize: '0.84rem',
+                  color: 'var(--text)',
+                  fontWeight: 500,
+                  background: 'var(--bg-card)',
+                  padding: '12px 14px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: `1.5px solid ${formData.aceiteLgpd ? 'var(--primary)' : 'var(--border)'}`
+                }}
+              >
+                <input
+                  id="aceiteLgpd"
+                  type="checkbox"
+                  name="aceiteLgpd"
+                  checked={formData.aceiteLgpd}
+                  onChange={handleInputChange}
+                  style={{ accentColor: 'var(--primary)', width: '18px', height: '18px', marginTop: '2px', flexShrink: 0 }}
                 />
-                <ModalidadePosicaoSelector
-                  selectedModalidades={formData.modalidades}
-                  posicoesPorModalidade={formData.posicoesPorModalidade}
-                  onChange={(novasPos) => setFormData(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
-                />
-                <div className="d-flex justify-content-between mt-5">
-                  <button onClick={prevStep} className="btn btn-outline-secondary fw-bold px-4 rounded-3"><ArrowLeft size={16} className="me-2" />Voltar</button>
-                  <button onClick={nextStep} className="btn btn-primary fw-bold px-5 rounded-3">Próximo <ArrowRight size={16} className="ms-2" /></button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div>
-                <div style={{ background: 'var(--success-light)', borderRadius: 'var(--radius-md)', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <CheckCircle2 size={24} style={{ color: 'var(--success)' }} />
-                  <div>
-                    <h6 style={{ fontWeight: 700, color: 'var(--success-text)', marginBottom: '2px', fontSize: '0.9375rem' }}>Quase lá, {formData.nome.split(' ')[0]}!</h6>
-                    <small style={{ color: 'var(--success-text)', opacity: 0.8 }}>Confirme se os dados abaixo estão corretos e aceite os termos de privacidade (LGPD) antes de finalizar.</small>
-                  </div>
-                </div>
-                <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
-                  <div className="row g-3 text-muted small">
-                    <div className="col-6"><strong>Nome:</strong> {formData.nome}</div>
-                    <div className="col-6"><strong>Email:</strong> {formData.email}</div>
-                    <div className="col-6"><strong>Tipo de Conta:</strong> {formData.tipo === 'estudante' ? 'Estudante / Atleta' : 'Treinador'}</div>
-                    {formData.tipo === 'estudante' && (
-                      <>
-                        <div className="col-6"><strong>Gênero:</strong> {formData.sexo}</div>
-                        <div className="col-6"><strong>Data Nasc.:</strong> {formData.dataNascimento ? new Date(formData.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</div>
-                        <div className="col-6"><strong>CPF:</strong> {formData.cpf}</div>
-                        <div className="col-6"><strong>RG:</strong> {formData.rg}</div>
-                        <div className="col-6"><strong>Matrícula:</strong> {formData.matricula}</div>
-                        <div className="col-6"><strong>Telefone:</strong> {formData.telefone}</div>
-                        <div className="col-6"><strong>Turma:</strong> {formData.turma || '-'}</div>
-                        <div className="col-6"><strong>Peso:</strong> {formData.peso ? formData.peso + ' kg' : '-'}</div>
-                        <div className="col-6"><strong>Altura:</strong> {formData.altura ? formData.altura + ' m' : '-'}</div>
-                        <div className="col-6"><strong>Nome Responsável:</strong> {formData.nomeResponsavel || '-'}</div>
-                        <div className="col-6"><strong>Tel. Responsável:</strong> {formData.telefoneResponsavel || '-'}</div>
-                        <div className="col-12"><strong>Logradouro:</strong> {formData.endereco ? `${formData.endereco}, ` : ''}{formData.cidade || '-'}{formData.estado ? ` - ${formData.estado}` : ''}</div>
-                        <div className="col-3"><strong>Nº Camisa:</strong> {formData.numeroCamisa || '-'}</div>
-                        <div className="col-3"><strong>Nº Calçado:</strong> {formData.numeroCalcado || '-'}</div>
-                        <div className="col-3"><strong>Tam. Camisa:</strong> {formData.tamanhoCamisa || '-'}</div>
-                        <div className="col-3"><strong>Tam. Calção:</strong> {formData.tamanhoCalcao || '-'}</div>
-                        <div className="col-12"><strong>Alergias:</strong> {formData.alergias || '-'}</div>
-                        <div className="col-6"><strong>Lesões Anteriores:</strong> {formData.lesoesAnteriores || '-'}</div>
-                        <div className="col-6"><strong>Restrições Médicas:</strong> {formData.restricoesMedicas || '-'}</div>
-                        <div className="col-12">
-                          <strong>Modalidades e Posições:</strong> {formData.modalidades.length > 0 ? (
-                            formData.modalidades.map(m => {
-                              const pos = getStudentPositionForSport(formData, m);
-                              return isSportWithPositions(m) ? `${m} (${pos || 'Indefinido'})` : m;
-                            }).join(', ')
-                          ) : 'Nenhuma'}
-                        </div>
-                      </>
-                    )}
-                    {formData.tipo === 'Treinador' && (
-                      <div className="col-6"><strong>Telefone:</strong> {formData.telefone || '-'}</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Seção de Verificação de E-mail e Conformidade LGPD */}
-                <div
-                  style={{
-                    background: 'var(--bg)',
-                    border: '1.5px solid var(--border-light)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '20px',
-                    marginBottom: '24px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <ShieldCheck size={20} style={{ color: 'var(--primary)' }} />
-                      <h6 style={{ margin: 0, fontWeight: 700, fontSize: '0.925rem', color: 'var(--text)' }}>
-                        Proteção de Dados Pessoais (LGPD) e Confirmação por E-mail
-                      </h6>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowLgpdModal(true)}
-                      className="btn btn-sm btn-outline-primary fw-bold rounded-3"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
-                    >
-                      <FileText size={14} />
-                      Ler Termos e Política de Privacidade
-                    </button>
-                  </div>
-
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '14px' }}>
-                    Em conformidade com a <strong>Lei Geral de Proteção de Dados (Lei nº 13.709/2018)</strong>, seus dados serão utilizados exclusivamente para gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica. Ao concluir o cadastro, enviaremos um <strong>e-mail de confirmação</strong> para <strong>{formData.email}</strong> com um link de verificação.
-                  </p>
-
-                  <label
-                    htmlFor="aceiteLgpd"
+                <span>
+                  Declaro que li e concordo com os{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowLgpdModal(true);
+                    }}
                     style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '10px',
-                      cursor: 'pointer',
-                      fontSize: '0.84rem',
-                      color: 'var(--text)',
-                      fontWeight: 500,
-                      background: 'var(--bg-card)',
-                      padding: '12px 14px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: `1.5px solid ${formData.aceiteLgpd ? 'var(--primary)' : 'var(--border)'}`
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: 'var(--primary)',
+                      fontWeight: 700,
+                      textDecoration: 'underline',
+                      cursor: 'pointer'
                     }}
                   >
-                    <input
-                      id="aceiteLgpd"
-                      type="checkbox"
-                      name="aceiteLgpd"
-                      checked={formData.aceiteLgpd}
-                      onChange={handleInputChange}
-                      style={{ accentColor: 'var(--primary)', width: '18px', height: '18px', marginTop: '2px', flexShrink: 0 }}
-                    />
-                    <span>
-                      Declaro que li e concordo com os{' '}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setShowLgpdModal(true);
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          color: 'var(--primary)',
-                          fontWeight: 700,
-                          textDecoration: 'underline',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Termos de Uso e a Política de Privacidade (LGPD)
-                      </button>
-                      , autorizando o tratamento dos dados informados para as finalidades institucionais do IFesporte. *
-                    </span>
-                  </label>
-                </div>
-
-                <div className="d-flex justify-content-between mt-4">
-                  <button onClick={prevStep} className="btn btn-outline-secondary fw-bold px-4 rounded-3" disabled={loading}><ArrowLeft size={16} className="me-2" />Editar Dados</button>
-                  <button onClick={handleSubmit} className="btn btn-primary fw-bold px-5 rounded-3" disabled={loading}>
-                    {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <Check size={16} className="me-2" />}
-                    Finalizar Cadastro
+                    Termos de Uso e a Política de Privacidade (LGPD)
                   </button>
-                </div>
-              </div>
-            )}
+                  , autorizando o tratamento dos dados informados para as finalidades institucionais do IFesporte. *
+                </span>
+              </label>
+            </div>
+
+            <div className="d-flex justify-content-between mt-4">
+              <button onClick={prevStep} className="btn btn-outline-secondary fw-bold px-4 rounded-3" disabled={loading}><ArrowLeft size={16} className="me-2" />Editar Dados</button>
+              <button onClick={handleSubmit} className="btn btn-primary fw-bold px-5 rounded-3" disabled={loading}>
+                {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <Check size={16} className="me-2" />}
+                Finalizar Cadastro
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <LgpdTermsModal

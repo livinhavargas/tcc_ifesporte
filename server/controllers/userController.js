@@ -10,11 +10,6 @@ const {
 } = require('../utils/sportPositions');
 const { sendWelcomeAndVerificationEmail } = require('../utils/emailService');
 
-const isInstitutionalTrainerEmail = (email) => {
-  if (!email || typeof email !== 'string') return false;
-  return email.trim().toLowerCase().endsWith('@ifc.edu.br');
-};
-
 const mapLegacyToNewModality = (mod) => {
   const legacyMap = {
     // Atletismo - Corridas
@@ -152,24 +147,15 @@ const loginUser = async (req, res) => {
 // Realizar registro
 const registerUser = async (req, res) => {
   const { 
-    nome, email, senha, tipo: tipoInformado, 
+    nome, email, senha, tipo, 
     telefone, sexo, idade, turma, matricula, peso, altura, modalidades, posicoesPorModalidade,
-    cpf, rg, endereco, cidade, estado, dataNascimento, nomeResponsavel, telefoneResponsavel,
+    codigoConvite, cpf, rg, endereco, cidade, estado, dataNascimento, nomeResponsavel, telefoneResponsavel,
     alergias, lesoesAnteriores, restricoesMedicas, numeroCamisa,
     numeroCalcado, tamanhoCamisa, tamanhoCalcao,
     aceiteLgpd, versaoTermos, lgpdConsent
   } = req.body;
-
-  // Reconhecimento automático de Treinador pelo domínio institucional @ifc.edu.br
-  const emailEhIfc = isInstitutionalTrainerEmail(email);
-  if (tipoInformado === 'Treinador' && !emailEhIfc) {
-    return res.status(400).json({
-      mensagem: 'Para cadastro como Treinador, utilize seu e-mail institucional (@ifc.edu.br).'
-    });
-  }
-  const tipo = emailEhIfc ? 'Treinador' : 'estudante';
   
-  console.log(`[Registro] Tentativa para: ${email}, Tipo reconhecido: ${tipo}`);
+  console.log(`[Registro] Tentativa para: ${email}, Tipo: ${tipo}`);
 
   try {
     // Verificar se o mongoose está conectado
@@ -184,6 +170,13 @@ const registerUser = async (req, res) => {
       return res.status(400).json({
         mensagem: 'É obrigatório aceitar os Termos de Uso e a Política de Privacidade (LGPD) para realizar o cadastro.'
       });
+    }
+
+    // Backend validation for Treinador
+    if (tipo === 'Treinador') {
+      if (codigoConvite !== 'IF3SPORTE2026!') {
+        return res.status(400).json({ mensagem: 'Código de Acesso inválido para Treinador.' });
+      }
     }
 
     const userExistente = await User.findOne({ email });
@@ -640,5 +633,4 @@ module.exports = {
   resendVerificationEmail,
   getUserById,
   updateUser,
-  isInstitutionalTrainerEmail,
 };
