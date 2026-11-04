@@ -6,7 +6,7 @@ import { addNotification } from '../../utils/notifications';
 import { apiUrl } from '../../services/api';
 import { 
   ArrowLeft, Edit2, Trash2, Calendar, 
-  Users, Activity, MessageSquare, AlertCircle, Timer 
+  Users, Activity, MessageSquare, AlertCircle, Timer, Trophy, Printer 
 } from 'lucide-react';
 import { isPrimeiroLugar } from './components/AtletismoForm';
 import { hasTempoExtraData } from './NovaAnalise';
@@ -132,7 +132,7 @@ const VisualizarAnalise = () => {
     );
   }
 
-  const { modalidade, categoria, subtipoProva, data, equipeAdversaria, resultado, placar, aluno, atletas, dadosEspecificos = {}, observacoes } = analysis;
+  const { modalidade, categoria, subtipoProva, data, equipeAdversaria, resultado, placar, aluno, atletas, dadosEspecificos = {}, observacoes, campeonato, fase } = analysis;
 
   const isAtletismo = (modalidade || '').toLowerCase().includes('atletismo');
   const colocacao = dadosEspecificos?.colocacao || dadosEspecificos?.classificacaoFinalPontos || dadosEspecificos?.classificacao;
@@ -185,24 +185,34 @@ const VisualizarAnalise = () => {
             </div>
           </div>
 
-          {!isStudent && (
-            <div style={{ display: 'flex', gap: '10px' }} className="d-none-print">
-              <button 
-                className="btn btn-outline-primary"
-                onClick={() => navigate(`/analises/editar/${id}`)}
-                style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 'var(--radius-md)', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Edit2 size={16} /> Editar
-              </button>
-              <button 
-                className="btn btn-outline-danger"
-                onClick={handleDelete}
-                style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 'var(--radius-md)', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Trash2 size={16} /> Excluir
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '10px' }} className="d-none-print">
+            <button 
+              className="btn btn-outline-secondary"
+              onClick={() => window.print()}
+              style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 'var(--radius-md)', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              title="Exportar ou imprimir análise em PDF"
+            >
+              <Printer size={16} /> Exportar PDF
+            </button>
+            {!isStudent && (
+              <>
+                <button 
+                  className="btn btn-outline-primary"
+                  onClick={() => navigate(`/analises/editar/${id}`)}
+                  style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 'var(--radius-md)', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Edit2 size={16} /> Editar
+                </button>
+                <button 
+                  className="btn btn-outline-danger"
+                  onClick={handleDelete}
+                  style={{ padding: '8px 18px', fontWeight: 600, borderRadius: 'var(--radius-md)', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Trash2 size={16} /> Excluir
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Banner Principal do Resultado / Placar */}
@@ -240,6 +250,16 @@ const VisualizarAnalise = () => {
                     {subtipoProva}
                   </span>
                 )}
+                {campeonato && (
+                  <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text)', border: '1px solid var(--border-light)', fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <Trophy size={12} /> {campeonato}
+                  </span>
+                )}
+                {fase && (
+                  <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text)', border: '1px solid var(--border-light)', fontSize: '0.8125rem' }}>
+                    {fase}
+                  </span>
+                )}
               </div>
               {equipeAdversaria ? (
                 <h3 style={{ fontWeight: 800, color: 'var(--text)', margin: '0 0 6px', fontSize: '1.25rem' }}>
@@ -250,9 +270,22 @@ const VisualizarAnalise = () => {
                   {subtipoProva}
                 </h3>
               ) : null}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
-                <Calendar size={14} />
-                <span>Data: <strong>{new Date(data || Date.now()).toLocaleDateString('pt-BR')}</strong></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={14} />
+                  <span>Data: <strong>{new Date(data || Date.now()).toLocaleDateString('pt-BR')}</strong></span>
+                </div>
+                {campeonato && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Trophy size={14} />
+                    <span>Campeonato: <strong style={{ color: 'var(--text)' }}>{campeonato}</strong></span>
+                  </div>
+                )}
+                {fase && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>Fase: <strong style={{ color: 'var(--text)' }}>{fase}</strong></span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

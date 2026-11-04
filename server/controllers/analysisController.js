@@ -266,7 +266,9 @@ const createAnalysis = async (req, res) => {
       aluno,
       atletas = [],
       dadosEspecificos = {},
-      observacoes
+      observacoes,
+      campeonato = '',
+      fase = ''
     } = req.body;
 
     let resolvedResultado = resultado;
@@ -308,7 +310,9 @@ const createAnalysis = async (req, res) => {
       aluno: aluno || undefined,
       atletas: Array.isArray(atletas) ? atletas : [],
       dadosEspecificos,
-      observacoes: observacoes ? observacoes.trim() : undefined
+      observacoes: observacoes ? observacoes.trim() : undefined,
+      campeonato: typeof campeonato === 'string' ? campeonato.trim() : (campeonato || ''),
+      fase: typeof fase === 'string' ? fase.trim() : (fase || '')
     });
 
     await newAnalysis.save();
@@ -344,7 +348,9 @@ const updateAnalysis = async (req, res) => {
       aluno,
       atletas = [],
       dadosEspecificos = {},
-      observacoes
+      observacoes,
+      campeonato = '',
+      fase = ''
     } = req.body;
 
     let resolvedResultado = resultado;
@@ -385,7 +391,9 @@ const updateAnalysis = async (req, res) => {
       aluno: aluno || null,
       atletas: Array.isArray(atletas) ? atletas : [],
       dadosEspecificos,
-      observacoes: observacoes ? observacoes.trim() : undefined
+      observacoes: observacoes ? observacoes.trim() : undefined,
+      campeonato: typeof campeonato === 'string' ? campeonato.trim() : (campeonato || ''),
+      fase: typeof fase === 'string' ? fase.trim() : (fase || '')
     };
 
     const updated = await Analysis.findByIdAndUpdate(id, updatePayload, { new: true })

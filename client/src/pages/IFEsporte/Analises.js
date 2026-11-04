@@ -207,7 +207,9 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
       const opp = normalize(a.equipeAdversaria);
       const sub = normalize(a.subtipoProva);
       const athlete = normalize(a.aluno?.nome);
-      return opp.includes(term) || sub.includes(term) || athlete.includes(term);
+      const camp = normalize(a.campeonato);
+      const fase = normalize(a.fase);
+      return opp.includes(term) || sub.includes(term) || athlete.includes(term) || camp.includes(term) || fase.includes(term);
     }
 
     return true;
@@ -369,6 +371,11 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
                       {analysis.equipeAdversaria && (
                         <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                           Adversário: <strong style={{ color: 'var(--text)' }}>{analysis.equipeAdversaria}</strong>
+                        </div>
+                      )}
+                      {analysis.campeonato && (
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                          Campeonato: <strong style={{ color: 'var(--text)' }}>{analysis.campeonato}</strong>{analysis.fase ? ` • ${analysis.fase}` : ''}
                         </div>
                       )}
                       {analysis.modalidade?.toLowerCase() !== 'xadrez' && placarText !== '-' && (

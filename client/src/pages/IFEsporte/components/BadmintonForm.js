@@ -432,6 +432,41 @@ const BadmintonForm = ({
         </select>
       </div>
 
+      {/* Campeonato e Fase */}
+      <div className="row g-3">
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            Campeonato
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Nome do campeonato"
+            value={formData.campeonato || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+          />
+        </div>
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            Fase
+          </label>
+          <select
+            className="form-select"
+            value={formData.fase || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, fase: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+          >
+            <option value="">Selecione a fase</option>
+            <option value="Fases de classificação">Fases de classificação</option>
+            <option value="Oitavas de final">Oitavas de final</option>
+            <option value="Quartas de final">Quartas de final</option>
+            <option value="Semifinal">Semifinal</option>
+            <option value="Final">Final</option>
+          </select>
+        </div>
+      </div>
+
       {/* 8. Observações do treinador */}
       <div>
         <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>

@@ -58,6 +58,18 @@ const analysisSchema = new mongoose.Schema({
   observacoes: { 
     type: String,
     trim: true
+  },
+
+  // Dados de Campeonato e Fase
+  campeonato: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  fase: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, { timestamps: true });
 
