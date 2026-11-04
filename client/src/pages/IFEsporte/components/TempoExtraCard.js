@@ -411,7 +411,7 @@ const TempoExtraCard = ({
 
               {cartoesFutsal.length === 0 ? (
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '8px 0' }}>
-                  Nenhum cartão no Tempo Extra.
+                  Nenhum cartão no Tempo Extra
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -641,7 +641,7 @@ const TempoExtraCard = ({
                   marginTop: '2px'
                 }}>
                   <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', margin: 0 }}>
-                    Nenhum cartão no Tempo Extra.
+                    Nenhum cartão no Tempo Extra
                   </p>
                 </div>
               ) : (

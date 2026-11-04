@@ -98,7 +98,7 @@ const CalendarSidebar = ({
         return next;
       });
       setGoals(previousGoals);
-      addNotification('Erro ao concluir', 'Não foi possível concluir a tarefa. Tente novamente.', 'error');
+      addNotification('Erro ao concluir', 'Não foi possível concluir a tarefa. Tente novamente', 'error');
     }
   };
 
@@ -317,7 +317,7 @@ const CalendarSidebar = ({
               color: 'var(--text-tertiary)',
               textAlign: 'center' 
             }}>
-              Tudo em dia • Nenhuma prioridade pendente.
+              Tudo em dia • Nenhuma prioridade pendente
             </div>
           )}
         </div>
@@ -458,7 +458,7 @@ const CalendarSidebar = ({
                   <div style={{ padding: '16px 8px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
                     <CheckCircle style={{ fontSize: '1.25rem', color: 'var(--success)', marginBottom: '4px', opacity: 0.9 }} />
                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>Tudo em dia!</div>
-                    <div style={{ fontSize: '0.6875rem' }}>Não há tarefas pendentes no momento.</div>
+                    <div style={{ fontSize: '0.6875rem' }}>Não há tarefas pendentes no momento</div>
                   </div>
                 );
               }
@@ -604,7 +604,7 @@ const CalendarSidebar = ({
           </div>
         ) : (
           <p style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', margin: 0, textAlign: 'center', padding: '8px' }}>
-            Nenhum evento agendado.
+            Nenhum evento agendado
           </p>
         )}
       </div>

@@ -24,7 +24,7 @@ exports.getByStudent = async (req, res) => {
     res.json(assessments);
   } catch (error) {
     console.error('Erro ao buscar avaliações físicas do aluno:', error);
-    res.status(500).json({ message: 'Erro ao buscar histórico de aptidão física.', error: error.message });
+    res.status(500).json({ message: 'Erro ao buscar histórico de aptidão física', error: error.message });
   }
 };
 
@@ -37,13 +37,13 @@ exports.getById = async (req, res) => {
       .populate('avaliador', 'nome email');
 
     if (!assessment) {
-      return res.status(404).json({ message: 'Avaliação física não encontrada.' });
+      return res.status(404).json({ message: 'Avaliação física não encontrada' });
     }
 
     res.json(assessment);
   } catch (error) {
     console.error('Erro ao buscar avaliação física:', error);
-    res.status(500).json({ message: 'Erro ao buscar avaliação física.', error: error.message });
+    res.status(500).json({ message: 'Erro ao buscar avaliação física', error: error.message });
   }
 };
 
@@ -67,11 +67,11 @@ exports.create = async (req, res) => {
     } = req.body;
 
     if (!alunoId) {
-      return res.status(400).json({ message: 'O ID do aluno é obrigatório.' });
+      return res.status(400).json({ message: 'O ID do aluno é obrigatório' });
     }
 
     if (!dataAvaliacao) {
-      return res.status(400).json({ message: 'A data da avaliação é obrigatória.' });
+      return res.status(400).json({ message: 'A data da avaliação é obrigatória' });
     }
 
     // Buscar dados cadastrais do aluno para idade e sexo
@@ -100,16 +100,16 @@ exports.create = async (req, res) => {
       const u = testes.corrida6Min.metrosUltimaVolta !== undefined && testes.corrida6Min.metrosUltimaVolta !== '' ? Number(testes.corrida6Min.metrosUltimaVolta) : null;
 
       if (v !== null && v < 0) {
-        return res.status(400).json({ message: 'O número de voltas na Corrida de 6 min não pode ser negativo.' });
+        return res.status(400).json({ message: 'O número de voltas na Corrida de 6 min não pode ser negativo' });
       }
       if (p <= 0) {
-        return res.status(400).json({ message: 'O perímetro da pista deve ser maior que zero metros.' });
+        return res.status(400).json({ message: 'O perímetro da pista deve ser maior que zero metros' });
       }
       if (u !== null && u < 0) {
-        return res.status(400).json({ message: 'A distância da última volta não pode ser negativa.' });
+        return res.status(400).json({ message: 'A distância da última volta não pode ser negativa' });
       }
       if (u !== null && p > 0 && u >= p) {
-        return res.status(400).json({ message: `A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m).` });
+        return res.status(400).json({ message: `A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m)` });
       }
     }
 
@@ -186,7 +186,7 @@ exports.create = async (req, res) => {
     res.status(201).json(assessment);
   } catch (error) {
     console.error('Erro ao criar avaliação física:', error);
-    res.status(500).json({ message: 'Erro ao salvar avaliação física.', error: error.message });
+    res.status(500).json({ message: 'Erro ao salvar avaliação física', error: error.message });
   }
 };
 
@@ -197,7 +197,7 @@ exports.update = async (req, res) => {
     const assessment = await PhysicalAssessment.findById(id);
 
     if (!assessment) {
-      return res.status(404).json({ message: 'Avaliação física não encontrada.' });
+      return res.status(404).json({ message: 'Avaliação física não encontrada' });
     }
 
     const {
@@ -241,16 +241,16 @@ exports.update = async (req, res) => {
       const u = testes.corrida6Min.metrosUltimaVolta !== undefined && testes.corrida6Min.metrosUltimaVolta !== '' ? Number(testes.corrida6Min.metrosUltimaVolta) : null;
 
       if (v !== null && v < 0) {
-        return res.status(400).json({ message: 'O número de voltas na Corrida de 6 min não pode ser negativo.' });
+        return res.status(400).json({ message: 'O número de voltas na Corrida de 6 min não pode ser negativo' });
       }
       if (p <= 0) {
-        return res.status(400).json({ message: 'O perímetro da pista deve ser maior que zero metros.' });
+        return res.status(400).json({ message: 'O perímetro da pista deve ser maior que zero metros' });
       }
       if (u !== null && u < 0) {
-        return res.status(400).json({ message: 'A distância da última volta não pode ser negativa.' });
+        return res.status(400).json({ message: 'A distância da última volta não pode ser negativa' });
       }
       if (u !== null && p > 0 && u >= p) {
-        return res.status(400).json({ message: `A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m).` });
+        return res.status(400).json({ message: `A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m)` });
       }
     }
 
@@ -323,7 +323,7 @@ exports.update = async (req, res) => {
     res.json(assessment);
   } catch (error) {
     console.error('Erro ao atualizar avaliação física:', error);
-    res.status(500).json({ message: 'Erro ao atualizar avaliação física.', error: error.message });
+    res.status(500).json({ message: 'Erro ao atualizar avaliação física', error: error.message });
   }
 };
 
@@ -334,12 +334,12 @@ exports.delete = async (req, res) => {
     const assessment = await PhysicalAssessment.findByIdAndDelete(id);
 
     if (!assessment) {
-      return res.status(404).json({ message: 'Avaliação física não encontrada.' });
+      return res.status(404).json({ message: 'Avaliação física não encontrada' });
     }
 
-    res.json({ message: 'Avaliação física excluída com sucesso.' });
+    res.json({ message: 'Avaliação física excluída com sucesso' });
   } catch (error) {
     console.error('Erro ao excluir avaliação física:', error);
-    res.status(500).json({ message: 'Erro ao excluir avaliação física.', error: error.message });
+    res.status(500).json({ message: 'Erro ao excluir avaliação física', error: error.message });
   }
 };

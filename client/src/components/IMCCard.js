@@ -49,7 +49,7 @@ export const calculateIMC = (peso, altura) => {
 
   return {
     val: roundedIMC,
-    formatted: roundedIMC.toFixed(1).replace('.', ','),
+    formatted: roundedIMC.toFixed(1).replace('', ','),
     classification,
     color: visualCfg.color,
     badgeBg: visualCfg.bg,
@@ -75,7 +75,7 @@ const IMCCard = ({ peso, altura, title = "IMC" }) => {
           <h6 style={{ fontWeight: 700, color: 'var(--text, #1f2937)', margin: 0, fontSize: '0.875rem' }}>{title}</h6>
         </div>
         <p style={{ color: 'var(--text-tertiary, #6b7280)', fontSize: '0.875rem', margin: 0, fontStyle: 'italic' }}>
-          Peso e altura ainda não foram informados.
+          Peso e altura ainda não foram informados
         </p>
       </div>
     );

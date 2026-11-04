@@ -226,15 +226,15 @@ const SportDetail = () => {
 
   const getPageSubtitle = () => {
     if (activeTab === 'analises') {
-      return 'Acompanhe e gerencie as análises esportivas desta prova.';
+      return 'Acompanhe e gerencie as análises esportivas desta prova';
     }
     if (activeTab === 'cronogramas') {
-      return 'Consulte e organize os cronogramas desta prova.';
+      return 'Consulte e organize os cronogramas desta prova';
     }
     if (selectedCategory) {
       return `${nome} · ${selectedCategory.cat}`;
     }
-    return 'Participantes desta modalidade.';
+    return 'Participantes desta modalidade';
   };
 
   const fetchStudents = async () => {
@@ -504,7 +504,7 @@ const SportDetail = () => {
               </div>
               <div>
                 <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>{nome}</h2>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Escolha uma submodalidade.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Escolha uma submodalidade</p>
               </div>
             </div>
             <button 
@@ -841,7 +841,7 @@ const SportDetail = () => {
                       <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <Search size={36} style={{ color: 'var(--text-tertiary)', opacity: 0.5, marginBottom: '12px' }} />
                         <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Nenhum atleta encontrado</h6>
-                        <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Ajuste os filtros ou o termo de pesquisa.</p>
+                        <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Ajuste os filtros ou o termo de pesquisa</p>
                       </div>
                     )}
                   </div>

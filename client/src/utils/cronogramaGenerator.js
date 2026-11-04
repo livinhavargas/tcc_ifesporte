@@ -81,16 +81,16 @@ export const generateSmartCronograma = (modalidade, dataInicioStr, dataFimStr, c
 Focos Principais: Passes curtos, movimentação sem bola, defesas 6x0 e 5x1 básicas.
 Capacidades Físicas: Resistência cardiovascular, explosão muscular (pernas/braços).
 Técnica: Arremessos de apoio e suspensão, fintas, bloqueios defensivos.
-${isLongo ? 'Foco estendido no aprimoramento individual de cada atleta e ganho de massa magra.' : 'Abordagem intensiva devido ao curto período.'}`;
+${isLongo ? 'Foco estendido no aprimoramento individual de cada atleta e ganho de massa magra' : 'Abordagem intensiva devido ao curto período'}`;
       
       if (tipoFase === 'Competitiva') return `Objetivo: Pico de performance tática e velocidade de jogo visando a competição.
 Ênfase Tática: Transições ofensivas rápidas, contra-ataques diretos, sincronia na defesa 5x1 e 3x2x1.
 Situações Reais: Treinamentos em superioridade e inferioridade numérica, tiros de 7 metros.
-Aspectos Psicológicos: Tomada de decisão rápida, controle emocional em placares apertados.`;
+Aspectos Psicológicos: Tomada de decisão rápida, controle emocional em placares apertados`;
       
       return `Objetivo: Recuperação ativa pós-competição.
 Focos: Jogos recreativos, prevenção de lesões em ombros e joelhos.
-Controle de Carga: Volume baixo, intensidade mínima.`;
+Controle de Carga: Volume baixo, intensidade mínima`;
     }
 
     // Futsal
@@ -99,16 +99,16 @@ Controle de Carga: Volume baixo, intensidade mínima.`;
 Focos Principais: Passes rápidos, controle de sola, finalizações de média distância, marcação individual e zona.
 Capacidades Físicas: Agilidade, resistência de velocidade, tempo de reação.
 Técnica: Domínio orientado, passes paralelos e diagonais, cobertura defensiva.
-${isLongo ? 'Período longo focado em hipertrofia e fortalecimento do core e articulações.' : 'Preparação compacta com foco em resistência de quadra.'}`;
+${isLongo ? 'Período longo focado em hipertrofia e fortalecimento do core e articulações' : 'Preparação compacta com foco em resistência de quadra'}`;
       
       if (tipoFase === 'Competitiva') return `Objetivo: Refinamento do sistema de jogo e jogadas ensaiadas.
 Ênfase Tática: Posse de bola sob pressão, movimentação do Pivô, goleiro linha, saída de pressão.
 Situações Reais: Treino de bolas paradas (escanteios, faltas e laterais), transição defesa-ataque rápida.
-Aspectos Psicológicos: Comunicação em quadra, foco defensivo, confiança na finalização.`;
+Aspectos Psicológicos: Comunicação em quadra, foco defensivo, confiança na finalização`;
       
       return `Objetivo: Descanso ativo muscular e recuperação neurológica.
 Focos: Alongamento profundo, treinos leves, recreação com esportes complementares.
-Controle de Carga: Evitar treinos com bola intensos, focar na recuperação de tornozelos e joelhos.`;
+Controle de Carga: Evitar treinos com bola intensos, focar na recuperação de tornozelos e joelhos`;
     }
 
     // Atletismo
@@ -117,16 +117,16 @@ Controle de Carga: Evitar treinos com bola intensos, focar na recuperação de t
 Focos Principais: Técnica de corrida, respiração, coordenação intra e intermuscular.
 Capacidades Físicas: Resistência aeróbica, força máxima, flexibilidade.
 Técnica: Educativos de corrida (Skiping, Anfersen, Hop), posicionamento de largada.
-${isLongo ? 'Acúmulo de grande volume de treinamento (quilometragem/repetições).' : 'Manutenção rápida da base e ajuste biomecânico intensivo.'}`;
+${isLongo ? 'Acúmulo de grande volume de treinamento (quilometragem/repetições)' : 'Manutenção rápida da base e ajuste biomecânico intensivo'}`;
         
         if (tipoFase === 'Competitiva') return `Objetivo: Polimento (Tapering) e alcance do pico de velocidade/explosão.
 Ênfase Tática: Controle de ritmo (Pacing), estratégia de prova, aceleração.
 Situações Reais: Tiros na distância específica da prova com descanso simulando eliminatórias.
-Aspectos Psicológicos: Visualização da prova, foco, controle da ansiedade de largada.`;
+Aspectos Psicológicos: Visualização da prova, foco, controle da ansiedade de largada`;
         
         return `Objetivo: Regeneração profunda e reavaliação física.
 Focos: Terapias manuais, liberação miofascial, corridas muito leves.
-Controle de Carga: Volume e intensidade extremamente reduzidos.`;
+Controle de Carga: Volume e intensidade extremamente reduzidos`;
     }
 
     // Vôlei
@@ -135,31 +135,31 @@ Controle de Carga: Volume e intensidade extremamente reduzidos.`;
 Focos Principais: Saque, recepção, manchete, toque por cima, bloqueios individuais.
 Capacidades Físicas: Potência elástica, resistência de saltos, agilidade lateral.
 Técnica: Passadas de ataque, posicionamento corporal na defesa.
-${isLongo ? 'Trabalho intenso de musculação focada em membros inferiores e core.' : 'Adaptação rápida à quadra com saltos controlados.'}`;
+${isLongo ? 'Trabalho intenso de musculação focada em membros inferiores e core' : 'Adaptação rápida à quadra com saltos controlados'}`;
       
       if (tipoFase === 'Competitiva') return `Objetivo: Sincronização do sistema ofensivo/defensivo e consistência.
 Ênfase Tática: Cobertura de ataque, variações de levantamento, sistemas de recepção e leitura de bloqueio.
 Situações Reais: Jogos-treino com placar reduzido, treino de saque sob pressão, contra-ataque.
-Aspectos Psicológicos: Resiliência em sequências de pontos perdidos, agressividade no saque.`;
+Aspectos Psicológicos: Resiliência em sequências de pontos perdidos, agressividade no saque`;
       
       return `Objetivo: Recuperação muscular e articular, especialmente ombros e joelhos.
 Focos: Fortalecimento estabilizador, gelo, alongamento e descanso mental.
-Controle de Carga: Sessões curtas sem impacto articular (sem saltos).`;
+Controle de Carga: Sessões curtas sem impacto articular (sem saltos)`;
     }
 
     // Genérico
     if (tipoFase === 'Preparatória') return `Objetivo: Elevar o condicionamento físico geral, resistência aeróbica e força. 
 Principais Focos: Aprimoramento da técnica básica, fundamentos e postura. 
 Capacidades Físicas Trabalhadas: Força de base, flexibilidade, mobilidade e resistência.
-${isLongo ? 'Volume de treino alto e intensidade progressiva.' : 'Volume adaptado ao pouco tempo antes da competição.'}`;
+${isLongo ? 'Volume de treino alto e intensidade progressiva' : 'Volume adaptado ao pouco tempo antes da competição'}`;
 
     if (tipoFase === 'Competitiva') return `Objetivo: Atingir o pico de performance, redução do volume e aumento da intensidade.
 Ênfase Tática: Simulação de situações de jogo/prova, tomadas de decisão sob pressão.
-Preparação para Competição: Ajuste de estratégias, estudo dos adversários e foco psicológico máximo.`;
+Preparação para Competição: Ajuste de estratégias, estudo dos adversários e foco psicológico máximo`;
 
     return `Objetivo: Recuperação e reparação de danos teciduais.
 Descrição: Momento de redução drástica de carga.
-Prevenção de Lesões: Fisioterapia preventiva, liberação miofascial e planejamento da próxima temporada.`;
+Prevenção de Lesões: Fisioterapia preventiva, liberação miofascial e planejamento da próxima temporada`;
   };
 
   const isLongo = totalWeeks > 12;

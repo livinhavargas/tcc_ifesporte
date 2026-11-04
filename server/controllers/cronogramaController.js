@@ -51,7 +51,7 @@ const createCronograma = async (req, res) => {
   try {
     const { modalidade } = req.body;
     if (modalidade && !isSportScheduleSupported(modalidade)) {
-      return res.status(400).json({ message: 'Cronogramas não são permitidos para esta modalidade.' });
+      return res.status(400).json({ message: 'Cronogramas não são permitidos para esta modalidade' });
     }
 
     const user = await User.findById(req.userId);

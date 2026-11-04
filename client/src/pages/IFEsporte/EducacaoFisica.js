@@ -85,7 +85,7 @@ export default function EducacaoFisica() {
 
   const handleSaveClassName = async () => {
     if (!newClassName || !newClassName.trim()) {
-      setMessage('O nome da turma não pode ficar em branco.');
+      setMessage('O nome da turma não pode ficar em branco');
       return;
     }
     try {
@@ -114,12 +114,12 @@ export default function EducacaoFisica() {
         setMessage('✅ Nome da turma atualizado com sucesso!');
         setTimeout(() => setMessage(''), 4000);
       } else {
-        setMessage(data.message || 'Erro ao atualizar nome da turma.');
+        setMessage(data.message || 'Erro ao atualizar nome da turma');
         setTimeout(() => setMessage(''), 4000);
       }
     } catch (err) {
       console.error('Erro ao atualizar nome da turma:', err);
-      setMessage('Erro de conexão ao salvar alteração do nome.');
+      setMessage('Erro de conexão ao salvar alteração do nome');
       setTimeout(() => setMessage(''), 4000);
     } finally {
       setActionLoading(false);
@@ -264,7 +264,7 @@ export default function EducacaoFisica() {
   const handleSaveReport = async (e) => {
     e.preventDefault();
     if (!reportForm.conteudo.trim()) {
-      setMessage('❌ O conteúdo trabalhado na aula é obrigatório.');
+      setMessage('❌ O conteúdo trabalhado na aula é obrigatório');
       return;
     }
 
@@ -292,11 +292,11 @@ export default function EducacaoFisica() {
         fetchClassDetail(selectedClassId);
         setTimeout(() => setMessage(''), 3500);
       } else {
-        setMessage(`❌ ${data.message || 'Erro ao salvar relatório de aula.'}`);
+        setMessage(`❌ ${data.message || 'Erro ao salvar relatório de aula'}`);
       }
     } catch (err) {
       console.error(err);
-      setMessage('❌ Erro de conexão com o servidor.');
+      setMessage('❌ Erro de conexão com o servidor');
     } finally {
       setActionLoading(false);
     }
@@ -312,18 +312,18 @@ export default function EducacaoFisica() {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
-        setMessage('✅ Relatório de aula excluído com sucesso.');
+        setMessage('✅ Relatório de aula excluído com sucesso');
         setDeleteModalOpen(false);
         setReportToDelete(null);
         fetchClassDetail(selectedClassId);
         setTimeout(() => setMessage(''), 3000);
       } else {
         const data = await res.json();
-        setMessage(`❌ ${data.message || 'Erro ao excluir relatório.'}`);
+        setMessage(`❌ ${data.message || 'Erro ao excluir relatório'}`);
       }
     } catch (err) {
       console.error(err);
-      setMessage('❌ Erro ao excluir relatório.');
+      setMessage('❌ Erro ao excluir relatório');
     } finally {
       setActionLoading(false);
     }
@@ -356,11 +356,11 @@ export default function EducacaoFisica() {
         setTimeout(() => setMessage(''), 3500);
       } else {
         const data = await res.json();
-        setMessage(`❌ ${data.message || 'Erro ao salvar horários.'}`);
+        setMessage(`❌ ${data.message || 'Erro ao salvar horários'}`);
       }
     } catch (err) {
       console.error(err);
-      setMessage('❌ Erro de conexão com o servidor.');
+      setMessage('❌ Erro de conexão com o servidor');
     } finally {
       setActionLoading(false);
     }
@@ -488,7 +488,7 @@ export default function EducacaoFisica() {
                     Educação Física
                   </h2>
                   <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>
-                    Organização escolar das aulas de Educação Física, turmas e registros de conteúdo trabalhado.
+                    Organização escolar das aulas de Educação Física, turmas e registros de conteúdo trabalhado
                   </p>
                 </div>
               </div>
@@ -649,7 +649,7 @@ export default function EducacaoFisica() {
               </div>
             ) : currentCourseData?.turmas?.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '64px 24px', background: 'var(--bg)', borderRadius: 'var(--radius-lg)' }}>
-                <p className="text-muted m-0">Nenhuma turma cadastrada para este curso.</p>
+                <p className="text-muted m-0">Nenhuma turma cadastrada para este curso</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -920,7 +920,7 @@ export default function EducacaoFisica() {
                     <CalendarCheck size={16} /> Aulas de Educação Física
                   </span>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', margin: 0 }}>
-                    2 aulas semanais com duração padrão de 45 minutos.
+                    2 aulas semanais com duração padrão de 45 minutos
                   </p>
                 </div>
 
@@ -988,7 +988,7 @@ export default function EducacaoFisica() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-muted small m-0">Nenhum horário configurado para esta turma.</p>
+                  <p className="text-muted small m-0">Nenhum horário configurado para esta turma</p>
                 )}
               </div>
             </div>
@@ -1145,7 +1145,7 @@ export default function EducacaoFisica() {
                       Nenhuma aula registrada nesta turma
                     </h6>
                     <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', maxWidth: '400px', margin: '0 auto' }}>
-                      Utilize o botão "Registrar aula" acima para manter o histórico e o diário pedagógico atualizados.
+                      Utilize o botão "Registrar aula" acima para manter o histórico e o diário pedagógico atualizados
                     </p>
                   </div>
                 )}
@@ -1215,7 +1215,7 @@ export default function EducacaoFisica() {
                   <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--bg)', borderRadius: 'var(--radius-lg)' }}>
                     <Users size={32} style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }} />
                     <p className="text-muted m-0 small">
-                      {searchTerm ? 'Nenhum aluno encontrado para os termos pesquisados.' : 'Nenhum aluno vinculado a esta turma no momento.'}
+                      {searchTerm ? 'Nenhum aluno encontrado para os termos pesquisados' : 'Nenhum aluno vinculado a esta turma no momento'}
                     </p>
                   </div>
                 ) : (
@@ -1531,7 +1531,7 @@ export default function EducacaoFisica() {
                       ))
                     ) : (
                       <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
-                        Nenhuma modalidade esportiva vinculada além da Educação Física regular.
+                        Nenhuma modalidade esportiva vinculada além da Educação Física regular
                       </span>
                     )}
                   </div>
@@ -1757,7 +1757,7 @@ export default function EducacaoFisica() {
 
               <form onSubmit={handleSaveSchedules} style={{ padding: '24px' }}>
                 <p className="text-muted small mb-3">
-                  Defina os 2 dias da semana e os respectivos horários em que a turma {currentClassData?.turma} possui aula de Educação Física (duração padrão de 45 minutos).
+                  Defina os 2 dias da semana e os respectivos horários em que a turma {currentClassData?.turma} possui aula de Educação Física (duração padrão de 45 minutos)
                 </p>
 
                 {[0, 1].map((idx) => {
@@ -1858,7 +1858,7 @@ export default function EducacaoFisica() {
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '24px' }}>
                 Deseja realmente excluir o relatório da aula de{' '}
                 <strong>{new Date(reportToDelete.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</strong>?
-                Esta ação não poderá ser desfeita.
+                Esta ação não poderá ser desfeita
               </p>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>

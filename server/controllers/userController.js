@@ -161,28 +161,28 @@ const registerUser = async (req, res) => {
     // Verificar se o mongoose está conectado
     if (require('mongoose').connection.readyState !== 1) {
       console.error("ERRO: Banco de dados não está conectado!");
-      return res.status(500).json({ mensagem: 'Banco de dados offline. Tente novamente em instantes.' });
+      return res.status(500).json({ mensagem: 'Banco de dados offline. Tente novamente em instantes' });
     }
 
     // Validação de consentimento LGPD (Lei nº 13.709/2018)
     const consentimentoAceito = aceiteLgpd === true || (lgpdConsent && lgpdConsent.aceito === true);
     if (!consentimentoAceito) {
       return res.status(400).json({
-        mensagem: 'É obrigatório aceitar os Termos de Uso e a Política de Privacidade (LGPD) para realizar o cadastro.'
+        mensagem: 'É obrigatório aceitar os Termos de Uso e a Política de Privacidade (LGPD) para realizar o cadastro'
       });
     }
 
     // Backend validation for Treinador
     if (tipo === 'Treinador') {
       if (codigoConvite !== 'IF3SPORTE2026!') {
-        return res.status(400).json({ mensagem: 'Código de Acesso inválido para Treinador.' });
+        return res.status(400).json({ mensagem: 'Código de Acesso inválido para Treinador' });
       }
     }
 
     const userExistente = await User.findOne({ email });
 
     if (userExistente) {
-      return res.status(400).json({ mensagem: 'E-mail já cadastrado.' });
+      return res.status(400).json({ mensagem: 'E-mail já cadastrado' });
     }
 
     // Verificar matrícula duplicada para estudantes
@@ -190,7 +190,7 @@ const registerUser = async (req, res) => {
     if (tipo === 'estudante' && matValida) {
       const matriculaExistente = await User.findOne({ matricula: matValida });
       if (matriculaExistente) {
-        return res.status(400).json({ mensagem: 'Matrícula já cadastrada.' });
+        return res.status(400).json({ mensagem: 'Matrícula já cadastrada' });
       }
     }
 
@@ -343,7 +343,7 @@ const registerUser = async (req, res) => {
 
     console.log(`✅ Usuário ${email} (${tipo}) cadastrado com sucesso!`);
     res.status(201).json({
-      mensagem: 'Usuário cadastrado com sucesso! Enviamos um e-mail de confirmação para o seu endereço.',
+      mensagem: 'Usuário cadastrado com sucesso! Enviamos um e-mail de confirmação para o seu endereço',
       tipo,
       emailEnviado: emailResult.sent,
       emailSimulado: emailResult.simulated,
@@ -362,7 +362,7 @@ const verifyEmail = async (req, res) => {
   const token = req.params.token || req.body.token || req.query.token;
 
   if (!token) {
-    return res.status(400).json({ mensagem: 'Token de verificação não informado.' });
+    return res.status(400).json({ mensagem: 'Token de verificação não informado' });
   }
 
   try {
@@ -370,13 +370,13 @@ const verifyEmail = async (req, res) => {
 
     if (!usuario) {
       return res.status(400).json({
-        mensagem: 'Link de verificação inválido ou já utilizado.'
+        mensagem: 'Link de verificação inválido ou já utilizado'
       });
     }
 
     if (usuario.emailVerificationExpires && usuario.emailVerificationExpires < new Date()) {
       return res.status(400).json({
-        mensagem: 'O link de verificação expirou. Solicite um novo envio no seu perfil ou na tela de login.'
+        mensagem: 'O link de verificação expirou. Solicite um novo envio no seu perfil ou na tela de login'
       });
     }
 
@@ -387,14 +387,14 @@ const verifyEmail = async (req, res) => {
     await usuario.save();
 
     res.json({
-      mensagem: 'E-mail verificado com sucesso! Sua conta está confirmada.',
+      mensagem: 'E-mail verificado com sucesso! Sua conta está confirmada',
       emailVerificado: true,
       nome: usuario.nome,
       email: usuario.email
     });
   } catch (erro) {
     console.error('ERRO AO VERIFICAR E-MAIL:', erro);
-    res.status(500).json({ mensagem: 'Erro ao verificar e-mail.', detalhe: erro.message });
+    res.status(500).json({ mensagem: 'Erro ao verificar e-mail', detalhe: erro.message });
   }
 };
 
@@ -412,12 +412,12 @@ const resendVerificationEmail = async (req, res) => {
     }
 
     if (!usuario) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+      return res.status(404).json({ mensagem: 'Usuário não encontrado' });
     }
 
     if (usuario.emailVerificado) {
       return res.status(200).json({
-        mensagem: 'Este endereço de e-mail já está verificado.',
+        mensagem: 'Este endereço de e-mail já está verificado',
         emailVerificado: true
       });
     }
@@ -437,14 +437,14 @@ const resendVerificationEmail = async (req, res) => {
     });
 
     res.json({
-      mensagem: 'E-mail de verificação reenviado com sucesso! Verifique sua caixa de entrada.',
+      mensagem: 'E-mail de verificação reenviado com sucesso! Verifique sua caixa de entrada',
       emailEnviado: emailResult.sent,
       emailSimulado: emailResult.simulated,
       verificationUrl: emailResult.simulated ? emailResult.verificationUrl : undefined
     });
   } catch (erro) {
     console.error('ERRO AO REENVIAR VERIFICAÇÃO:', erro);
-    res.status(500).json({ mensagem: 'Erro ao reenviar e-mail de verificação.', detalhe: erro.message });
+    res.status(500).json({ mensagem: 'Erro ao reenviar e-mail de verificação', detalhe: erro.message });
   }
 };
 

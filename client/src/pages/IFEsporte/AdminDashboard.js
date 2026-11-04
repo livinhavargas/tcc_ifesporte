@@ -9,7 +9,7 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <div>
             <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Painel Administrativo</h2>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Gerencie as configurações gerais e dados institucionais.</p>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Gerencie as configurações gerais e dados institucionais</p>
           </div>
           <a href="/" className="btn btn-secondary">Voltar</a>
         </div>
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
                   <i className="bi bi-people-fill"></i>
                 </div>
                 <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '8px', fontSize: '1rem' }}>Usuários</h4>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '24px' }}>Gerenciar contas de treinadores e administradores.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '24px' }}>Gerenciar contas de treinadores e administradores</p>
               </div>
               <button className="btn btn-primary" style={{ width: '100%' }}>Acessar</button>
             </div>
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
                 </div>
                 <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '8px', fontSize: '1rem' }}>Configurações</h4>
                 <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '24px' }}>
-                  Ajustes globais do sistema <Logo height="14px" style={{ display: 'inline-block', verticalAlign: 'baseline', marginLeft: '4px' }} />.
+                  Ajustes globais do sistema <Logo height="14px" style={{ display: 'inline-block', verticalAlign: 'baseline', marginLeft: '4px' }} />
                 </p>
               </div>
               <button className="btn btn-primary" style={{ width: '100%' }}>Acessar</button>
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
                   <i className="bi bi-bar-chart-fill"></i>
                 </div>
                 <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '8px', fontSize: '1rem' }}>Relatórios</h4>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '24px' }}>Visualizar estatísticas gerais do projeto.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '24px' }}>Visualizar estatísticas gerais do projeto</p>
               </div>
               <button className="btn btn-primary" style={{ width: '100%' }}>Acessar</button>
             </div>

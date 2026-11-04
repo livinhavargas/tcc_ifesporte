@@ -15,7 +15,7 @@ const createTask = async (req, res) => {
   try {
     const { text, descricao, prazo, done } = req.body;
     if (!text || !text.trim()) {
-      return res.status(400).json({ message: 'O título da tarefa é obrigatório.' });
+      return res.status(400).json({ message: 'O título da tarefa é obrigatório' });
     }
 
     const newTask = new Task({
@@ -40,7 +40,7 @@ const updateTask = async (req, res) => {
     const task = await Task.findOne({ _id: req.params.id, criador: req.userId });
     
     if (!task) {
-      return res.status(404).json({ message: 'Tarefa não encontrada ou não autorizada.' });
+      return res.status(404).json({ message: 'Tarefa não encontrada ou não autorizada' });
     }
 
     if (text !== undefined) task.text = text.trim();
@@ -60,9 +60,9 @@ const deleteTask = async (req, res) => {
   try {
     const task = await Task.findOneAndDelete({ _id: req.params.id, criador: req.userId });
     if (!task) {
-      return res.status(404).json({ message: 'Tarefa não encontrada ou não autorizada.' });
+      return res.status(404).json({ message: 'Tarefa não encontrada ou não autorizada' });
     }
-    res.json({ message: 'Tarefa excluída com sucesso.' });
+    res.json({ message: 'Tarefa excluída com sucesso' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -97,10 +97,10 @@ const StudentProfile = () => {
         fetchStudent();
         setTimeout(() => setMensagem(''), 3000);
       } else {
-        setMensagem('Erro ao atualizar aluno.');
+        setMensagem('Erro ao atualizar aluno');
       }
     } catch (error) {
-      setMensagem('Erro de conexão ao servidor.');
+      setMensagem('Erro de conexão ao servidor');
     }
   };
 
@@ -126,10 +126,10 @@ const StudentProfile = () => {
           setMensagem('✅ Foto do atleta atualizada com sucesso!');
           setTimeout(() => setMensagem(''), 3000);
         } else {
-          setMensagem('Erro ao salvar foto do atleta.');
+          setMensagem('Erro ao salvar foto do atleta');
         }
       } catch (err) {
-        setMensagem('Erro de conexão ao salvar foto.');
+        setMensagem('Erro de conexão ao salvar foto');
       }
     };
     reader.readAsDataURL(file);
@@ -151,10 +151,10 @@ const StudentProfile = () => {
         setMensagem('✅ Foto removida com sucesso!');
         setTimeout(() => setMensagem(''), 3000);
       } else {
-        setMensagem('Erro ao remover foto.');
+        setMensagem('Erro ao remover foto');
       }
     } catch (err) {
-      setMensagem('Erro de conexão ao remover foto.');
+      setMensagem('Erro de conexão ao remover foto');
     }
   };
 
@@ -500,7 +500,7 @@ const StudentProfile = () => {
             </div>
             <div class="field" style="grid-column: span 2; margin-top: 6px;">
               <span class="field-label">Observações Médicas / Restrições</span>
-              <div class="field-value">${student.observacoesMedicas || 'Nenhuma observação ou restrição.'}</div>
+              <div class="field-value">${student.observacoesMedicas || 'Nenhuma observação ou restrição'}</div>
             </div>
           </div>
         </div>
@@ -527,7 +527,7 @@ const StudentProfile = () => {
   };
 
   if (loading) return <Layout><div className="text-center py-5"><div className="spinner-border text-primary"></div></div></Layout>;
-  if (!student) return <Layout><div className="text-center py-5">Aluno não encontrado.</div></Layout>;
+  if (!student) return <Layout><div className="text-center py-5">Aluno não encontrado</div></Layout>;
 
   const fieldStyle = {
     width: '100%',
@@ -741,7 +741,7 @@ const StudentProfile = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
                    <div>
                      <h5 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.125rem' }}>Ficha Completa do Atleta</h5>
-                     <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '2px 0 0' }}>Dados cadastrais, acadêmicos, físicos, esportivos e médicos.</p>
+                     <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '2px 0 0' }}>Dados cadastrais, acadêmicos, físicos, esportivos e médicos</p>
                    </div>
                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                      <button 
@@ -987,7 +987,7 @@ const StudentProfile = () => {
                           })
                         ) : (
                           <div style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', fontStyle: 'italic' }}>
-                            Nenhuma modalidade vinculada.
+                            Nenhuma modalidade vinculada
                           </div>
                         )}
                       </div>
@@ -1107,7 +1107,7 @@ const StudentProfile = () => {
                     {isEditing ? (
                       <textarea name="observacoesMedicas" rows="2" value={student.observacoesMedicas || ''} onChange={handleInputChange} placeholder="Nenhuma observação ou restrição..." style={fieldStyle}></textarea>
                     ) : (
-                      <div style={{ ...readOnlyFieldStyle, minHeight: '44px', whiteSpace: 'pre-wrap', alignItems: 'flex-start' }}>{student.observacoesMedicas || 'Nenhuma observação ou restrição registrada.'}</div>
+                      <div style={{ ...readOnlyFieldStyle, minHeight: '44px', whiteSpace: 'pre-wrap', alignItems: 'flex-start' }}>{student.observacoesMedicas || 'Nenhuma observação ou restrição registrada'}</div>
                     )}
                   </div>
 

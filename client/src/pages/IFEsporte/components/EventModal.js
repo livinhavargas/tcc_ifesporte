@@ -160,7 +160,7 @@ const EventModal = ({ show, eventData, onClose, onSave, onDelete, userType }) =>
             }}>
               <i className="bi bi-info-circle-fill"></i>
               <span>
-                Aula semanal de Educação Física vinculada à turma {eventData.turma || ''} ({eventData.curso || ''}). Os horários são gerenciados diretamente na configuração da turma.
+                Aula semanal de Educação Física vinculada à turma {eventData.turma || ''} ({eventData.curso || ''}). Os horários são gerenciados diretamente na configuração da turma
               </span>
             </div>
           )}

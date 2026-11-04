@@ -155,12 +155,12 @@ const NovaAnalise = () => {
           const existingTE = analysisData.dadosEspecificos?.tempoExtra;
           setShowTempoExtra(hasTempoExtraData(existingTE));
         } else {
-          setFormError('Não foi possível carregar os dados da análise.');
+          setFormError('Não foi possível carregar os dados da análise');
         }
       }
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
-      setFormError('Erro de conexão ao carregar dados.');
+      setFormError('Erro de conexão ao carregar dados');
     } finally {
       setLoading(false);
     }
@@ -276,7 +276,7 @@ const NovaAnalise = () => {
     const dados = formData.dadosEspecificos || {};
 
     if (!formData.data) {
-      return 'Informe a data da partida/prova.';
+      return 'Informe a data da partida/prova';
     }
 
     // 1. ATLETISMO
@@ -287,27 +287,27 @@ const NovaAnalise = () => {
       if (isRevezamento) {
         const atletas = Array.isArray(dados.atletasRevezamento) ? dados.atletasRevezamento.filter(Boolean) : [];
         if (atletas.length !== 4) {
-          return 'No revezamento, é obrigatório selecionar exatamente os 4 atletas da equipe.';
+          return 'No revezamento, é obrigatório selecionar exatamente os 4 atletas da equipe';
         }
         if (dados.quantidadeEquipes === undefined || dados.quantidadeEquipes === null || dados.quantidadeEquipes === '') {
-          return 'Informe quantas equipes participaram do revezamento.';
+          return 'Informe quantas equipes participaram do revezamento';
         }
         if (!dados.colocacao || !String(dados.colocacao).trim()) {
-          return 'Informe a colocação da equipe no revezamento.';
+          return 'Informe a colocação da equipe no revezamento';
         }
       } else {
         // Todas as demais provas individuais do Atletismo (Corridas, Barreiras, Saltos, Lançamentos, Pentatlo)
         if (!formData.aluno) {
-          return 'Selecione o atleta participante da prova.';
+          return 'Selecione o atleta participante da prova';
         }
         if (dados.quantidadeAdversarios === undefined || dados.quantidadeAdversarios === null || dados.quantidadeAdversarios === '') {
-          return 'Informe a quantidade de adversários.';
+          return 'Informe a quantidade de adversários';
         }
         const colocacaoVal = dados.colocacao || dados.classificacaoFinalPontos;
         if (!colocacaoVal || !String(colocacaoVal).trim()) {
           return subtipo.includes('pentatlo')
-            ? 'Informe a classificação final (contagem de pontos).'
-            : 'Informe a colocação do atleta.';
+            ? 'Informe a classificação final (contagem de pontos)'
+            : 'Informe a colocação do atleta';
         }
       }
 
@@ -317,10 +317,10 @@ const NovaAnalise = () => {
     // 2. VOLEIBOL E VÔLEI DE PRAIA
     if (mod.includes('volei') || mod.includes('vôlei')) {
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return 'Informe o nome da equipe adversária.';
+        return 'Informe o nome da equipe adversária';
       }
       if (!formData.resultado) {
-        return 'Selecione o resultado da partida (Vitória ou Derrota).';
+        return 'Selecione o resultado da partida (Vitória ou Derrota)';
       }
       return null;
     }
@@ -329,26 +329,26 @@ const NovaAnalise = () => {
     if (mod.includes('tenis de mesa') || mod.includes('tênis de mesa')) {
       const isDupla = dados.formatoPartida === 'Dupla' || dados.formatoPartida === 'Em Dupla';
       if (!dados.genero && !formData.categoria) {
-        return 'Selecione o gênero (Misto, Feminino ou Masculino).';
+        return 'Selecione o gênero (Misto, Feminino ou Masculino)';
       }
       if (isDupla) {
         const hasAthlete = dados.atleta1 || dados.atleta2 || formData.aluno || (Array.isArray(formData.atletas) && formData.atletas.length > 0) || dados.nomeDupla;
         if (!hasAthlete) {
-          return 'Selecione pelo menos um atleta da nossa equipe para a dupla.';
+          return 'Selecione pelo menos um atleta da nossa equipe para a dupla';
         }
         if (dados.atleta1 && dados.atleta2 && dados.atleta1 === dados.atleta2) {
-          return 'Não é permitido selecionar o mesmo atleta duas vezes na mesma dupla.';
+          return 'Não é permitido selecionar o mesmo atleta duas vezes na mesma dupla';
         }
       } else {
         if (!dados.nomeAtleta && !formData.aluno && (!formData.atletas || formData.atletas.length === 0)) {
-          return 'Selecione o atleta da nossa equipe.';
+          return 'Selecione o atleta da nossa equipe';
         }
       }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return isDupla ? 'Informe a dupla adversária.' : 'Informe o atleta adversário.';
+        return isDupla ? 'Informe a dupla adversária' : 'Informe o atleta adversário';
       }
       if (!formData.resultado || !['Vitória', 'Derrota'].includes(formData.resultado)) {
-        return 'Selecione o resultado da partida (Vitória ou Derrota).';
+        return 'Selecione o resultado da partida (Vitória ou Derrota)';
       }
       let setsNos = 0;
       let setsAdv = 0;
@@ -364,10 +364,10 @@ const NovaAnalise = () => {
         }
       }
       if (setsNos > setsAdv && formData.resultado === 'Derrota') {
-        return 'O resultado selecionado (Derrota) é contraditório com os sets vencidos pela sua equipe.';
+        return 'O resultado selecionado (Derrota) é contraditório com os sets vencidos pela sua equipe';
       }
       if (setsAdv > setsNos && formData.resultado === 'Vitória') {
-        return 'O resultado selecionado (Vitória) é contraditório com os sets vencidos pelo adversário.';
+        return 'O resultado selecionado (Vitória) é contraditório com os sets vencidos pelo adversário';
       }
       return null;
     }
@@ -376,13 +376,13 @@ const NovaAnalise = () => {
     if (mod.includes('badminton')) {
       const isDupla = dados.formatoPartida === 'Em Dupla' || dados.formatoPartida === 'Dupla';
       if (!formData.aluno && !dados.nomeAtleta && (!formData.atletas || formData.atletas.length === 0)) {
-        return 'Selecione o atleta da nossa equipe.';
+        return 'Selecione o atleta da nossa equipe';
       }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return isDupla ? 'Informe a dupla adversária.' : 'Informe o atleta adversário.';
+        return isDupla ? 'Informe a dupla adversária' : 'Informe o atleta adversário';
       }
       if (!formData.resultado || !['Vitória', 'Derrota'].includes(formData.resultado)) {
-        return 'Selecione o resultado da partida (Vitória ou Derrota).';
+        return 'Selecione o resultado da partida (Vitória ou Derrota)';
       }
       return null;
     }
@@ -390,17 +390,17 @@ const NovaAnalise = () => {
     // 3. FUTEBOL E FUTSAL
     if (mod.includes('futebol') || mod.includes('futsal')) {
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return 'Informe a equipe adversária.';
+        return 'Informe a equipe adversária';
       }
       if (!formData.resultado) {
-        return 'Selecione o resultado da partida.';
+        return 'Selecione o resultado da partida';
       }
       if (dados.foiParaPenaltis) {
         const participantes = Array.isArray(dados.penaltisParticipantes) && dados.penaltisParticipantes.length > 0
           ? dados.penaltisParticipantes
           : (Array.isArray(dados.penaltisCobrancas) ? dados.penaltisCobrancas.filter(c => c && c.atletaId) : []);
         if (participantes.length === 0) {
-          return 'Quando a partida foi para os pênaltis, selecione os jogadores que participaram da cobrança.';
+          return 'Quando a partida foi para os pênaltis, selecione os jogadores que participaram da cobrança';
         }
       }
       return null;
@@ -409,10 +409,10 @@ const NovaAnalise = () => {
     // 4. BASQUETE
     if (mod.includes('basquete')) {
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return 'Informe a equipe adversária.';
+        return 'Informe a equipe adversária';
       }
       if (!formData.resultado) {
-        return 'Selecione o resultado da partida.';
+        return 'Selecione o resultado da partida';
       }
       return null;
     }
@@ -420,15 +420,15 @@ const NovaAnalise = () => {
     // 5. HANDEBOL
     if (mod.includes('handebol')) {
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return 'Informe a equipe adversária.';
+        return 'Informe a equipe adversária';
       }
       if (!formData.resultado) {
-        return 'Selecione o resultado da partida.';
+        return 'Selecione o resultado da partida';
       }
       if (formData.resultado === 'Empate') {
         const cobrancas = Array.isArray(dados.desempateSeteMetrosLista) ? dados.desempateSeteMetrosLista : [];
         if (cobrancas.length === 0 || cobrancas.some(c => !c.atletaId)) {
-          return 'Em caso de empate no handebol, é obrigatório registrar os atletas que realizaram as cobranças de 7 metros.';
+          return 'Em caso de empate no handebol, é obrigatório registrar os atletas que realizaram as cobranças de 7 metros';
         }
       }
       return null;
@@ -437,19 +437,19 @@ const NovaAnalise = () => {
     // 6. XADREZ
     if (mod.includes('xadrez')) {
       if (!dados.genero && !formData.categoria) {
-        return 'Selecione o gênero da partida de xadrez (Feminino ou Masculino).';
+        return 'Selecione o gênero da partida de xadrez (Feminino ou Masculino)';
       }
       if (!formData.aluno && !dados.nomeAtleta && (!formData.atletas || formData.atletas.length === 0)) {
-        return 'Selecione o atleta da nossa equipe.';
+        return 'Selecione o atleta da nossa equipe';
       }
       if (!formData.equipeAdversaria || !String(formData.equipeAdversaria).trim()) {
-        return 'Informe o adversário da partida de xadrez.';
+        return 'Informe o adversário da partida de xadrez';
       }
       if (!dados.cor && !dados.corPecas) {
-        return 'Selecione a cor com a qual o atleta está jogando (Brancas ou Pretas).';
+        return 'Selecione a cor com a qual o atleta está jogando (Brancas ou Pretas)';
       }
       if (!formData.resultado || !['Vitória', 'Empate', 'Derrota'].includes(formData.resultado)) {
-        return 'Selecione o resultado da partida (Vitória, Empate ou Derrota).';
+        return 'Selecione o resultado da partida (Vitória, Empate ou Derrota)';
       }
       return null;
     }
@@ -648,15 +648,15 @@ const NovaAnalise = () => {
       if (response.ok) {
         addNotification(
           isEditing ? 'Análise Esportiva Atualizada' : 'Análise Esportiva Criada',
-          `Análise de ${formData.modalidade} (${formData.categoria}) salva com sucesso.`
+          `Análise de ${formData.modalidade} (${formData.categoria}) salva com sucesso`
         );
         navigate(getBackUrl());
       } else {
-        setFormError(data.message || 'Erro ao salvar análise esportiva.');
+        setFormError(data.message || 'Erro ao salvar análise esportiva');
       }
     } catch (err) {
       console.error('Erro ao salvar:', err);
-      setFormError('Erro de conexão ao salvar a análise.');
+      setFormError('Erro de conexão ao salvar a análise');
     } finally {
       setSaving(false);
     }
@@ -699,7 +699,7 @@ const NovaAnalise = () => {
 
     return (
       <div className="alert alert-info" style={{ borderRadius: 'var(--radius-md)' }}>
-        Formulário padrão carregado para {formData.modalidade}. Preencha as informações e observações abaixo.
+        Formulário padrão carregado para {formData.modalidade}. Preencha as informações e observações abaixo
       </div>
     );
   };
@@ -780,7 +780,7 @@ const NovaAnalise = () => {
                   {isEditing ? `Editar Análise — ${formData.modalidade}` : `Nova Análise — ${formData.modalidade}`}
                 </h1>
                 <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>
-                  Preencha as informações técnicas e o resultado oficial para {formData.modalidade} ({formData.categoria}).
+                  Preencha as informações técnicas e o resultado oficial para {formData.modalidade} ({formData.categoria})
                 </p>
               </div>
             </div>

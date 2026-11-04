@@ -39,11 +39,11 @@ const VisualizarAnalise = () => {
         const data = await response.json();
         setAnalysis(data);
       } else {
-        setError('Análise esportiva não encontrada.');
+        setError('Análise esportiva não encontrada');
       }
     } catch (err) {
       console.error('Erro ao buscar análise:', err);
-      setError('Erro de conexão ao buscar análise.');
+      setError('Erro de conexão ao buscar análise');
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ const VisualizarAnalise = () => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
-        addNotification('Análise Excluída', 'O registro foi removido com sucesso.');
+        addNotification('Análise Excluída', 'O registro foi removido com sucesso');
         navigate(getBackUrl());
       }
     } catch (err) {
@@ -121,7 +121,7 @@ const VisualizarAnalise = () => {
               {error || 'Análise não encontrada'}
             </h4>
             <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginBottom: '24px' }}>
-              O registro que você está tentando acessar pode ter sido removido ou o link está incorreto.
+              O registro que você está tentando acessar pode ter sido removido ou o link está incorreto
             </p>
             <Link to="/esportes" className="btn btn-primary" style={{ borderRadius: 'var(--radius-md)', padding: '8px 20px', fontWeight: 600 }}>
               Voltar para Esportes
@@ -665,7 +665,7 @@ const VisualizarAnalise = () => {
                 </div>
               ) : (
                 <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>
-                  Nenhum dado estatístico adicional registrado nesta análise.
+                  Nenhum dado estatístico adicional registrado nesta análise
                 </p>
               )}
             </div>

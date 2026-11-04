@@ -133,7 +133,7 @@ const Esportes = () => {
             </div>
             <div>
               <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>Esportes</h2>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Gerencie os participantes por modalidade.</p>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Gerencie os participantes por modalidade</p>
             </div>
           </div>
         </div>

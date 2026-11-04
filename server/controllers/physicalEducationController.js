@@ -152,7 +152,7 @@ exports.getCoursesSummary = async (req, res) => {
     res.json(summary);
   } catch (error) {
     console.error('Erro ao buscar resumo dos cursos:', error);
-    res.status(500).json({ message: 'Erro ao buscar resumo dos cursos de Educação Física.', error: error.message });
+    res.status(500).json({ message: 'Erro ao buscar resumo dos cursos de Educação Física', error: error.message });
   }
 };
 
@@ -167,7 +167,7 @@ exports.getTurmasByCourse = async (req, res) => {
     );
 
     if (!courseDef) {
-      return res.status(404).json({ message: 'Curso não encontrado.' });
+      return res.status(404).json({ message: 'Curso não encontrado' });
     }
 
     await ensureDefaultClasses();
@@ -225,7 +225,7 @@ exports.getTurmasByCourse = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao buscar turmas do curso:', error);
-    res.status(500).json({ message: 'Erro ao buscar turmas do curso.', error: error.message });
+    res.status(500).json({ message: 'Erro ao buscar turmas do curso', error: error.message });
   }
 };
 
@@ -236,7 +236,7 @@ exports.getTurmaDetail = async (req, res) => {
     let turmaDoc = await PhysicalEducationClass.findById(id).populate('professorResponsavel', 'nome email');
 
     if (!turmaDoc || isTerceiroAno(turmaDoc.turma)) {
-      return res.status(404).json({ message: 'Turma de Educação Física não encontrada ou não participa de Educação Física (3ºs anos não possuem Educação Física).' });
+      return res.status(404).json({ message: 'Turma de Educação Física não encontrada ou não participa de Educação Física (3ºs anos não possuem Educação Física)' });
     }
 
     // Buscar alunos reais vinculados à turma (suportando nome atual e turmaOriginal)
@@ -270,7 +270,7 @@ exports.getTurmaDetail = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao buscar detalhes da turma:', error);
-    res.status(500).json({ message: 'Erro ao buscar detalhes da turma.', error: error.message });
+    res.status(500).json({ message: 'Erro ao buscar detalhes da turma', error: error.message });
   }
 };
 
@@ -278,19 +278,19 @@ exports.getTurmaDetail = async (req, res) => {
 exports.updateTurmaNome = async (req, res) => {
   try {
     if (req.userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação.' });
+      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação' });
     }
 
     const { id } = req.params;
     const { turma } = req.body;
 
     if (!turma || !String(turma).trim()) {
-      return res.status(400).json({ message: 'O nome da turma não pode ficar em branco.' });
+      return res.status(400).json({ message: 'O nome da turma não pode ficar em branco' });
     }
 
     const turmaDoc = await PhysicalEducationClass.findById(id);
     if (!turmaDoc) {
-      return res.status(404).json({ message: 'Turma não encontrada.' });
+      return res.status(404).json({ message: 'Turma não encontrada' });
     }
 
     const novoNome = turma.trim();
@@ -309,21 +309,21 @@ exports.updateTurmaNome = async (req, res) => {
     });
 
     if (conflito) {
-      return res.status(400).json({ message: `Já existe uma turma cadastrada com o nome "${novoNome}" neste curso.` });
+      return res.status(400).json({ message: `Já existe uma turma cadastrada com o nome "${novoNome}" neste curso` });
     }
 
     turmaDoc.turma = novoNome;
     await turmaDoc.save();
 
     res.json({
-      message: 'Nome da turma atualizado com sucesso.',
+      message: 'Nome da turma atualizado com sucesso',
       turma: turmaDoc.turma,
       turmaOriginal: turmaDoc.turmaOriginal,
       turmaDoc
     });
   } catch (error) {
     console.error('Erro ao atualizar nome da turma:', error);
-    res.status(500).json({ message: 'Erro ao atualizar nome da turma.', error: error.message });
+    res.status(500).json({ message: 'Erro ao atualizar nome da turma', error: error.message });
   }
 };
 
@@ -331,31 +331,31 @@ exports.updateTurmaNome = async (req, res) => {
 exports.updateSchedules = async (req, res) => {
   try {
     if (req.userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação.' });
+      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação' });
     }
 
     const { id } = req.params;
     const { horariosSemanais } = req.body;
 
     if (!Array.isArray(horariosSemanais)) {
-      return res.status(400).json({ message: 'Lista de horários semanais inválida.' });
+      return res.status(400).json({ message: 'Lista de horários semanais inválida' });
     }
 
     const turmaDoc = await PhysicalEducationClass.findById(id);
     if (!turmaDoc) {
-      return res.status(404).json({ message: 'Turma não encontrada.' });
+      return res.status(404).json({ message: 'Turma não encontrada' });
     }
 
     turmaDoc.horariosSemanais = horariosSemanais;
     await turmaDoc.save();
 
     res.json({
-      message: 'Horários de aula de Educação Física atualizados com sucesso.',
+      message: 'Horários de aula de Educação Física atualizados com sucesso',
       horariosSemanais: turmaDoc.horariosSemanais
     });
   } catch (error) {
     console.error('Erro ao atualizar horários:', error);
-    res.status(500).json({ message: 'Erro ao salvar horários de aula.', error: error.message });
+    res.status(500).json({ message: 'Erro ao salvar horários de aula', error: error.message });
   }
 };
 
@@ -363,19 +363,19 @@ exports.updateSchedules = async (req, res) => {
 exports.addReport = async (req, res) => {
   try {
     if (req.userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação.' });
+      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação' });
     }
 
     const { id } = req.params;
     const { data, horario, diaSemana, conteudo, observacoes } = req.body;
 
     if (!data || !conteudo) {
-      return res.status(400).json({ message: 'A data da aula e o conteúdo trabalhado são obrigatórios.' });
+      return res.status(400).json({ message: 'A data da aula e o conteúdo trabalhado são obrigatórios' });
     }
 
     const turmaDoc = await PhysicalEducationClass.findById(id);
     if (!turmaDoc) {
-      return res.status(404).json({ message: 'Turma não encontrada.' });
+      return res.status(404).json({ message: 'Turma não encontrada' });
     }
 
     // Identificar usuário logado a partir de req.userId
@@ -412,7 +412,7 @@ exports.addReport = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao registrar relatório de aula:', error);
-    res.status(500).json({ message: 'Erro ao registrar relatório de aula.', error: error.message });
+    res.status(500).json({ message: 'Erro ao registrar relatório de aula', error: error.message });
   }
 };
 
@@ -420,24 +420,24 @@ exports.addReport = async (req, res) => {
 exports.updateReport = async (req, res) => {
   try {
     if (req.userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação.' });
+      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação' });
     }
 
     const { id, relatorioId } = req.params;
     const { data, horario, diaSemana, conteudo, observacoes } = req.body;
 
     if (!conteudo) {
-      return res.status(400).json({ message: 'O conteúdo trabalhado é obrigatório.' });
+      return res.status(400).json({ message: 'O conteúdo trabalhado é obrigatório' });
     }
 
     const turmaDoc = await PhysicalEducationClass.findById(id);
     if (!turmaDoc) {
-      return res.status(404).json({ message: 'Turma não encontrada.' });
+      return res.status(404).json({ message: 'Turma não encontrada' });
     }
 
     const relatorio = turmaDoc.relatorios.id(relatorioId);
     if (!relatorio) {
-      return res.status(404).json({ message: 'Relatório de aula não encontrado.' });
+      return res.status(404).json({ message: 'Relatório de aula não encontrado' });
     }
 
     if (data) relatorio.data = new Date(data);
@@ -456,7 +456,7 @@ exports.updateReport = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao atualizar relatório de aula:', error);
-    res.status(500).json({ message: 'Erro ao atualizar relatório de aula.', error: error.message });
+    res.status(500).json({ message: 'Erro ao atualizar relatório de aula', error: error.message });
   }
 };
 
@@ -464,19 +464,19 @@ exports.updateReport = async (req, res) => {
 exports.deleteReport = async (req, res) => {
   try {
     if (req.userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação.' });
+      return res.status(403).json({ message: 'Acesso negado: estudantes não têm permissão para esta ação' });
     }
 
     const { id, relatorioId } = req.params;
 
     const turmaDoc = await PhysicalEducationClass.findById(id);
     if (!turmaDoc) {
-      return res.status(404).json({ message: 'Turma não encontrada.' });
+      return res.status(404).json({ message: 'Turma não encontrada' });
     }
 
     const relatorio = turmaDoc.relatorios.id(relatorioId);
     if (!relatorio) {
-      return res.status(404).json({ message: 'Relatório de aula não encontrado.' });
+      return res.status(404).json({ message: 'Relatório de aula não encontrado' });
     }
 
     turmaDoc.relatorios.pull(relatorioId);
@@ -485,12 +485,12 @@ exports.deleteReport = async (req, res) => {
     const sortedRelatorios = turmaDoc.relatorios.sort((a, b) => new Date(b.data) - new Date(a.data));
 
     res.json({
-      message: 'Relatório de aula excluído com sucesso.',
+      message: 'Relatório de aula excluído com sucesso',
       relatorios: sortedRelatorios
     });
   } catch (error) {
     console.error('Erro ao excluir relatório de aula:', error);
-    res.status(500).json({ message: 'Erro ao excluir relatório de aula.', error: error.message });
+    res.status(500).json({ message: 'Erro ao excluir relatório de aula', error: error.message });
   }
 };
 
@@ -683,12 +683,12 @@ exports.getMyNextClass = async (req, res) => {
   try {
     const userId = req.userId;
     if (!userId) {
-      return res.status(401).json({ message: 'Não autenticado.' });
+      return res.status(401).json({ message: 'Não autenticado' });
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'Usuário não encontrado.' });
+      return res.status(404).json({ message: 'Usuário não encontrado' });
     }
 
     // Buscar perfil de Student vinculado
@@ -707,7 +707,7 @@ exports.getMyNextClass = async (req, res) => {
     if (!turmaNome) {
       return res.json({
         hasTurma: false,
-        message: 'Não foi possível identificar sua turma para consultar as aulas de Educação Física.'
+        message: 'Não foi possível identificar sua turma para consultar as aulas de Educação Física'
       });
     }
 
@@ -719,7 +719,7 @@ exports.getMyNextClass = async (req, res) => {
         hasHorarios: false,
         turma: turmaNome,
         curso: cursoNome || 'Curso Técnico',
-        message: 'Turmas de 3º ano não possuem aulas de Educação Física.'
+        message: 'Turmas de 3º ano não possuem aulas de Educação Física'
       });
     }
 
@@ -748,7 +748,7 @@ exports.getMyNextClass = async (req, res) => {
         hasHorarios: false,
         turma: turmaNome,
         curso: cursoNome || 'Curso Técnico',
-        message: 'Os horários de Educação Física ainda não foram configurados para sua turma.'
+        message: 'Os horários de Educação Física ainda não foram configurados para sua turma'
       });
     }
 
@@ -765,7 +765,7 @@ exports.getMyNextClass = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao consultar próxima aula do estudante:', error);
-    res.status(500).json({ message: 'Erro ao consultar próxima aula de Educação Física.', error: error.message });
+    res.status(500).json({ message: 'Erro ao consultar próxima aula de Educação Física', error: error.message });
   }
 };
 

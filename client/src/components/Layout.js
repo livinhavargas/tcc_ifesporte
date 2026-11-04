@@ -443,7 +443,7 @@ const Layout = ({ children }) => {
                   <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
                     {notifications.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
-                        Nenhuma notificação recente.
+                        Nenhuma notificação recente
                       </div>
                     ) : (
                       notifications.map(n => (

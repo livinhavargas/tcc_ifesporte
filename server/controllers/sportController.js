@@ -130,7 +130,7 @@ const createSport = async (req, res) => {
     });
 
     if (existing) {
-      return res.status(400).json({ message: `A modalidade "${nomeLimpo}" já está cadastrada no sistema.` });
+      return res.status(400).json({ message: `A modalidade "${nomeLimpo}" já está cadastrada no sistema` });
     }
 
     const sport = new Sport(req.body);

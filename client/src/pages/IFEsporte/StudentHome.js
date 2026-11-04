@@ -102,7 +102,7 @@ const StudentHome = ({ userName }) => {
           Olá, <span style={{ color: 'var(--primary)' }}>{userName ? userName.split(' ')[0] : 'Estudante'}</span> 👋
         </h2>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>
-          Confira seus próximos eventos e as modalidades esportivas nas quais você está cadastrado.
+          Confira seus próximos eventos e as modalidades esportivas nas quais você está cadastrado
         </p>
       </div>
 
@@ -148,7 +148,7 @@ const StudentHome = ({ userName }) => {
                   <CalendarX size={36} style={{ color: 'var(--text-tertiary)', opacity: 0.5, marginBottom: '12px' }} />
                   <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Sem próximos eventos</h6>
                   <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>
-                    Não há treinos, jogos ou compromissos programados no momento.
+                    Não há treinos, jogos ou compromissos programados no momento
                   </p>
                 </div>
               ) : (
@@ -295,7 +295,7 @@ const StudentHome = ({ userName }) => {
                   Nenhum esporte cadastrado
                 </h6>
                 <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '0 0 16px' }}>
-                  Você ainda não possui modalidades vinculadas ao seu perfil.
+                  Você ainda não possui modalidades vinculadas ao seu perfil
                 </p>
                 <Link to="/perfil" className="btn btn-outline-primary btn-sm rounded-pill px-4">
                   Cadastrar Modalidades
@@ -437,7 +437,7 @@ const StudentHome = ({ userName }) => {
                     Turma {peData.turma} • {peData.curso}
                   </div>
                   <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>
-                    Os horários de Educação Física ainda não foram configurados para sua turma.
+                    Os horários de Educação Física ainda não foram configurados para sua turma
                   </p>
                 </div>
               ) : (

@@ -124,10 +124,10 @@ const Perfil = () => {
         setMensagem(`✅ ${data.mensagem || 'E-mail de confirmação reenviado com sucesso!'}`);
         setTimeout(() => setMensagem(''), 5000);
       } else {
-        setMensagem(`❌ ${data.mensagem || 'Não foi possível reenviar o e-mail de confirmação.'}`);
+        setMensagem(`❌ ${data.mensagem || 'Não foi possível reenviar o e-mail de confirmação'}`);
       }
     } catch (err) {
-      setMensagem('❌ Erro de conexão ao solicitar reenvio de e-mail.');
+      setMensagem('❌ Erro de conexão ao solicitar reenvio de e-mail');
     } finally {
       setResendingEmail(false);
     }
@@ -195,16 +195,16 @@ const Perfil = () => {
 
       if (response.ok) {
         setMensagem('✅ Perfil atualizado com sucesso!');
-        addNotification('Perfil Atualizado', 'Seus dados de perfil foram atualizados com sucesso.');
+        addNotification('Perfil Atualizado', 'Seus dados de perfil foram atualizados com sucesso');
         setIsEditing(false);
         if (profileData.nome) localStorage.setItem('userName', profileData.nome);
         if (profileData.foto) localStorage.setItem('foto', profileData.foto);
         setTimeout(() => setMensagem(''), 4000);
       } else {
-        setMensagem('❌ Erro ao atualizar perfil.');
+        setMensagem('❌ Erro ao atualizar perfil');
       }
     } catch (error) {
-      setMensagem('❌ Erro de conexão ao salvar.');
+      setMensagem('❌ Erro de conexão ao salvar');
     }
   };
 
@@ -230,7 +230,7 @@ const Perfil = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Meu Perfil</h2>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Visualize e mantenha seus dados atualizados.</p>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Visualize e mantenha seus dados atualizados</p>
           </div>
           <div>
             {!isEditing ? (
@@ -696,7 +696,7 @@ const Perfil = () => {
                             );
                           })
                         ) : (
-                          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontStyle: 'italic' }}>Nenhuma modalidade vinculada.</div>
+                          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', fontStyle: 'italic' }}>Nenhuma modalidade vinculada</div>
                         )}
                       </div>
                     )}
@@ -723,7 +723,7 @@ const Perfil = () => {
                     )}
                   </div>
                   <div style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem' }}>
-                    Seus dados são protegidos e utilizados exclusivamente para as finalidades esportivas e acadêmicas do IFesporte.
+                    Seus dados são protegidos e utilizados exclusivamente para as finalidades esportivas e acadêmicas do IFesporte
                   </div>
                 </div>
                 <button

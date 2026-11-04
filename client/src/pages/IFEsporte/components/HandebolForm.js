@@ -342,7 +342,7 @@ const HandebolForm = ({
             color: 'var(--text-tertiary)',
             margin: 0
           }}>
-            Nenhum cartão no {tempo === 1 ? '1º' : '2º'} Tempo.
+            Nenhum cartão no {tempo === 1 ? '1º' : '2º'} Tempo
           </p>
         </div>
       ) : (

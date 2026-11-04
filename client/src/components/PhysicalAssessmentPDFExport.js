@@ -144,7 +144,7 @@ const PhysicalAssessmentPDFExport = ({
   // Gerar e Imprimir Documento Profissional Isolado
   const handlePrintPDF = () => {
     if (selectedAssessmentsList.length === 0) {
-      alert('Selecione ao menos uma avaliação para exportar.');
+      alert('Selecione ao menos uma avaliação para exportar');
       return;
     }
 
@@ -767,7 +767,7 @@ const PhysicalAssessmentPDFExport = ({
               <span>Exportar Ficha de Aptidão Física (PDF)</span>
             </h5>
             <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>
-              Selecione as avaliações e os tópicos que deseja incluir no documento oficial.
+              Selecione as avaliações e os tópicos que deseja incluir no documento oficial
             </p>
           </div>
           <button 
@@ -807,7 +807,7 @@ const PhysicalAssessmentPDFExport = ({
                 </div>
 
                 {assessments.length === 0 ? (
-                  <p className="text-muted small m-0">Nenhuma avaliação encontrada para este aluno.</p>
+                  <p className="text-muted small m-0">Nenhuma avaliação encontrada para este aluno</p>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
                     {sortedAssessments.map(a => {
@@ -918,7 +918,7 @@ const PhysicalAssessmentPDFExport = ({
               }}>
                 <Activity size={18} style={{ color: 'var(--primary)', marginTop: '2px', flexShrink: 0 }} />
                 <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                  <strong>Documento Oficial PROESP-Br:</strong> A exportação gera um PDF formatado como ficha física técnica do atleta, contendo cabeçalho institucional, identificação e tabelas de classificação, sem elementos visuais do sistema.
+                  <strong>Documento Oficial PROESP-Br:</strong> A exportação gera um PDF formatado como ficha física técnica do atleta, contendo cabeçalho institucional, identificação e tabelas de classificação, sem elementos visuais do sistema
                 </div>
               </div>
             </div>

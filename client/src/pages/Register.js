@@ -104,41 +104,41 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
     setError('');
     if (step === 1) {
       if (!formData.nome || !formData.email || !formData.senha || !formData.confirmarSenha) {
-        setError('Preencha todos os campos obrigatórios da Etapa 1.');
+        setError('Preencha todos os campos obrigatórios da Etapa 1');
         return;
       }
       if (formData.senha.length < 8) {
-        setError('A senha deve ter no mínimo 8 caracteres.');
+        setError('A senha deve ter no mínimo 8 caracteres');
         return;
       }
       if (formData.senha !== formData.confirmarSenha) {
-        setError('As senhas não coincidem.');
+        setError('As senhas não coincidem');
         return;
       }
     }
     if (step === 2) {
       if (formData.tipo === 'Treinador') {
         if (!formData.codigoConvite) {
-          setError('O Código de Acesso é obrigatório para Treinadores.');
+          setError('O Código de Acesso é obrigatório para Treinadores');
           return;
         }
         if (formData.codigoConvite !== 'IF3SPORTE2026!') {
-          setError('Código de Acesso inválido.');
+          setError('Código de Acesso inválido');
           return;
         }
       } else if (formData.tipo === 'estudante') {
         if (!formData.sexo || !formData.dataNascimento || !formData.matricula || !formData.telefone || !formData.cpf || !formData.cidade || !formData.estado) {
-          setError('Preencha os campos obrigatórios: Gênero, Data de Nascimento, Matrícula, Telefone, CPF, Cidade e Estado.');
+          setError('Preencha os campos obrigatórios: Gênero, Data de Nascimento, Matrícula, Telefone, CPF, Cidade e Estado');
           return;
         }
         if (formData.cpf.length < 14) {
-          setError('CPF inválido ou incompleto.');
+          setError('CPF inválido ou incompleto');
           return;
         }
         if (formData.rg) {
           const cleanRG = formData.rg.replace(/[^a-zA-Z0-9]/g, '');
           if (cleanRG.length < 7) {
-            setError('RG inválido ou incompleto.');
+            setError('RG inválido ou incompleto');
             return;
           }
         }
@@ -154,7 +154,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
 
   const handleSubmit = async () => {
     if (!formData.aceiteLgpd) {
-      setError('É obrigatório aceitar os Termos de Uso e a Política de Privacidade (LGPD) para concluir o cadastro.');
+      setError('É obrigatório aceitar os Termos de Uso e a Política de Privacidade (LGPD) para concluir o cadastro');
       return;
     }
 
@@ -170,7 +170,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
       });
       const data = await response.json();
       if (response.ok) {
-        addNotification('Novo Cadastro Realizado', `O usuário ${formData.nome} (${formData.tipo}) cadastrou-se no sistema.`);
+        addNotification('Novo Cadastro Realizado', `O usuário ${formData.nome} (${formData.tipo}) cadastrou-se no sistema`);
         if (isEmbedded && onSuccess) {
           onSuccess();
         } else {
@@ -182,7 +182,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
         setStep(1); 
       }
     } catch (err) {
-      setError('Erro de conexão ao servidor.');
+      setError('Erro de conexão ao servidor');
     } finally {
       setLoading(false);
     }
@@ -430,7 +430,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
               <CheckCircle2 size={24} style={{ color: 'var(--success)' }} />
               <div>
                 <h6 style={{ fontWeight: 700, color: 'var(--success-text)', marginBottom: '2px', fontSize: '0.9375rem' }}>Quase lá, {formData.nome.split(' ')[0]}!</h6>
-                <small style={{ color: 'var(--success-text)', opacity: 0.8 }}>Confirme se os dados abaixo estão corretos e aceite os termos de privacidade (LGPD) antes de finalizar.</small>
+                <small style={{ color: 'var(--success-text)', opacity: 0.8 }}>Confirme se os dados abaixo estão corretos e aceite os termos de privacidade (LGPD) antes de finalizar</small>
               </div>
             </div>
             <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
@@ -507,7 +507,7 @@ const Register = ({ isEmbedded = false, defaultType = '', onSuccess = null, onCa
               </div>
 
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '14px' }}>
-                Em conformidade com a <strong>Lei Geral de Proteção de Dados (Lei nº 13.709/2018)</strong>, seus dados serão utilizados exclusivamente para gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica. Ao concluir o cadastro, enviaremos um <strong>e-mail de confirmação</strong> para <strong>{formData.email}</strong> com um link de verificação.
+                Em conformidade com a <strong>Lei Geral de Proteção de Dados (Lei nº 13.709/2018)</strong>, seus dados serão utilizados exclusivamente para gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica. Ao concluir o cadastro, enviaremos um <strong>e-mail de confirmação</strong> para <strong>{formData.email}</strong> com um link de verificação
               </p>
 
               <label

@@ -148,7 +148,7 @@ const Agenda = () => {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        addNotification(isNew ? 'Novo Evento Criado' : 'Evento Atualizado', `Evento "${payload.titulo}" salvo na Agenda.`);
+        addNotification(isNew ? 'Novo Evento Criado' : 'Evento Atualizado', `Evento "${payload.titulo}" salvo na Agenda`);
         fetchEvents();
       }
     } catch (err) {
@@ -171,7 +171,7 @@ const Agenda = () => {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      addNotification('Evento Excluído', 'O compromisso foi removido da Agenda.');
+      addNotification('Evento Excluído', 'O compromisso foi removido da Agenda');
       fetchEvents();
       setShowModal(false);
       setSelectedEvent(null);
@@ -212,7 +212,7 @@ const Agenda = () => {
                 Agenda
               </h1>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>
-                Organize e acompanhe seus compromissos, treinos, jogos e eventos.
+                Organize e acompanhe seus compromissos, treinos, jogos e eventos
               </p>
             </div>
           </div>

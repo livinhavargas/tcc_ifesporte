@@ -90,7 +90,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
         <CalendarX size={36} style={{ color: 'var(--text-tertiary)', marginBottom: '12px' }} />
         <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Cronogramas não disponíveis</h5>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0 }}>
-          A modalidade "{modalidade}" não possui função de cronogramas de treinamento.
+          A modalidade "{modalidade}" não possui função de cronogramas de treinamento
         </p>
       </div>
     );
@@ -139,7 +139,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
   const handleGerarPreview = async (e) => {
     e.preventDefault();
     if (!formData.titulo || !formData.dataInicio || !formData.dataFim || !formData.competicaoAlvo) {
-      alert("Preencha todos os campos obrigatórios.");
+      alert("Preencha todos os campos obrigatórios");
       return;
     }
     const dI = new Date(`${formData.dataInicio}T00:00:00`);
@@ -147,7 +147,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
     const dF = new Date(`${formData.dataFim}T00:00:00`);
     
     if (dI >= dA || dA > dF) {
-      alert("Ordem de datas inválida. A ordem correta é: Início -> Competição Alvo -> Fim (Fim pode ser igual a Alvo se não houver transição).");
+      alert("Ordem de datas inválida. A ordem correta é: Início -> Competição Alvo -> Fim (Fim pode ser igual a Alvo se não houver transição)");
       return;
     }
 
@@ -193,7 +193,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
       
       if (res.ok) {
         alert("Cronograma salvo com sucesso!");
-        addNotification(selected ? 'Cronograma Atualizado' : 'Novo Cronograma Criado', `Cronograma "${formData.titulo}" salvo para ${modalidade}.`);
+        addNotification(selected ? 'Cronograma Atualizado' : 'Novo Cronograma Criado', `Cronograma "${formData.titulo}" salvo para ${modalidade}`);
         fetchCronogramas();
         setView('list');
       } else {
@@ -203,7 +203,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
       }
     } catch (err) {
       console.error("Exceção ao salvar:", err);
-      alert("Erro de conexão ao salvar o cronograma. Verifique o console.");
+      alert("Erro de conexão ao salvar o cronograma. Verifique o console");
     }
   };
 
@@ -229,7 +229,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
       await fetch(apiUrl(`/api/cronogramas/${id}`), {
         method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      addNotification('Cronograma Excluído', 'Um cronograma de treinos foi excluído.');
+      addNotification('Cronograma Excluído', 'Um cronograma de treinos foi excluído');
       fetchCronogramas();
     } catch (e) {
       console.error(e);
@@ -245,15 +245,15 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
       });
       if (res.ok) {
         alert("Treinos sincronizados com sucesso na Agenda!");
-        addNotification('Agenda Sincronizada', `Eventos do cronograma "${c.titulo}" foram sincronizados na Agenda.`);
+        addNotification('Agenda Sincronizada', `Eventos do cronograma "${c.titulo}" foram sincronizados na Agenda`);
         fetchCronogramas();
         setView('list');
       } else {
-        alert("Erro ao sincronizar cronograma.");
+        alert("Erro ao sincronizar cronograma");
       }
     } catch (e) {
       console.error(e);
-      alert("Erro ao sincronizar com agenda.");
+      alert("Erro ao sincronizar com agenda");
     }
   };
 
@@ -327,7 +327,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
             {filtered.length === 0 ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 16px' }}>
                 <CalendarX size={48} style={{ color: 'var(--text-tertiary)', opacity: 0.5, display: 'block', margin: '0 auto 12px' }} />
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>Nenhum cronograma encontrado para esta modalidade.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>Nenhum cronograma encontrado para esta modalidade</p>
               </div>
             ) : (
               filtered.map(c => {
@@ -399,7 +399,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
             }}>
                <div className="spinner-border" style={{ width: '3rem', height: '3rem', color: 'var(--primary)' }} role="status"></div>
                <h5 style={{ fontWeight: 700, color: 'var(--text)', marginTop: '16px' }}>IA analisando dados...</h5>
-               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Gerando periodização baseada na modalidade e tempo disponível.</p>
+               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>Gerando periodização baseada na modalidade e tempo disponível</p>
             </div>
           )}
 
@@ -461,7 +461,7 @@ const Cronogramas = ({ modalidade, categoria, cronogramaId }) => {
                  <Pencil size={20} style={{ color: 'var(--accent)' }} />
                  <span>Revisão do Cronograma</span>
                </h5>
-               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>Você pode ajustar as semanas e a descrição de cada fase gerada antes de salvar.</p>
+               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>Você pode ajustar as semanas e a descrição de cada fase gerada antes de salvar</p>
              </div>
              <button className="btn btn-secondary" onClick={() => setView('form')}><ArrowLeft size={16} className="me-2" />Voltar</button>
            </div>

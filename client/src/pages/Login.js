@@ -46,7 +46,7 @@ const Login = ({ onLogin }) => {
     if (name === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (value && !emailRegex.test(value)) {
-        setEmailError('E-mail inválido.');
+        setEmailError('E-mail inválido');
       } else {
         setEmailError('');
       }
@@ -90,10 +90,10 @@ const Login = ({ onLogin }) => {
         onLogin(data.token, data.tipo, data.email);
         navigate('/');
       } else {
-        setError(data.message || data.mensagem || 'Erro ao realizar login. Verifique suas credenciais.');
+        setError(data.message || data.mensagem || 'Erro ao realizar login. Verifique suas credenciais');
       }
     } catch (err) {
-      setError('Erro de conexão ao servidor.');
+      setError('Erro de conexão ao servidor');
     } finally {
       setLoading(false);
     }
@@ -122,10 +122,10 @@ const Login = ({ onLogin }) => {
             <Logo height="72px" circleColor="#fff" textColor="#fff" style={{ marginLeft: '29px' }} />
           </div>
           <h3 style={{ color: '#fff', fontWeight: 300, fontSize: '1.375rem', marginBottom: '20px', lineHeight: 1.5, textAlign: 'center' }}>
-            Tecnologia e esporte<br/>trabalhando juntos.
+            Tecnologia e esporte<br/>trabalhando juntos
           </h3>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9375rem', lineHeight: 1.7, textAlign: 'center' }}>
-            Gerencie atletas, modalidades, treinamentos, eventos e análises de desempenho em um único ambiente moderno, seguro e intuitivo.
+            Gerencie atletas, modalidades, treinamentos, eventos e análises de desempenho em um único ambiente moderno, seguro e intuitivo
           </p>
         </div>
       </div>
@@ -186,7 +186,7 @@ const Login = ({ onLogin }) => {
               Bem-vindo de volta
             </h2>
             <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: 0, textAlign: 'center' }}>
-              Faça login para continuar.
+              Faça login para continuar
             </p>
           </div>
 

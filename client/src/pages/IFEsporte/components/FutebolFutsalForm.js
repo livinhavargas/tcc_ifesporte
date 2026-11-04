@@ -897,7 +897,7 @@ const FutebolFutsalForm = ({
 
               {cartoes1T.length === 0 ? (
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '8px 0' }}>
-                  Nenhum cartão no 1º Tempo.
+                  Nenhum cartão no 1º Tempo
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -975,7 +975,7 @@ const FutebolFutsalForm = ({
 
               {cartoes2T.length === 0 ? (
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '8px 0' }}>
-                  Nenhum cartão no 2º Tempo.
+                  Nenhum cartão no 2º Tempo
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

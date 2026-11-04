@@ -42,7 +42,7 @@ const getAllAnalyses = async (req, res) => {
     res.json(analyses);
   } catch (error) {
     console.error('Erro ao buscar análises esportivas:', error);
-    res.status(500).json({ message: 'Erro ao buscar análises esportivas.' });
+    res.status(500).json({ message: 'Erro ao buscar análises esportivas' });
   }
 };
 
@@ -51,7 +51,7 @@ const validateAnalysisFields = (data) => {
   const { modalidade, categoria, equipeAdversaria, resultado, placar, subtipoProva, aluno, dadosEspecificos = {} } = data;
   
   if (!modalidade || typeof modalidade !== 'string' || !modalidade.trim()) {
-    return 'A modalidade esportiva é obrigatória.';
+    return 'A modalidade esportiva é obrigatória';
   }
 
   const modLower = modalidade.toLowerCase().trim();
@@ -59,7 +59,7 @@ const validateAnalysisFields = (data) => {
   // ATLETISMO
   if (modLower.includes('atletismo')) {
     if (!subtipoProva) {
-      return 'A prova de atletismo é obrigatória.';
+      return 'A prova de atletismo é obrigatória';
     }
 
     const provaLower = subtipoProva.toLowerCase();
@@ -68,13 +68,13 @@ const validateAnalysisFields = (data) => {
     if (provaLower.includes('100m') && provaLower.includes('barreiras') && !provaLower.includes('400m')) {
       const catNorm = (categoria || '').toLowerCase().trim();
       if (!catNorm.startsWith('fem')) {
-        return 'A prova 100m com Barreiras é exclusiva da categoria Feminino.';
+        return 'A prova 100m com Barreiras é exclusiva da categoria Feminino';
       }
     }
     if (provaLower.includes('110m') && provaLower.includes('barreiras')) {
       const catNorm = (categoria || '').toLowerCase().trim();
       if (!catNorm.startsWith('masc')) {
-        return 'A prova 110m com Barreiras é exclusiva da categoria Masculino.';
+        return 'A prova 110m com Barreiras é exclusiva da categoria Masculino';
       }
     }
 
@@ -82,26 +82,26 @@ const validateAnalysisFields = (data) => {
     if (provaLower.includes('revezamento') || provaLower.includes('4x')) {
       const { atletasRevezamento, quantidadeEquipes, colocacao } = dadosEspecificos;
       if (!Array.isArray(atletasRevezamento) || atletasRevezamento.filter(Boolean).length < 4) {
-        return 'É obrigatório selecionar os quatro atletas do revezamento.';
+        return 'É obrigatório selecionar os quatro atletas do revezamento';
       }
       if (quantidadeEquipes === undefined || quantidadeEquipes === null || quantidadeEquipes === '') {
-        return 'A quantidade de equipes é obrigatória.';
+        return 'A quantidade de equipes é obrigatória';
       }
       if (!colocacao) {
-        return 'A colocação é obrigatória.';
+        return 'A colocação é obrigatória';
       }
       return null;
     }
 
     // Provas individuais de Atletismo (Corridas, Barreiras, Saltos, Lançamentos, Pentatlo)
     if (!aluno) {
-      return 'É obrigatório selecionar o atleta.';
+      return 'É obrigatório selecionar o atleta';
     }
     if (dadosEspecificos.quantidadeAdversarios === undefined || dadosEspecificos.quantidadeAdversarios === null || dadosEspecificos.quantidadeAdversarios === '') {
-      return 'A quantidade de adversários é obrigatória.';
+      return 'A quantidade de adversários é obrigatória';
     }
     if (!dadosEspecificos.colocacao && !dadosEspecificos.classificacaoFinalPontos) {
-      return 'A colocação é obrigatória.';
+      return 'A colocação é obrigatória';
     }
 
     return null;
@@ -110,10 +110,10 @@ const validateAnalysisFields = (data) => {
   // TÊNIS DE MESA
   if (modLower.includes('tenis de mesa') || modLower.includes('tênis de mesa')) {
     if (!equipeAdversaria || !equipeAdversaria.trim()) {
-      return 'O nome do atleta adversário ou dupla adversária é obrigatório.';
+      return 'O nome do atleta adversário ou dupla adversária é obrigatório';
     }
     if (!resultado || !['Vitória', 'Derrota'].includes(resultado)) {
-      return 'O resultado da partida de tênis de mesa deve ser Vitória ou Derrota.';
+      return 'O resultado da partida de tênis de mesa deve ser Vitória ou Derrota';
     }
     return null;
   }
@@ -121,21 +121,21 @@ const validateAnalysisFields = (data) => {
   // BADMINTON
   if (modLower.includes('badminton')) {
     if (!equipeAdversaria || !equipeAdversaria.trim()) {
-      return 'O nome do atleta adversário ou dupla adversária é obrigatório.';
+      return 'O nome do atleta adversário ou dupla adversária é obrigatório';
     }
     if (!resultado || !['Vitória', 'Derrota'].includes(resultado)) {
-      return 'O resultado da partida de badminton deve ser Vitória ou Derrota.';
+      return 'O resultado da partida de badminton deve ser Vitória ou Derrota';
     }
     return null;
   }
 
   // DEMAIS MODALIDADES (Confronto)
   if (!equipeAdversaria || !equipeAdversaria.trim()) {
-    return 'O nome da equipe adversária é obrigatório.';
+    return 'O nome da equipe adversária é obrigatório';
   }
 
   if (!resultado || !['Vitória', 'Derrota', 'Empate'].includes(resultado)) {
-    return 'O resultado da partida é obrigatório (Vitória, Derrota ou Empate).';
+    return 'O resultado da partida é obrigatório (Vitória, Derrota ou Empate)';
   }
 
   // XADREZ: Não requer placar de gols/sets
@@ -145,7 +145,7 @@ const validateAnalysisFields = (data) => {
 
   // HANDEBOL, BASQUETE, FUTSAL, FUTEBOL, VOLEIBOL, VÔLEI DE PRAIA
   if (placar === undefined || placar === null || placar === '') {
-    return 'O placar da partida é obrigatório.';
+    return 'O placar da partida é obrigatório';
   }
 
   return null;
@@ -252,7 +252,7 @@ const createAnalysis = async (req, res) => {
   try {
     const userTipo = (req.userTipo || '').toLowerCase();
     if (userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises.' });
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises' });
     }
 
     const {
@@ -320,7 +320,7 @@ const createAnalysis = async (req, res) => {
     res.status(201).json(populated);
   } catch (error) {
     console.error('Erro ao salvar análise esportiva:', error);
-    res.status(500).json({ message: error.message || 'Erro ao registrar análise esportiva.' });
+    res.status(500).json({ message: error.message || 'Erro ao registrar análise esportiva' });
   }
 };
 
@@ -329,7 +329,7 @@ const updateAnalysis = async (req, res) => {
   try {
     const userTipo = (req.userTipo || '').toLowerCase();
     if (userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises.' });
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises' });
     }
 
     const { id } = req.params;
@@ -394,13 +394,13 @@ const updateAnalysis = async (req, res) => {
       .populate('avaliador', 'nome email');
 
     if (!updated) {
-      return res.status(404).json({ message: 'Análise esportiva não encontrada.' });
+      return res.status(404).json({ message: 'Análise esportiva não encontrada' });
     }
 
     res.json(updated);
   } catch (error) {
     console.error('Erro ao atualizar análise esportiva:', error);
-    res.status(500).json({ message: error.message || 'Erro ao atualizar análise esportiva.' });
+    res.status(500).json({ message: error.message || 'Erro ao atualizar análise esportiva' });
   }
 };
 
@@ -429,7 +429,7 @@ const getAnalysisByStudent = async (req, res) => {
     res.json(analyses);
   } catch (error) {
     console.error('Erro ao buscar análises do aluno:', error);
-    res.status(500).json({ message: 'Erro ao buscar análises do aluno.' });
+    res.status(500).json({ message: 'Erro ao buscar análises do aluno' });
   }
 };
 
@@ -443,12 +443,12 @@ const getAnalysisById = async (req, res) => {
       .populate('avaliador', 'nome email');
 
     if (!analysis) {
-      return res.status(404).json({ message: 'Análise esportiva não encontrada.' });
+      return res.status(404).json({ message: 'Análise esportiva não encontrada' });
     }
     res.json(analysis);
   } catch (error) {
     console.error('Erro ao buscar análise esportiva:', error);
-    res.status(500).json({ message: 'Erro ao buscar análise esportiva.' });
+    res.status(500).json({ message: 'Erro ao buscar análise esportiva' });
   }
 };
 
@@ -457,18 +457,18 @@ const deleteAnalysis = async (req, res) => {
   try {
     const userTipo = (req.userTipo || '').toLowerCase();
     if (userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises.' });
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização de análises' });
     }
 
     const { id } = req.params;
     const analysis = await Analysis.findByIdAndDelete(id);
     if (!analysis) {
-      return res.status(404).json({ message: 'Análise esportiva não encontrada.' });
+      return res.status(404).json({ message: 'Análise esportiva não encontrada' });
     }
-    res.json({ message: 'Análise esportiva removida com sucesso.' });
+    res.json({ message: 'Análise esportiva removida com sucesso' });
   } catch (error) {
     console.error('Erro ao excluir análise esportiva:', error);
-    res.status(500).json({ message: 'Erro ao excluir análise esportiva.' });
+    res.status(500).json({ message: 'Erro ao excluir análise esportiva' });
   }
 };
 

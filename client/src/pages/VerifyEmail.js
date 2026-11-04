@@ -18,7 +18,7 @@ const VerifyEmail = () => {
     const verify = async () => {
       if (!token) {
         setStatus('error');
-        setMessage('Token de verificação ausente na URL. Verifique o link enviado para o seu e-mail.');
+        setMessage('Token de verificação ausente na URL. Verifique o link enviado para o seu e-mail');
         return;
       }
 
@@ -32,11 +32,11 @@ const VerifyEmail = () => {
           if (data.email) setUserEmail(data.email);
         } else {
           setStatus('error');
-          setMessage(data.mensagem || 'Não foi possível verificar o e-mail. O link pode ter expirado ou já ter sido utilizado.');
+          setMessage(data.mensagem || 'Não foi possível verificar o e-mail. O link pode ter expirado ou já ter sido utilizado');
         }
       } catch (err) {
         setStatus('error');
-        setMessage('Erro de conexão com o servidor ao tentar verificar seu e-mail.');
+        setMessage('Erro de conexão com o servidor ao tentar verificar seu e-mail');
       }
     };
 

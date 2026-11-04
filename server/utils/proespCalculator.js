@@ -103,7 +103,7 @@ function validateStudentForPROESP(student, dataAvaliacao = new Date()) {
     return {
       isValid: false,
       reason: 'sem_aluno',
-      message: 'Nenhum aluno foi selecionado para a avaliação física.'
+      message: 'Nenhum aluno foi selecionado para a avaliação física'
     };
   }
 
@@ -112,7 +112,7 @@ function validateStudentForPROESP(student, dataAvaliacao = new Date()) {
     return {
       isValid: false,
       reason: 'sexo_invalido',
-      message: 'O sexo/gênero do aluno está ausente ou inválido no cadastro. Para avaliar a aptidão física segundo as tabelas oficiais do PROESP-Br 2021, é obrigatório preencher o sexo (Masculino ou Feminino) no cadastro do aluno.'
+      message: 'O sexo/gênero do aluno está ausente ou inválido no cadastro. Para avaliar a aptidão física segundo as tabelas oficiais do PROESP-Br 2021, é obrigatório preencher o sexo (Masculino ou Feminino) no cadastro do aluno'
     };
   }
 
@@ -120,7 +120,7 @@ function validateStudentForPROESP(student, dataAvaliacao = new Date()) {
     return {
       isValid: false,
       reason: 'data_nascimento_ausente',
-      message: 'A data de nascimento do aluno não está cadastrada. O protocolo oficial do PROESP-Br exige o cálculo exato da idade na data da avaliação. Por favor, preencha a data de nascimento no cadastro do aluno antes de iniciar a avaliação.'
+      message: 'A data de nascimento do aluno não está cadastrada. O protocolo oficial do PROESP-Br exige o cálculo exato da idade na data da avaliação. Por favor, preencha a data de nascimento no cadastro do aluno antes de iniciar a avaliação'
     };
   }
 
@@ -129,7 +129,7 @@ function validateStudentForPROESP(student, dataAvaliacao = new Date()) {
     return {
       isValid: false,
       reason: 'idade_invalida',
-      message: 'Não foi possível determinar a idade do aluno a partir da data de nascimento informada. Por favor, verifique e corrija a data de nascimento no cadastro do aluno.'
+      message: 'Não foi possível determinar a idade do aluno a partir da data de nascimento informada. Por favor, verifique e corrija a data de nascimento no cadastro do aluno'
     };
   }
 
@@ -137,7 +137,7 @@ function validateStudentForPROESP(student, dataAvaliacao = new Date()) {
     return {
       isValid: false,
       reason: 'idade_fora_da_faixa',
-      message: `A idade calculada do aluno (${age} anos na data da avaliação) está fora da faixa etária atendida pelas tabelas oficiais do PROESP-Br (6 a 17 anos). O protocolo é validado cientificamente exclusivamente para crianças e adolescentes nessa faixa etária.`
+      message: `A idade calculada do aluno (${age} anos na data da avaliação) está fora da faixa etária atendida pelas tabelas oficiais do PROESP-Br (6 a 17 anos). O protocolo é validado cientificamente exclusivamente para crianças e adolescentes nessa faixa etária`
     };
   }
 

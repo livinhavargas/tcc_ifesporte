@@ -78,10 +78,10 @@ const Profile = () => {
         if (profileData.foto) localStorage.setItem('foto', profileData.foto);
         setTimeout(() => setMensagem(''), 3000);
       } else {
-        setMensagem('Erro ao atualizar perfil.');
+        setMensagem('Erro ao atualizar perfil');
       }
     } catch (error) {
-      setMensagem('Erro de conexão ao servidor.');
+      setMensagem('Erro de conexão ao servidor');
     }
   };
 
@@ -104,7 +104,7 @@ const Profile = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h2 style={{ fontWeight: 700, color: 'var(--text)', margin: 0, fontSize: '1.375rem' }}>Meu Perfil</h2>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Gerencie suas informações pessoais e credenciais.</p>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>Gerencie suas informações pessoais e credenciais</p>
           </div>
           <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.8125rem', padding: '6px 16px' }}>
             {userType && userType.toLowerCase() === 'estudante' ? 'ESTUDANTE' : 'TREINADOR(A)'}
@@ -181,7 +181,7 @@ const Profile = () => {
                       background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '16px',
                       color: 'var(--text-tertiary)', fontSize: '0.75rem', textAlign: 'center', fontStyle: 'italic'
                     }}>
-                      Módulo de estatísticas em desenvolvimento.
+                      Módulo de estatísticas em desenvolvimento
                     </div>
                   </div>
                 </div>
@@ -295,7 +295,7 @@ const Profile = () => {
                   }}>
                     <div>
                       <h6 style={{ fontWeight: 700, color: 'var(--text)', margin: '0 0 2px', fontSize: '0.8125rem' }}>Senha de Acesso</h6>
-                      <small style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>A última alteração foi há muito tempo.</small>
+                      <small style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>A última alteração foi há muito tempo</small>
                     </div>
                     <button type="button" className="btn btn-outline-primary" style={{ padding: '8px 16px', fontSize: '0.8125rem' }}>Alterar Senha</button>
                   </div>

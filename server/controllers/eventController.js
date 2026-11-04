@@ -87,7 +87,7 @@ const getAllEvents = async (req, res) => {
 const createEvent = async (req, res) => {
   const userTipo = (req.userTipo || '').toLowerCase();
   if (userTipo === 'estudante') {
-    return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda.' });
+    return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda' });
   }
 
   const event = new Event(req.body);
@@ -124,13 +124,13 @@ const updateEvent = async (req, res) => {
   try {
     const userTipo = (req.userTipo || '').toLowerCase();
     if (userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda.' });
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda' });
     }
 
     const { id } = req.params;
     if (id && id.startsWith('pe_')) {
       return res.status(400).json({ 
-        message: 'Os horários de Educação Física são recorrentes e devem ser configurados na aba Educação Física da turma correspondente.' 
+        message: 'Os horários de Educação Física são recorrentes e devem ser configurados na aba Educação Física da turma correspondente' 
       });
     }
 
@@ -146,13 +146,13 @@ const deleteEvent = async (req, res) => {
   try {
     const userTipo = (req.userTipo || '').toLowerCase();
     if (userTipo === 'estudante') {
-      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda.' });
+      return res.status(403).json({ message: 'Acesso negado. Estudantes possuem permissão apenas para visualização da agenda' });
     }
 
     const { id } = req.params;
     if (id && id.startsWith('pe_')) {
       return res.status(400).json({ 
-        message: 'Os horários de Educação Física são gerenciados no módulo de Educação Física.' 
+        message: 'Os horários de Educação Física são gerenciados no módulo de Educação Física' 
       });
     }
 

@@ -236,7 +236,7 @@ const Home = () => {
               </span> 👋
             </h2>
             <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0' }}>
-              Acompanhe os próximos eventos e cronogramas esportivos das suas equipes.
+              Acompanhe os próximos eventos e cronogramas esportivos das suas equipes
             </p>
           </div>
 
@@ -355,7 +355,7 @@ const Home = () => {
               <div style={{ padding: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <CalendarX size={36} style={{ color: 'var(--text-tertiary)', opacity: 0.5, marginBottom: '12px' }} />
                 <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Sem próximos eventos</h6>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '0 0 16px' }}>Não há eventos programados no momento.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '0 0 16px' }}>Não há eventos programados no momento</p>
                 <button
                   onClick={() => {
                     setSelectedEvent(null);
@@ -550,7 +550,7 @@ const Home = () => {
             }}>
               <CalendarX size={36} style={{ color: 'var(--text-tertiary)', opacity: 0.5, marginBottom: '12px' }} />
               <h6 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Nenhum cronograma</h6>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '16px' }}>Nenhum cronograma foi criado até o momento.</p>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: '16px' }}>Nenhum cronograma foi criado até o momento</p>
               <Link to="/esportes" className="btn btn-primary btn-sm rounded-pill px-4">Criar Cronograma</Link>
             </div>
           )}

@@ -106,7 +106,7 @@ const MainCalendar = ({
           date: 'Data',
           time: 'Hora',
           event: 'Evento',
-          noEventsInRange: 'Não há eventos neste período.',
+          noEventsInRange: 'Não há eventos neste período',
           showMore: total => `+ ${total} eventos`
         }}
         style={{ height: '100%', flex: 1, minHeight: 0 }}

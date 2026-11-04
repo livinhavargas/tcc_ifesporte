@@ -107,7 +107,7 @@ const LgpdTermsModal = ({ isOpen, onClose, onAccept }) => {
           }}
         >
           <p style={{ margin: 0 }}>
-            O sistema <strong>IFesporte</strong> compromete-se com a privacidade, a transparência e a proteção dos dados pessoais de estudantes, atletas, professores e treinadores, em estrita observância à <strong>Lei Geral de Proteção de Dados Pessoais (LGPD – Lei nº 13.709/2018)</strong>.
+            O sistema <strong>IFesporte</strong> compromete-se com a privacidade, a transparência e a proteção dos dados pessoais de estudantes, atletas, professores e treinadores, em estrita observância à <strong>Lei Geral de Proteção de Dados Pessoais (LGPD – Lei nº 13.709/2018)</strong>
           </p>
 
           <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
@@ -116,7 +116,7 @@ const LgpdTermsModal = ({ isOpen, onClose, onAccept }) => {
               1. Finalidade e Necessidade do Tratamento (Art. 6º, I e III)
             </h6>
             <p style={{ margin: 0, fontSize: '0.825rem' }}>
-              Os dados pessoais coletados no cadastro são utilizados exclusivamente para finalidades institucionais, acadêmicas e esportivas: identificação do estudante/atleta ou treinador, formação de equipes e turmas, gestão de cronogramas e eventos esportivos, análises técnicas de desempenho e acompanhamento de aptidão física.
+              Os dados pessoais coletados no cadastro são utilizados exclusivamente para finalidades institucionais, acadêmicas e esportivas: identificação do estudante/atleta ou treinador, formação de equipes e turmas, gestão de cronogramas e eventos esportivos, análises técnicas de desempenho e acompanhamento de aptidão física
             </p>
           </div>
 
@@ -126,7 +126,7 @@ const LgpdTermsModal = ({ isOpen, onClose, onAccept }) => {
               2. Dados Físicos, Médicos e de Saúde (Art. 11 da LGPD)
             </h6>
             <p style={{ margin: 0, fontSize: '0.825rem' }}>
-              Informações antropométricas (peso, altura, IMC) e de saúde (alergias, lesões anteriores e restrições médicas) são tratadas com proteção reforçada. Sua coleta visa resguardar a integridade física do estudante/atleta durante treinos, aulas de Educação Física e competições, bem como subsidiar avaliações físicas pedagógicas (protocolo PROESP-Br).
+              Informações antropométricas (peso, altura, IMC) e de saúde (alergias, lesões anteriores e restrições médicas) são tratadas com proteção reforçada. Sua coleta visa resguardar a integridade física do estudante/atleta durante treinos, aulas de Educação Física e competições, bem como subsidiar avaliações físicas pedagógicas (protocolo PROESP-Br)
             </p>
           </div>
 
@@ -136,7 +136,7 @@ const LgpdTermsModal = ({ isOpen, onClose, onAccept }) => {
               3. Dados de Estudantes e Responsáveis Legais (Art. 14 da LGPD)
             </h6>
             <p style={{ margin: 0, fontSize: '0.825rem' }}>
-              O tratamento de dados de estudantes adolescentes é realizado sempre em seu melhor interesse pedagógico e desportivo, mantendo-se o registro do nome e telefone do responsável legal para comunicações institucionais e situações de emergência.
+              O tratamento de dados de estudantes adolescentes é realizado sempre em seu melhor interesse pedagógico e desportivo, mantendo-se o registro do nome e telefone do responsável legal para comunicações institucionais e situações de emergência
             </p>
           </div>
 
@@ -146,7 +146,7 @@ const LgpdTermsModal = ({ isOpen, onClose, onAccept }) => {
               4. Segurança, Acesso Restrito e Não Comercialização (Art. 46 da LGPD)
             </h6>
             <p style={{ margin: 0, fontSize: '0.825rem' }}>
-              As senhas são armazenadas de forma criptografada (hash unidirecional) e o acesso às fichas técnicas e médicas é restrito à equipe de professores, treinadores e coordenadores autenticados no sistema. O IFesporte não comercializa nem compartilha dados pessoais com terceiros para fins publicitários.
+              As senhas são armazenadas de forma criptografada (hash unidirecional) e o acesso às fichas técnicas e médicas é restrito à equipe de professores, treinadores e coordenadores autenticados no sistema. O IFesporte não comercializa nem compartilha dados pessoais com terceiros para fins publicitários
             </p>
           </div>
 
@@ -156,7 +156,7 @@ const LgpdTermsModal = ({ isOpen, onClose, onAccept }) => {
               5. Verificação de E-mail e Direitos do Titular (Art. 18 da LGPD)
             </h6>
             <p style={{ margin: 0, fontSize: '0.825rem' }}>
-              Ao concluir o cadastro, você receberá um e-mail de confirmação contendo um link para validar seu endereço eletrônico e o comprovante do seu consentimento. A qualquer momento, você tem direito ao acesso, à visualização e à correção de seus dados diretamente na página <strong>Meu Perfil</strong>, bem como a solicitar esclarecimentos ou a exclusão de sua conta junto à coordenação esportiva.
+              Ao concluir o cadastro, você receberá um e-mail de confirmação contendo um link para validar seu endereço eletrônico e o comprovante do seu consentimento. A qualquer momento, você tem direito ao acesso, à visualização e à correção de seus dados diretamente na página <strong>Meu Perfil</strong>, bem como a solicitar esclarecimentos ou a exclusão de sua conta junto à coordenação esportiva
             </p>
           </div>
         </div>

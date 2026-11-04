@@ -127,17 +127,17 @@ const Alunos = () => {
     setMensagem('');
 
     if (!formData.nome || !formData.sexo || !formData.matricula || !formData.telefone || !formData.cpf || !formData.dataNascimento || !formData.cidade || !formData.estado) {
-      setMensagem('Preencha os campos obrigatórios (*): Nome, Gênero, Data Nasc., Matrícula, CPF, Telefone, Cidade e Estado.');
+      setMensagem('Preencha os campos obrigatórios (*): Nome, Gênero, Data Nasc., Matrícula, CPF, Telefone, Cidade e Estado');
       return;
     }
     if (formData.cpf.length < 14) {
-      setMensagem('CPF inválido ou incompleto.');
+      setMensagem('CPF inválido ou incompleto');
       return;
     }
     if (formData.rg) {
       const cleanRG = formData.rg.replace(/[^a-zA-Z0-9]/g, '');
       if (cleanRG.length < 7) {
-        setMensagem('RG inválido ou incompleto.');
+        setMensagem('RG inválido ou incompleto');
         return;
       }
     }
@@ -162,7 +162,7 @@ const Alunos = () => {
 
       if (response.ok) {
         setMensagem('✅ Aluno cadastrado com sucesso!');
-        addNotification('Novo Aluno Cadastrado', `O atleta ${formData.nome} foi cadastrado no sistema com sucesso.`);
+        addNotification('Novo Aluno Cadastrado', `O atleta ${formData.nome} foi cadastrado no sistema com sucesso`);
         setFormData({
           nome: '', sexo: 'Feminino', dataNascimento: '', cpf: '', rg: '', endereco: '',
           cidade: '', estado: '',
@@ -174,10 +174,10 @@ const Alunos = () => {
         fetchStudents();
         setTimeout(() => { setShowForm(false); setMensagem(''); }, 1500);
       } else {
-        setMensagem(data.message || data.mensagem || 'Erro ao cadastrar aluno.');
+        setMensagem(data.message || data.mensagem || 'Erro ao cadastrar aluno');
       }
     } catch (error) {
-      setMensagem('Erro de conexão ao salvar aluno.');
+      setMensagem('Erro de conexão ao salvar aluno');
     }
   };
 
@@ -273,7 +273,7 @@ const Alunos = () => {
             </div>
             <div>
               <h2 style={{ fontWeight: 800, color: 'var(--text)', margin: 0, fontSize: '1.375rem', lineHeight: 1.2 }}>Meus Atletas</h2>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Gerencie todos os alunos inscritos nos seus esportes.</p>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.3 }}>Gerencie todos os alunos inscritos nos seus esportes</p>
             </div>
           </div>
           {userType !== 'estudante' && (
@@ -538,7 +538,7 @@ const Alunos = () => {
                     posicoesPorModalidade={formData.posicoesPorModalidade}
                     onChange={(novasPos) => setFormData(prev => ({ ...prev, posicoesPorModalidade: novasPos }))}
                   />
-                  <small style={{ color: 'var(--text-tertiary)', display: 'block', marginTop: '8px', fontSize: '0.75rem' }}>Isso adicionará o aluno imediatamente aos elencos selecionados.</small>
+                  <small style={{ color: 'var(--text-tertiary)', display: 'block', marginTop: '8px', fontSize: '0.75rem' }}>Isso adicionará o aluno imediatamente aos elencos selecionados</small>
                 </div>
               </div>
 
@@ -650,7 +650,7 @@ const Alunos = () => {
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '64px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Users size={42} style={{ color: 'var(--text-tertiary)', opacity: 0.4, marginBottom: '12px' }} />
                 <h5 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>Nenhum aluno encontrado</h5>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>Ajuste os filtros ou cadastre um novo aluno.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>Ajuste os filtros ou cadastre um novo aluno</p>
               </div>
             )}
           </div>

@@ -101,7 +101,7 @@ const DisputaDesempateCobrancas = ({
           margin: '10px 0',
           textAlign: 'center'
         }}>
-          Nenhum cobrador adicionado para a disputa de desempate.
+          Nenhum cobrador adicionado para a disputa de desempate
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>

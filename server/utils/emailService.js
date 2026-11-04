@@ -12,7 +12,7 @@ let nodemailer = null;
 try {
   nodemailer = require('nodemailer');
 } catch (err) {
-  console.warn('[EmailService] Pacote nodemailer não encontrado. Usando modo de simulação.');
+  console.warn('[EmailService] Pacote nodemailer não encontrado. Usando modo de simulação');
 }
 
 const getBaseClientUrl = () => {
@@ -66,17 +66,17 @@ const sendWelcomeAndVerificationEmail = async ({
   const textContent = [
     `Olá, ${nome}!`,
     '',
-    `Seu cadastro no sistema IFesporte como ${papelLabel} foi realizado com sucesso.`,
+    `Seu cadastro no sistema IFesporte como ${papelLabel} foi realizado com sucesso`,
     '',
     'Para confirmar e verificar seu endereço de e-mail, acesse o link abaixo:',
     verificationUrl,
     '',
     '--- TRANSPARÊNCIA E PRIVACIDADE (LGPD - Lei nº 13.709/2018) ---',
     `• Termos de Uso e Política de Privacidade aceitos em: ${dataFormatada} (Versão ${versaoTermos})`,
-    '• Finalidade do tratamento: Gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica.',
-    '• Direitos do Titular (Art. 18 da LGPD): Você pode consultar, corrigir ou atualizar seus dados a qualquer momento acessando a área "Meu Perfil" no sistema.',
+    '• Finalidade do tratamento: Gestão esportiva institucional, acompanhamento físico/técnico e comunicação acadêmica',
+    '• Direitos do Titular (Art. 18 da LGPD): Você pode consultar, corrigir ou atualizar seus dados a qualquer momento acessando a área "Meu Perfil" no sistema',
     '',
-    'Se você não realizou este cadastro, ignore esta mensagem ou entre em contato com a coordenação esportiva.',
+    'Se você não realizou este cadastro, ignore esta mensagem ou entre em contato com a coordenação esportiva',
     '',
     'Atenciosamente,',
     'Equipe IFesporte'
@@ -188,7 +188,7 @@ const sendWelcomeAndVerificationEmail = async ({
       sent: false,
       simulated: true,
       error: isGmailAuthError
-        ? 'O Google não permite usar a senha normal do Gmail para envio de sistemas. Entre na conta ifesportee@gmail.com em myaccount.google.com/apppasswords, gere uma "Senha de App" de 16 letras e substitua no SMTP_PASS do arquivo server/.env.'
+        ? 'O Google não permite usar a senha normal do Gmail para envio de sistemas. Entre na conta ifesportee@gmail.com em myaccount.google.com/apppasswords, gere uma "Senha de App" de 16 letras e substitua no SMTP_PASS do arquivo server/.env'
         : error.message,
       verificationUrl
     };

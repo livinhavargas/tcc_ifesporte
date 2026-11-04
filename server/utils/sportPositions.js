@@ -103,12 +103,12 @@ const getPositionsForSport = (sportName) => {
  */
 const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade = []) => {
   if (!Array.isArray(posicoesPorModalidade)) {
-    return { isValid: false, error: 'posicoesPorModalidade deve ser um array.' };
+    return { isValid: false, error: 'posicoesPorModalidade deve ser um array' };
   }
 
   for (const item of posicoesPorModalidade) {
     if (!item || !item.modalidade) {
-      return { isValid: false, error: 'Cada item de posição deve conter a propriedade "modalidade".' };
+      return { isValid: false, error: 'Cada item de posição deve conter a propriedade "modalidade"' };
     }
 
     const sportKey = normalizeSportKey(item.modalidade);
@@ -117,7 +117,7 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
     if (!sportKey) {
       return { 
         isValid: false, 
-        error: `A modalidade "${item.modalidade}" não aceita definição de posições.` 
+        error: `A modalidade "${item.modalidade}" não aceita definição de posições` 
       };
     }
 
@@ -137,7 +137,7 @@ const validatePosicoesPorModalidade = (modalidades = [], posicoesPorModalidade =
       if (pos && !validPositions.includes(pos)) {
         return {
           isValid: false,
-          error: `A posição "${pos}" não é válida para a modalidade "${item.modalidade}". Posições permitidas: ${validPositions.join(', ')}.`
+          error: `A posição "${pos}" não é válida para a modalidade "${item.modalidade}". Posições permitidas: ${validPositions.join(', ')}`
         };
       }
     }

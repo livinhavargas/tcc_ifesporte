@@ -249,11 +249,11 @@ const TenisMesaForm = ({
   // Alteração do Resultado Final por Sets com validação anti-contradição
   const handleResultadoChange = (novoResultado) => {
     if (setsNos > setsAdv && novoResultado === 'Derrota') {
-      alert('Não é possível definir como Derrota, pois o placar dos sets indica vitória.');
+      alert('Não é possível definir como Derrota, pois o placar dos sets indica vitória');
       return;
     }
     if (setsAdv > setsNos && novoResultado === 'Vitória') {
-      alert('Não é possível definir como Vitória, pois o placar dos sets indica derrota.');
+      alert('Não é possível definir como Vitória, pois o placar dos sets indica derrota');
       return;
     }
     setFormData(prev => ({

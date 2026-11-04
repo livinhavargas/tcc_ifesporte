@@ -542,7 +542,7 @@ export const exportAssessmentToPDF = (assessment, student) => {
       <div class="section">
         <div class="section-title">Observações</div>
         <div class="obs-container">
-          ${assessmentData.observacoes || 'Nenhuma observação registrada.'}
+          ${assessmentData.observacoes || 'Nenhuma observação registrada'}
         </div>
       </div>
 
@@ -812,7 +812,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
   };
 
   const handleTestChange = (testName, field, value) => {
-    const sanitized = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+    const sanitized = value.replace(/[^0-9.,]/g, '').replace(',', '');
     setFormData(prev => ({
       ...prev,
       testes: {
@@ -826,7 +826,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
   };
 
   const handleMedidaChange = (field, value) => {
-    const sanitized = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+    const sanitized = value.replace(/[^0-9.,]/g, '').replace(',', '');
     setFormData(prev => ({ ...prev, [field]: sanitized }));
   };
 
@@ -850,22 +850,22 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
       const u = formData.testes.corrida6Min.metrosUltimaVolta !== '' ? Number(formData.testes.corrida6Min.metrosUltimaVolta) : null;
 
       if (v !== null && v < 0) {
-        alert('O número de voltas na Corrida de 6 min não pode ser negativo.');
+        alert('O número de voltas na Corrida de 6 min não pode ser negativo');
         setSubmitting(false);
         return;
       }
       if (p <= 0) {
-        alert('O perímetro da pista deve ser maior que zero metros.');
+        alert('O perímetro da pista deve ser maior que zero metros');
         setSubmitting(false);
         return;
       }
       if (u !== null && u < 0) {
-        alert('A distância da última volta não pode ser negativa.');
+        alert('A distância da última volta não pode ser negativa');
         setSubmitting(false);
         return;
       }
       if (u !== null && p > 0 && u >= p) {
-        alert(`A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m).`);
+        alert(`A distância da última volta (${u} m) deve ser menor que o perímetro da pista (${p} m)`);
         setSubmitting(false);
         return;
       }
@@ -929,11 +929,11 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
         setTimeout(() => setMessage(''), 4000);
       } else {
         const errData = await response.json();
-        setMessage(`❌ ${errData.message || 'Erro ao salvar avaliação física.'}`);
+        setMessage(`❌ ${errData.message || 'Erro ao salvar avaliação física'}`);
       }
     } catch (err) {
       console.error(err);
-      setMessage('❌ Erro de conexão com o servidor.');
+      setMessage('❌ Erro de conexão com o servidor');
     } finally {
       setSubmitting(false);
     }
@@ -947,7 +947,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
-        setMessage('✅ Avaliação excluída com sucesso.');
+        setMessage('✅ Avaliação excluída com sucesso');
         setSelectedAssessment(null);
         setIsCreating(false);
         setIsEditing(false);
@@ -956,7 +956,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
       }
     } catch (err) {
       console.error(err);
-      setMessage('❌ Erro ao excluir avaliação.');
+      setMessage('❌ Erro ao excluir avaliação');
     }
   };
 
@@ -1132,7 +1132,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                             O aluno pratica alguma modalidade esportiva com frequência?
                           </label>
                           <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>
-                            Contextualiza a aptidão física e condicionamento habitual do atleta.
+                            Contextualiza a aptidão física e condicionamento habitual do atleta
                           </small>
                         </div>
                         <div className="btn-group" role="group">
@@ -1169,7 +1169,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
 
                       {!praticaAlgumaModalidade ? (
                         <div className="p-3 rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
-                          ✓ O registro será salvo como <strong>"Não pratica modalidade"</strong>.
+                          ✓ O registro será salvo como <strong>"Não pratica modalidade"</strong>
                         </div>
                       ) : studentModalidades.length > 0 ? (
                         <div>
@@ -1283,7 +1283,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           Apresenta alguma deficiência diagnosticada?
                         </label>
                         <span className="text-muted d-block small" style={{ fontSize: '0.75rem' }}>
-                          Permite adequar o acompanhamento físico às necessidades do atleta.
+                          Permite adequar o acompanhamento físico às necessidades do atleta
                         </span>
                       </div>
                       <div className="form-check form-switch">
@@ -1492,7 +1492,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                           if (formData.testes.corrida6Min.metrosUltimaVolta !== '' && !isNaN(u) && u >= p) {
                             return (
                               <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '-6px', marginBottom: '10px', fontWeight: 600 }}>
-                                ⚠️ A última volta ({u}m) deve ser menor que o perímetro da pista ({p}m).
+                                ⚠️ A última volta ({u}m) deve ser menor que o perímetro da pista ({p}m)
                               </div>
                             );
                           }
@@ -2325,7 +2325,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                 <span>Aptidão Física (PROESP-Br 2021)</span>
               </h5>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: '4px 0 0' }}>
-                Acompanhamento longitudinal de medidas antropométricas, saúde e testes motores.
+                Acompanhamento longitudinal de medidas antropométricas, saúde e testes motores
               </p>
             </div>
 
@@ -2464,7 +2464,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                 Nenhuma avaliação de aptidão física registrada
               </h6>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', maxWidth: '440px', margin: '0 auto' }}>
-                Utilize o botão <strong>+ Nova avaliação</strong> no topo para registrar a primeira avaliação motora e antropométrica com o protocolo PROESP-Br 2021.
+                Utilize o botão <strong>+ Nova avaliação</strong> no topo para registrar a primeira avaliação motora e antropométrica com o protocolo PROESP-Br 2021
               </p>
             </div>
           ) : viewMode === 'compare' ? (
@@ -2648,7 +2648,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                   </div>
                 </div>
               ) : (
-                <p className="text-muted text-center py-4">Selecione duas avaliações para comparar os resultados.</p>
+                <p className="text-muted text-center py-4">Selecione duas avaliações para comparar os resultados</p>
               )}
             </div>
           ) : viewMode === 'evolution' ? (
@@ -2673,7 +2673,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     Evolução Longitudinal de Desempenho
                   </strong>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Acompanhe o progresso temporal do atleta nos testes do PROESP-Br.
+                    Acompanhe o progresso temporal do atleta nos testes do PROESP-Br
                   </span>
                 </div>
 
@@ -2720,7 +2720,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                 if (points.length < 2) {
                   return (
                     <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-tertiary)' }}>
-                      Dados insuficientes para gerar a curva deste indicador.
+                      Dados insuficientes para gerar a curva deste indicador
                     </div>
                   );
                 }

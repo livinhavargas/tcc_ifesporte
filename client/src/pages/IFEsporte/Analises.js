@@ -155,7 +155,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
       });
       if (res.ok) {
         setAnalyses(prev => prev.filter(a => a._id !== id));
-        addNotification('Análise Excluída', 'A análise esportiva foi removida com sucesso.');
+        addNotification('Análise Excluída', 'A análise esportiva foi removida com sucesso');
       }
     } catch (err) {
       console.error('Erro ao excluir análise:', err);
@@ -255,8 +255,8 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
           </h4>
           <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', maxWidth: '420px', margin: '0 auto 24px' }}>
             {searchTerm 
-              ? `Nenhum registro encontrado para "${searchTerm}". Tente alterar o termo de busca.`
-              : `Ainda não existem registros técnicos para ${selectedModalidade}${selectedGenero && selectedGenero !== 'Geral' ? ` (${selectedGenero})` : ''}.`}
+              ? `Nenhum registro encontrado para "${searchTerm}". Tente alterar o termo de busca`
+              : `Ainda não existem registros técnicos para ${selectedModalidade}${selectedGenero && selectedGenero !== 'Geral' ? ` (${selectedGenero})` : ''}`}
           </p>
           <Link
             to={`/analises/nova?modalidade=${encodeURIComponent(selectedModalidade)}&genero=${encodeURIComponent(selectedGenero === 'Geral' ? 'Geral' : selectedGenero)}`}
@@ -488,7 +488,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
             </h1>
           </div>
           <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0 50px' }}>
-            Selecione uma modalidade para gerenciar relatórios, desempenhos técnicos e registros de jogos.
+            Selecione uma modalidade para gerenciar relatórios, desempenhos técnicos e registros de jogos
           </p>
         </div>
 
@@ -576,7 +576,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
                     {mod.nome}
                   </h5>
                   <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>
-                    Relatórios táticos, pontuação e escalação por categoria.
+                    Relatórios táticos, pontuação e escalação por categoria
                   </p>
                 </div>
 
@@ -661,7 +661,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
                     {mod.nome}
                   </h5>
                   <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>
-                    Provas, tempos, alturas e registros individuais dos atletas.
+                    Provas, tempos, alturas e registros individuais dos atletas
                   </p>
                 </div>
 
@@ -857,7 +857,7 @@ const Analises = ({ initialSport = null, defaultModalidade = null, defaultGenero
                 </span>
               </div>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', margin: '4px 0 0 0' }}>
-                Acompanhe os registros, resultados e análises técnicas exclusivas desta modalidade.
+                Acompanhe os registros, resultados e análises técnicas exclusivas desta modalidade
               </p>
             </div>
           </div>
