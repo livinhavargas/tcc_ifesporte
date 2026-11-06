@@ -1128,7 +1128,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
                         <div>
-                          <label className="form-label fw-bold text-dark mb-0" style={{ fontSize: '0.875rem' }}>
+                          <label className="form-label fw-bold mb-0" style={{ fontSize: '0.875rem' }}>
                             O aluno pratica alguma modalidade esportiva com frequência?
                           </label>
                           <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>
@@ -1279,7 +1279,7 @@ const PhysicalAssessmentTab = ({ student, userType = 'treinador' }) => {
                   <div className="col-12 mt-2 pt-2 border-top" style={{ borderColor: 'var(--border-light)' }}>
                     <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
                       <div>
-                        <label className="form-label text-dark fw-bold m-0" style={{ fontSize: '0.875rem' }}>
+                        <label className="form-label fw-bold m-0" style={{ fontSize: '0.875rem' }}>
                           Apresenta alguma deficiência diagnosticada?
                         </label>
                         <span className="text-muted d-block small" style={{ fontSize: '0.75rem' }}>

@@ -365,7 +365,7 @@ const Perfil = () => {
                             gap: '4px',
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            color: '#b45309',
+                            color: 'var(--warning-text, #b45309)',
                             background: 'rgba(245, 158, 11, 0.15)',
                             padding: '2px 8px',
                             borderRadius: 'var(--radius-full)'

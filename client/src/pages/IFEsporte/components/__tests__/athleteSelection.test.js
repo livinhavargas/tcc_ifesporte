@@ -139,8 +139,7 @@ describe('Correções na Seleção de Atletas — Testes Unitários', () => {
 
       // O select do 2º atleta não deve conter o atleta 1 (Carlos Silva) para evitar duplicatas
       const selects = Array.from(container.querySelectorAll('select.form-select'));
-      // select[0]=Gênero, select[1]=Formato, select[2]=1º Atleta, select[3]=2º Atleta
-      const atleta2Select = selects[3];
+      const atleta2Select = selects.find(s => s.closest('div')?.textContent?.includes('2º Atleta')) || selects[3];
       expect(atleta2Select).toBeDefined();
 
       const optionsInAtleta2 = Array.from(atleta2Select.querySelectorAll('option')).map(o => o.value);
@@ -229,8 +228,7 @@ describe('Correções na Seleção de Atletas — Testes Unitários', () => {
 
       // Confirma que Atleta é select com a lista de alunos
       const selects = Array.from(container.querySelectorAll('select.form-select'));
-      // select[0] é Formato, select[1] é Atleta
-      const atletaSelect = selects[1];
+      const atletaSelect = selects.find(s => s.closest('div')?.textContent?.includes('Atleta *')) || selects[1];
       expect(atletaSelect).toBeInTheDocument();
       expect(screen.getByText('Mariana Souza (3B) · 2023002')).toBeInTheDocument();
 

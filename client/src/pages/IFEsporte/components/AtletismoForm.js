@@ -273,6 +273,20 @@ const AtletismoForm = ({
             </div>
           </div>
 
+          {/* Campeonato */}
+          <div>
+            <label style={labelStyle}>
+              Campeonato
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Nome do campeonato"
+              value={formData.campeonato || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+            />
+          </div>
+
           <div className="row g-3">
             {/* Adversários */}
             <div className="col-12 col-md-6">
@@ -350,20 +364,6 @@ const AtletismoForm = ({
             </div>
           </div>
 
-          {/* Campeonato */}
-          <div>
-            <label style={labelStyle}>
-              Campeonato
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Nome do campeonato"
-              value={formData.campeonato || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
-            />
-          </div>
-
           {/* Observações do treinador */}
           <div>
             <label style={labelStyle}>
@@ -422,7 +422,7 @@ const AtletismoForm = ({
 
           <div className="row g-3">
             {/* Gênero */}
-            <div className="col-12 col-md-4">
+            <div className="col-12 col-md-6">
               <label style={labelStyle}>
                 Gênero <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
@@ -437,8 +437,24 @@ const AtletismoForm = ({
               </select>
             </div>
 
+            {/* Campeonato */}
+            <div className="col-12 col-md-6">
+              <label style={labelStyle}>
+                Campeonato
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Nome do campeonato"
+                value={formData.campeonato || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="row g-3">
             {/* Equipes */}
-            <div className="col-12 col-md-4">
+            <div className="col-12 col-md-6">
               <label style={labelStyle}>
                 Equipes <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
@@ -454,7 +470,7 @@ const AtletismoForm = ({
             </div>
 
             {/* Classificação */}
-            <div className="col-12 col-md-4">
+            <div className="col-12 col-md-6">
               <label style={labelStyle}>
                 Classificação <span style={{ color: 'var(--error, #ef4444)' }}>*</span>
               </label>
@@ -511,20 +527,6 @@ const AtletismoForm = ({
                 onChange={(e) => updateDados({ tempoVencedor: e.target.value })}
               />
             </div>
-          </div>
-
-          {/* Campeonato */}
-          <div>
-            <label style={labelStyle}>
-              Campeonato
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Nome do campeonato"
-              value={formData.campeonato || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
-            />
           </div>
 
           {/* Observações do treinador */}
@@ -593,6 +595,20 @@ const AtletismoForm = ({
                 <option value="Masculino">Masculino</option>
               </select>
             </div>
+          </div>
+
+          {/* Campeonato */}
+          <div>
+            <label style={labelStyle}>
+              Campeonato
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Nome do campeonato"
+              value={formData.campeonato || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+            />
           </div>
 
           <div className="row g-3">
@@ -756,20 +772,6 @@ const AtletismoForm = ({
             </div>
           </div>
 
-          {/* Campeonato */}
-          <div>
-            <label style={labelStyle}>
-              Campeonato
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Nome do campeonato"
-              value={formData.campeonato || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
-            />
-          </div>
-
           {/* Observações do treinador */}
           <div>
             <label style={labelStyle}>
@@ -835,6 +837,20 @@ const AtletismoForm = ({
                 <option value="Masculino">Masculino</option>
               </select>
             </div>
+          </div>
+
+          {/* Campeonato */}
+          <div>
+            <label style={labelStyle}>
+              Campeonato
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Nome do campeonato"
+              value={formData.campeonato || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+            />
           </div>
 
           <div className="row g-3">
@@ -921,20 +937,6 @@ const AtletismoForm = ({
             </div>
           </div>
 
-          {/* Campeonato */}
-          <div>
-            <label style={labelStyle}>
-              Campeonato
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Nome do campeonato"
-              value={formData.campeonato || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
-            />
-          </div>
-
           {/* Observações do treinador */}
           <div>
             <label style={labelStyle}>
@@ -1004,6 +1006,20 @@ const AtletismoForm = ({
                 <option value="Masculino">Masculino</option>
               </select>
             </div>
+          </div>
+
+          {/* Campeonato */}
+          <div>
+            <label style={labelStyle}>
+              Campeonato
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Nome do campeonato"
+              value={formData.campeonato || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+            />
           </div>
 
           <div className="row g-3">
@@ -1246,20 +1262,6 @@ const AtletismoForm = ({
                 />
               </div>
             </div>
-          </div>
-
-          {/* Campeonato */}
-          <div>
-            <label style={labelStyle}>
-              Campeonato
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Nome do campeonato"
-              value={formData.campeonato || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
-            />
           </div>
 
           {/* Observações do treinador */}

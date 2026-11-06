@@ -702,8 +702,23 @@ const NovaAnalise = () => {
     }
 
     return (
-      <div className="alert alert-info" style={{ borderRadius: 'var(--radius-md)' }}>
-        Formulário padrão carregado para {formData.modalidade}. Preencha as informações e observações abaixo
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="alert alert-info" style={{ borderRadius: 'var(--radius-md)' }}>
+          Formulário padrão carregado para {formData.modalidade}. Preencha as informações e observações abaixo
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
+            Campeonato
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Nome do campeonato"
+            value={formData.campeonato || ''}
+            onChange={(e) => handleInputChange('campeonato', e.target.value)}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+          />
+        </div>
       </div>
     );
   };
@@ -1016,51 +1031,6 @@ const NovaAnalise = () => {
                   onRemove={handleRemoveTempoExtra}
                 />
               )}
-
-              {/* Card: Campeonato e Fase */}
-              <div style={{
-                background: 'var(--bg-card)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '24px',
-                border: '1px solid var(--border-light)',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <div className="row g-3">
-                  <div className={isEquipe ? "col-12 col-md-6" : "col-12"}>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                      Campeonato
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Nome do campeonato"
-                      value={formData.campeonato || ''}
-                      onChange={(e) => handleInputChange('campeonato', e.target.value)}
-                      style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-                    />
-                  </div>
-                  {isEquipe && (
-                    <div className="col-12 col-md-6">
-                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                        Fase
-                      </label>
-                      <select
-                        className="form-select"
-                        value={formData.fase || ''}
-                        onChange={(e) => handleInputChange('fase', e.target.value)}
-                        style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-                      >
-                        <option value="">Selecione a fase</option>
-                        <option value="Fases de classificação">Fases de classificação</option>
-                        <option value="Oitavas de final">Oitavas de final</option>
-                        <option value="Quartas de final">Quartas de final</option>
-                        <option value="Semifinal">Semifinal</option>
-                        <option value="Final">Final</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {/* Card 3: Observações do Treinador */}
               <div style={{

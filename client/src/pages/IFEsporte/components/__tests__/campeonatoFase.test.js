@@ -78,8 +78,14 @@ describe('Campos Campeonato e Fase na Criação e Consulta de Análises', () => 
         'Final'
       ]);
 
-      // Ordem no DOM: Campeonato e Fase antes de Observações do treinador
+      // Ordem no DOM: 1. Campeonato, 2. Fase, 3. Equipe Adversária, 4. Resultado Final, e antes de Observações
+      const advInput = screen.getByPlaceholderText('Digite o nome da equipe adversária');
+      const resultadoSelect = screen.getByLabelText(/Resultado Final/i);
       const obsHeading = screen.getByText('Observações do treinador');
+
+      expect(campInput.compareDocumentPosition(faseSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(faseSelect.compareDocumentPosition(advInput) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(advInput.compareDocumentPosition(resultadoSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(campInput.compareDocumentPosition(obsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
@@ -160,24 +166,22 @@ describe('Campos Campeonato e Fase na Criação e Consulta de Análises', () => 
         />
       );
 
-      expect(screen.getByText('Campeonato')).toBeInTheDocument();
-      expect(screen.getByText('Fase')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Nome do campeonato')).toBeInTheDocument();
+      const campInput = screen.getByPlaceholderText('Nome do campeonato');
+      const faseSelect = screen.getByText('Fase').closest('div').querySelector('select');
+      const advInput = screen.getByPlaceholderText('Digite o nome do atleta adversário');
+      const resultadoSelect = screen.getByText(/Resultado Final por Sets/i).closest('div').querySelector('select');
+      const obsTextarea = screen.getByPlaceholderText('Digite aqui as observações...');
 
-      const options = Array.from(screen.getByText('Fase').closest('div').querySelectorAll('option')).map(o => o.textContent);
-      expect(options).toEqual([
-        'Selecione a fase',
-        'Fases de classificação',
-        'Oitavas de final',
-        'Quartas de final',
-        'Semifinal',
-        'Final'
-      ]);
+      // Ordem: 1. Campeonato, 2. Fase, 3. Equipe Adversária, 4. Resultado Final, e antes de Observações
+      expect(campInput.compareDocumentPosition(faseSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(faseSelect.compareDocumentPosition(advInput) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(advInput.compareDocumentPosition(resultadoSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(resultadoSelect.compareDocumentPosition(obsTextarea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
   });
 
   describe('3. Tênis de Mesa', () => {
-    test('Exibe opções exclusivas para Tênis de Mesa no campo Fase', () => {
+    test('Exibe opções exclusivas para Tênis de Mesa no campo Fase e na ordem correta', () => {
       let formData = {
         modalidade: 'Tênis de Mesa',
         categoria: 'Geral',
@@ -196,6 +200,18 @@ describe('Campos Campeonato e Fase na Criação e Consulta de Análises', () => 
           students={mockStudents}
         />
       );
+
+      const campInput = screen.getByPlaceholderText('Nome do campeonato');
+      const faseSelect = screen.getByText('Fase').closest('div').querySelector('select');
+      const advInput = screen.getByPlaceholderText('Digite o nome do atleta adversário');
+      const resultadoSelect = screen.getByText(/Resultado Final por Sets/i).closest('div').querySelector('select');
+      const obsTextarea = screen.getByPlaceholderText('Digite aqui as observações...');
+
+      // Ordem: 1. Campeonato, 2. Fase, 3. Equipe Adversária, 4. Resultado Final, e antes de Observações
+      expect(campInput.compareDocumentPosition(faseSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(faseSelect.compareDocumentPosition(advInput) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(advInput.compareDocumentPosition(resultadoSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(resultadoSelect.compareDocumentPosition(obsTextarea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
       expect(screen.getByText('Campeonato')).toBeInTheDocument();
       expect(screen.getByText('Fase')).toBeInTheDocument();
@@ -218,7 +234,7 @@ describe('Campos Campeonato e Fase na Criação e Consulta de Análises', () => 
   });
 
   describe('4. Modalidades Individuais Restantes (Xadrez e Atletismo)', () => {
-    test('Xadrez: Exibe apenas o campo Campeonato e NÃO exibe o campo Fase', () => {
+    test('Xadrez: Exibe apenas o campo Campeonato e na ordem correta antes do Adversário e Resultado Final (SEM Fase)', () => {
       let formData = {
         modalidade: 'Xadrez',
         categoria: 'Geral',
@@ -238,12 +254,21 @@ describe('Campos Campeonato e Fase na Criação e Consulta de Análises', () => 
         />
       );
 
+      const campInput = screen.getByPlaceholderText('Nome do campeonato');
+      const advInput = screen.getByPlaceholderText('Digite o nome do adversário');
+      const resultadoSelect = screen.getByText(/Resultado Final/i).closest('div').querySelector('select');
+      const obsTextarea = screen.getByPlaceholderText('Digite aqui as observações...');
+
+      // Ordem: 1. Campeonato, 2. Equipe Adversária, 3. Resultado Final, e antes de Observações
+      expect(campInput.compareDocumentPosition(advInput) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(advInput.compareDocumentPosition(resultadoSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(resultadoSelect.compareDocumentPosition(obsTextarea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
       expect(screen.getByText('Campeonato')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Nome do campeonato')).toBeInTheDocument();
       expect(screen.queryByText('Fase')).not.toBeInTheDocument();
     });
 
-    test('Atletismo: Exibe apenas o campo Campeonato e NÃO exibe o campo Fase nas submodalidades', () => {
+    test('Atletismo: Exibe apenas o campo Campeonato na ordem correta antes dos Adversários e Classificação nas submodalidades (SEM Fase)', () => {
       let formData = {
         modalidade: 'Atletismo',
         subtipoProva: '100m',
@@ -264,8 +289,17 @@ describe('Campos Campeonato e Fase na Criação e Consulta de Análises', () => 
         />
       );
 
+      const campInput = screen.getByPlaceholderText('Nome do campeonato');
+      const advInput = screen.getByPlaceholderText('Quantidade de adversários');
+      const colocacaoInput = screen.getByPlaceholderText('Ex: 1º lugar');
+      const obsTextarea = screen.getByPlaceholderText('Digite aqui as observações...');
+
+      // Ordem: 1. Campeonato, 2. Adversários, 3. Classificação, e antes de Observações
+      expect(campInput.compareDocumentPosition(advInput) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(advInput.compareDocumentPosition(colocacaoInput) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(colocacaoInput.compareDocumentPosition(obsTextarea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
       expect(screen.getByText('Campeonato')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Nome do campeonato')).toBeInTheDocument();
       expect(screen.queryByText('Fase')).not.toBeInTheDocument();
     });
   });

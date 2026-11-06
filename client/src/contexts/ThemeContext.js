@@ -22,8 +22,10 @@ export const ThemeProvider = ({ children }) => {
     const root = document.documentElement;
     if (theme === 'dark') {
       root.setAttribute('data-theme', 'dark');
+      root.setAttribute('data-bs-theme', 'dark');
     } else {
       root.removeAttribute('data-theme');
+      root.removeAttribute('data-bs-theme');
     }
     localStorage.setItem(STORAGE_KEY, theme);
 

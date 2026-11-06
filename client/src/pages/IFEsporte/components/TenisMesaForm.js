@@ -303,6 +303,42 @@ const TenisMesaForm = ({
         </select>
       </div>
 
+      {/* Campeonato e Fase */}
+      <div className="row g-3">
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            Campeonato
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Nome do campeonato"
+            value={formData.campeonato || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+          />
+        </div>
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+            Fase
+          </label>
+          <select
+            className="form-select"
+            value={formData.fase || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, fase: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+          >
+            <option value="">Selecione a fase</option>
+            <option value="Primeira Rodada">Primeira Rodada</option>
+            <option value="Segunda Rodada">Segunda Rodada</option>
+            <option value="Oitavas de Final">Oitavas de Final</option>
+            <option value="Quartas de Final">Quartas de Final</option>
+            <option value="Semifinais">Semifinais</option>
+            <option value="Finais">Finais</option>
+          </select>
+        </div>
+      </div>
+
       {/* 3. Seleção de Atletas e Adversário conforme o formato escolhido */}
       {!isDupla ? (
         /* INDIVIDUAL: apenas um campo para nosso atleta e um campo para atleta adversário, lado a lado */
@@ -503,42 +539,6 @@ const TenisMesaForm = ({
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Campeonato e Fase */}
-      <div className="row g-3">
-        <div className="col-12 col-md-6">
-          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-            Campeonato
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Nome do campeonato"
-            value={formData.campeonato || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
-            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-          />
-        </div>
-        <div className="col-12 col-md-6">
-          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-            Fase
-          </label>
-          <select
-            className="form-select"
-            value={formData.fase || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, fase: e.target.value }))}
-            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-          >
-            <option value="">Selecione a fase</option>
-            <option value="Primeira Rodada">Primeira Rodada</option>
-            <option value="Segunda Rodada">Segunda Rodada</option>
-            <option value="Oitavas de Final">Oitavas de Final</option>
-            <option value="Quartas de Final">Quartas de Final</option>
-            <option value="Semifinais">Semifinais</option>
-            <option value="Finais">Finais</option>
-          </select>
         </div>
       </div>
 

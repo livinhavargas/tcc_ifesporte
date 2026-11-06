@@ -506,6 +506,41 @@ const HandebolForm = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
+      {/* Campeonato e Fase */}
+      <div className="row g-3">
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700 }}>
+            Campeonato
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Nome do campeonato"
+            value={formData.campeonato || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+          />
+        </div>
+        <div className="col-12 col-md-6">
+          <label className="form-label" style={{ fontWeight: 700 }}>
+            Fase
+          </label>
+          <select
+            className="form-select"
+            value={formData.fase || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, fase: e.target.value }))}
+            style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+          >
+            <option value="">Selecione a fase</option>
+            <option value="Fases de classificação">Fases de classificação</option>
+            <option value="Oitavas de final">Oitavas de final</option>
+            <option value="Quartas de final">Quartas de final</option>
+            <option value="Semifinal">Semifinal</option>
+            <option value="Final">Final</option>
+          </select>
+        </div>
+      </div>
+
       {/* 1. Equipe Adversária & 2. Resultado Final */}
       <div className="row g-3">
         <div className="col-12 col-md-6">

@@ -81,7 +81,7 @@ const StudentHome = ({ userName }) => {
     if (t === 'treino') return { bg: 'var(--primary-light)', color: 'var(--primary)' };
     if (t === 'jogo' || t === 'amistoso') return { bg: 'var(--success-light)', color: 'var(--success)' };
     if (t === 'campeonato') return { bg: 'var(--accent-light)', color: 'var(--accent)' };
-    if (t === 'educação física') return { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981' };
+    if (t === 'educação física') return { bg: 'var(--success-light)', color: 'var(--success)' };
     return { bg: 'var(--bg-hover)', color: 'var(--text-secondary)' };
   };
 

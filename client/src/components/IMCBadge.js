@@ -82,9 +82,19 @@ export const IMCBadge = ({ classification, className = '', style = {} }) => {
   if (!classification) return null;
   const cfg = getIMCVisualConfig(classification);
 
+  const norm = String(classification).trim().toLowerCase();
+  let statusClass = 'imc-status-neutro';
+  if (norm.includes('saudável') || norm.includes('saudavel')) {
+    statusClass = 'imc-status-saudavel';
+  } else if ((norm.includes('atenção') || norm.includes('atencao')) && !norm.includes('necessita')) {
+    statusClass = 'imc-status-atencao';
+  } else if (norm.includes('necessita') || norm.includes('risco') || norm.includes('perigo')) {
+    statusClass = 'imc-status-risco';
+  }
+
   return (
     <span
-      className={`imc-standard-badge ${className}`}
+      className={`imc-standard-badge ${statusClass} ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

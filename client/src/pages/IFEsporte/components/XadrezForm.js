@@ -88,6 +88,21 @@ const XadrezForm = ({
         </select>
       </div>
 
+      {/* Campeonato */}
+      <div>
+        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
+          Campeonato
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Nome do campeonato"
+          value={formData.campeonato || ''}
+          onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
+          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
+        />
+      </div>
+
       {/* 2. Atleta (Nossa Equipe) e Adversário lado a lado em duas colunas equilibradas */}
       <div className="row g-3">
         <div className="col-12 col-md-6">
@@ -206,21 +221,6 @@ const XadrezForm = ({
           <option value="Empate">Empate</option>
           <option value="Derrota">Derrota</option>
         </select>
-      </div>
-
-      {/* Campeonato */}
-      <div>
-        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)', marginBottom: '8px', display: 'block' }}>
-          Campeonato
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Nome do campeonato"
-          value={formData.campeonato || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, campeonato: e.target.value }))}
-          style={{ borderRadius: 'var(--radius-md)', fontSize: '0.875rem' }}
-        />
       </div>
 
       {/* 5. Observações do treinador */}
