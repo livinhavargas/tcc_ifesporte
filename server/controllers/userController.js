@@ -544,7 +544,7 @@ const updateUser = async (req, res) => {
       usuario.emailVerificado = false;
       usuario.emailVerificadoEm = null;
     }
-    if (foto) usuario.foto = foto;
+    if (foto !== undefined) usuario.foto = foto;
     let mods = req.body.modalidades || req.body.esportes;
     if (mods) {
       mods = mods.map(mapLegacyToNewModality);
@@ -591,7 +591,7 @@ const updateUser = async (req, res) => {
       if (idade !== undefined) estudante.idade = idade === '' ? null : idade;
       if (serie !== undefined) estudante.serie = serie;
       if (turma !== undefined) estudante.turma = turma;
-      if (foto) estudante.foto = foto;
+      if (foto !== undefined) estudante.foto = foto;
       if (mods) {
         estudante.esportes = mods;
         estudante.modalidades = mods;
@@ -626,6 +626,45 @@ const updateUser = async (req, res) => {
   }
 };
 
+// Excluir foto de perfil do usuário
+const deleteUserPhoto = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (req.userId && req.userId !== id && req.userTipo !== 'administrador' && req.userTipo !== 'coordenador') {
+      return res.status(403).json({ mensagem: 'Acesso negado' });
+    }
+
+    const usuario = await User.findById(id);
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+    }
+
+    usuario.foto = '';
+    await usuario.save();
+
+    // Se for estudante, sincronizar com o documento Student correspondente
+    if (usuario.tipo === 'estudante') {
+      const queryOriginal = usuario.matricula ? { matricula: usuario.matricula } : { email: usuario.email };
+      let estudante = await Student.findOne(queryOriginal);
+      if (!estudante) {
+        estudante = await Student.findOne({ adicionadoPor: usuario._id });
+      }
+      if (!estudante && usuario.email) {
+        estudante = await Student.findOne({ email: usuario.email });
+      }
+      if (estudante) {
+        estudante.foto = '';
+        await estudante.save();
+      }
+    }
+
+    res.json({ mensagem: 'Foto de perfil excluída com sucesso', foto: '' });
+  } catch (error) {
+    console.error('Erro ao excluir foto de perfil:', error);
+    res.status(500).json({ mensagem: error.message || 'Erro ao excluir foto de perfil' });
+  }
+};
+
 module.exports = {
   loginUser,
   registerUser,
@@ -633,4 +672,5 @@ module.exports = {
   resendVerificationEmail,
   getUserById,
   updateUser,
+  deleteUserPhoto,
 };

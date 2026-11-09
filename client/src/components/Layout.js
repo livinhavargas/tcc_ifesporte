@@ -12,8 +12,20 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const userName = localStorage.getItem('userName') || 'Usuário';
-  const userPhoto = localStorage.getItem('foto');
+  const [userPhoto, setUserPhoto] = useState(localStorage.getItem('foto') || null);
   const userInitials = userName.substring(0, 2).toUpperCase();
+
+  useEffect(() => {
+    const handlePhotoUpdate = () => {
+      setUserPhoto(localStorage.getItem('foto') || null);
+    };
+    window.addEventListener('profile_photo_updated', handlePhotoUpdate);
+    window.addEventListener('storage', handlePhotoUpdate);
+    return () => {
+      window.removeEventListener('profile_photo_updated', handlePhotoUpdate);
+      window.removeEventListener('storage', handlePhotoUpdate);
+    };
+  }, []);
   const userType = localStorage.getItem('tipo') || 'Estudante';
   const isStudent = userType.toLowerCase() === 'estudante';
   const displayUserType = isStudent ? 'Estudante' : 'Treinador(a)';

@@ -295,10 +295,24 @@ const deleteStudent = async (req, res) => {
   }
 };
 
+const deleteStudentPhoto = async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: 'Estudante não encontrado' });
+    student.foto = '';
+    await student.save();
+    await syncStudentToUser(student);
+    res.json({ message: 'Foto do estudante removida com sucesso', foto: '' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllStudents,
   getStudentById,
   createStudent,
   updateStudent,
-  deleteStudent
+  deleteStudent,
+  deleteStudentPhoto
 };

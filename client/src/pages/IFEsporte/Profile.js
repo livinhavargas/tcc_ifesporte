@@ -55,6 +55,30 @@ const Profile = () => {
     }
   };
 
+  const handleDeletePhoto = async () => {
+    if (!window.confirm('Deseja realmente excluir sua foto de perfil?')) return;
+    try {
+      const response = await fetch(apiUrl(`/api/users/${userId}/foto`), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        setProfileData(prev => ({ ...prev, foto: '' }));
+        localStorage.removeItem('foto');
+        window.dispatchEvent(new Event('profile_photo_updated'));
+        window.dispatchEvent(new Event('storage'));
+        setMensagem('✅ Foto de perfil excluída com sucesso!');
+        setTimeout(() => setMensagem(''), 3000);
+      } else {
+        setMensagem('Erro ao excluir foto de perfil');
+      }
+    } catch (error) {
+      setMensagem('Erro de conexão ao excluir foto');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     window.location.href = '/login';
@@ -75,7 +99,13 @@ const Profile = () => {
       if (response.ok) {
         setMensagem('✅ Perfil atualizado com sucesso!');
         localStorage.setItem('userName', profileData.nome);
-        if (profileData.foto) localStorage.setItem('foto', profileData.foto);
+        if (profileData.foto) {
+          localStorage.setItem('foto', profileData.foto);
+        } else {
+          localStorage.removeItem('foto');
+        }
+        window.dispatchEvent(new Event('profile_photo_updated'));
+        window.dispatchEvent(new Event('storage'));
         setTimeout(() => setMensagem(''), 3000);
       } else {
         setMensagem('Erro ao atualizar perfil');
@@ -143,7 +173,7 @@ const Profile = () => {
                   flexDirection: 'column',
                   alignItems: 'center'
                 }}>
-                  <div style={{ position: 'relative', width: '130px', height: '130px', cursor: 'pointer', marginBottom: '20px' }} onClick={() => fileInputRef.current.click()}>
+                  <div style={{ position: 'relative', width: '130px', height: '130px', marginBottom: '16px' }}>
                     {profileData.foto ? (
                       <img src={profileData.foto} alt="Perfil" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--bg)' }} />
                     ) : (
@@ -156,17 +186,79 @@ const Profile = () => {
                         {profileData.nome ? profileData.nome.charAt(0).toUpperCase() : 'U'}
                       </div>
                     )}
-                    <div style={{
-                      position: 'absolute', bottom: '0', right: '0',
-                      background: 'var(--accent)', color: '#fff',
-                      width: '36px', height: '36px', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: 'var(--shadow-sm)', border: '2px solid #fff'
-                    }}>
+                    <label
+                      htmlFor="treinadorFotoInput"
+                      title={profileData.foto ? "Alterar foto" : "Adicionar foto"}
+                      style={{
+                        position: 'absolute', bottom: '0', right: profileData.foto ? '44px' : '0',
+                        background: 'var(--accent)', color: '#fff',
+                        width: '36px', height: '36px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: 'var(--shadow-sm)', border: '2px solid #fff',
+                        cursor: 'pointer'
+                      }}
+                    >
                       <i className="bi bi-camera-fill"></i>
-                    </div>
+                    </label>
+                    {profileData.foto && (
+                      <button
+                        type="button"
+                        title="Excluir foto"
+                        onClick={handleDeletePhoto}
+                        style={{
+                          position: 'absolute', bottom: '0', right: '0',
+                          background: 'var(--error, #ef4444)', color: '#fff',
+                          width: '36px', height: '36px', borderRadius: '50%',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          boxShadow: 'var(--shadow-sm)', border: '2px solid #fff',
+                          cursor: 'pointer',
+                          padding: 0
+                        }}
+                      >
+                        <i className="bi bi-trash-fill"></i>
+                      </button>
+                    )}
                   </div>
-                  <input type="file" className="d-none" ref={fileInputRef} onChange={handleFileChange} accept="image/*" />
+                  <input type="file" id="treinadorFotoInput" className="d-none" ref={fileInputRef} onChange={handleFileChange} accept="image/*" />
+
+                  {/* Botões de Ação para Foto */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <label 
+                      htmlFor="treinadorFotoInput" 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ 
+                        padding: '5px 12px', 
+                        fontSize: '0.75rem', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px', 
+                        cursor: 'pointer', 
+                        margin: 0, 
+                        borderRadius: 'var(--radius-md)', 
+                        fontWeight: 600 
+                      }}
+                    >
+                      <i className="bi bi-camera-fill"></i> {profileData.foto ? 'Alterar foto' : 'Adicionar foto'}
+                    </label>
+                    {profileData.foto && (
+                      <button 
+                        type="button" 
+                        onClick={handleDeletePhoto} 
+                        className="btn btn-outline-danger btn-sm" 
+                        style={{ 
+                          padding: '5px 12px', 
+                          fontSize: '0.75rem', 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px', 
+                          borderRadius: 'var(--radius-md)', 
+                          fontWeight: 600 
+                        }}
+                      >
+                        <i className="bi bi-trash-fill"></i> Excluir foto
+                      </button>
+                    )}
+                  </div>
                   
                   <h4 style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '4px', fontSize: '1.125rem' }}>{profileData.nome}</h4>
                   <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', margin: 0 }}>{profileData.email}</p>

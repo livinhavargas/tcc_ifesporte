@@ -49,7 +49,7 @@ export const calculateIMC = (peso, altura) => {
 
   return {
     val: roundedIMC,
-    formatted: roundedIMC.toFixed(1).replace('', ','),
+    formatted: roundedIMC.toFixed(1).replace('.', ','),
     classification,
     color: visualCfg.color,
     badgeBg: visualCfg.bg,

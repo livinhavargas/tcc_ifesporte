@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Pencil, X, Save, Camera, User, Phone, Mail, GraduationCap, 
+  Pencil, X, Save, Camera, Trash2, User, Phone, Mail, GraduationCap, 
   HeartPulse, Trophy, IdCard, BadgeInfo, Shirt, ShieldAlert, 
   Activity, CheckCircle2, AlertTriangle, MapPin, 
   PhoneCall, Scale, Ruler, Calendar, UserCheck, ShieldCheck, FileText, Send
@@ -180,6 +180,30 @@ const Perfil = () => {
     }
   };
 
+  const handlePhotoDelete = async () => {
+    if (!window.confirm('Deseja realmente excluir sua foto de perfil?')) return;
+    try {
+      const response = await fetch(apiUrl(`/api/users/${userId}/foto`), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        setProfileData(prev => ({ ...prev, foto: '' }));
+        localStorage.removeItem('foto');
+        window.dispatchEvent(new Event('profile_photo_updated'));
+        window.dispatchEvent(new Event('storage'));
+        setMensagem('✅ Foto de perfil excluída com sucesso!');
+        setTimeout(() => setMensagem(''), 4000);
+      } else {
+        setMensagem('❌ Erro ao excluir foto de perfil');
+      }
+    } catch (error) {
+      setMensagem('❌ Erro de conexão ao excluir foto');
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setMensagem('');
@@ -198,7 +222,13 @@ const Perfil = () => {
         addNotification('Perfil Atualizado', 'Seus dados de perfil foram atualizados com sucesso');
         setIsEditing(false);
         if (profileData.nome) localStorage.setItem('userName', profileData.nome);
-        if (profileData.foto) localStorage.setItem('foto', profileData.foto);
+        if (profileData.foto) {
+          localStorage.setItem('foto', profileData.foto);
+        } else {
+          localStorage.removeItem('foto');
+        }
+        window.dispatchEvent(new Event('profile_photo_updated'));
+        window.dispatchEvent(new Event('storage'));
         setTimeout(() => setMensagem(''), 4000);
       } else {
         setMensagem('❌ Erro ao atualizar perfil');
@@ -308,19 +338,80 @@ const Perfil = () => {
                    )}
                    {isEditing && (
                      <>
-                       <label htmlFor="fotoInput" style={{
-                         position: 'absolute', bottom: '0', right: '0',
-                         background: 'var(--primary)', color: '#fff',
-                         width: '36px', height: '36px', borderRadius: '50%',
-                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                         cursor: 'pointer', boxShadow: 'var(--shadow-sm)', border: '2px solid #fff'
-                       }}>
+                       <label 
+                         htmlFor="fotoInput" 
+                         title={profileData.foto ? "Alterar foto" : "Adicionar foto"}
+                         style={{
+                           position: 'absolute', bottom: '0', right: profileData.foto ? '44px' : '0',
+                           background: 'var(--primary)', color: '#fff',
+                           width: '36px', height: '36px', borderRadius: '50%',
+                           display: 'flex', alignItems: 'center', justifyContent: 'center',
+                           cursor: 'pointer', boxShadow: 'var(--shadow-sm)', border: '2px solid #fff'
+                         }}
+                       >
                          <Camera size={18} />
                        </label>
+                       {profileData.foto && (
+                         <button
+                           type="button"
+                           title="Excluir foto"
+                           onClick={handlePhotoDelete}
+                           style={{
+                             position: 'absolute', bottom: '0', right: '0',
+                             background: 'var(--error, #ef4444)', color: '#fff',
+                             width: '36px', height: '36px', borderRadius: '50%',
+                             display: 'flex', alignItems: 'center', justifyContent: 'center',
+                             cursor: 'pointer', boxShadow: 'var(--shadow-sm)', border: '2px solid #fff',
+                             padding: 0
+                           }}
+                         >
+                           <Trash2 size={18} />
+                         </button>
+                       )}
                        <input type="file" id="fotoInput" className="d-none" accept="image/*" onChange={handlePhotoChange} />
                      </>
                    )}
                  </div>
+
+                 {isEditing && (
+                   <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                     <label 
+                       htmlFor="fotoInput" 
+                       className="btn btn-secondary btn-sm" 
+                       style={{ 
+                         padding: '5px 12px', 
+                         fontSize: '0.75rem', 
+                         display: 'inline-flex', 
+                         alignItems: 'center', 
+                         gap: '6px', 
+                         cursor: 'pointer', 
+                         margin: 0, 
+                         borderRadius: 'var(--radius-md)', 
+                         fontWeight: 600 
+                       }}
+                     >
+                       <Camera size={14} /> {profileData.foto ? 'Alterar foto' : 'Adicionar foto'}
+                     </label>
+                     {profileData.foto && (
+                       <button 
+                         type="button" 
+                         onClick={handlePhotoDelete} 
+                         className="btn btn-outline-danger btn-sm" 
+                         style={{ 
+                           padding: '5px 12px', 
+                           fontSize: '0.75rem', 
+                           display: 'inline-flex', 
+                           alignItems: 'center', 
+                           gap: '6px', 
+                           borderRadius: 'var(--radius-md)', 
+                           fontWeight: 600 
+                         }}
+                       >
+                         <Trash2 size={14} /> Excluir foto
+                       </button>
+                     )}
+                   </div>
+                 )}
               </div>
 
               {/* Informações Pessoais */}
