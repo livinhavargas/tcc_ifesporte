@@ -186,38 +186,6 @@ const Profile = () => {
                         {profileData.nome ? profileData.nome.charAt(0).toUpperCase() : 'U'}
                       </div>
                     )}
-                    <label
-                      htmlFor="treinadorFotoInput"
-                      title={profileData.foto ? "Alterar foto" : "Adicionar foto"}
-                      style={{
-                        position: 'absolute', bottom: '0', right: profileData.foto ? '44px' : '0',
-                        background: 'var(--accent)', color: '#fff',
-                        width: '36px', height: '36px', borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: 'var(--shadow-sm)', border: '2px solid #fff',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <i className="bi bi-camera-fill"></i>
-                    </label>
-                    {profileData.foto && (
-                      <button
-                        type="button"
-                        title="Excluir foto"
-                        onClick={handleDeletePhoto}
-                        style={{
-                          position: 'absolute', bottom: '0', right: '0',
-                          background: 'var(--error, #ef4444)', color: '#fff',
-                          width: '36px', height: '36px', borderRadius: '50%',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          boxShadow: 'var(--shadow-sm)', border: '2px solid #fff',
-                          cursor: 'pointer',
-                          padding: 0
-                        }}
-                      >
-                        <i className="bi bi-trash-fill"></i>
-                      </button>
-                    )}
                   </div>
                   <input type="file" id="treinadorFotoInput" className="d-none" ref={fileInputRef} onChange={handleFileChange} accept="image/*" />
 

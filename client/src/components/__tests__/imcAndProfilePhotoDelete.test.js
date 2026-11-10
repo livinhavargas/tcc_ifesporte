@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import IMCCard, { calculateIMC } from '../IMCCard';
 import Perfil from '../../pages/Perfil';
+import CoachProfile from '../../pages/IFEsporte/Profile';
 
 const { TextEncoder, TextDecoder } = require('util');
 global.TextEncoder = TextEncoder;
@@ -133,9 +134,11 @@ describe('2. Opção de Excluir Foto de Perfil no Frontend (Perfil.js)', () => {
 
     fireEvent.click(screen.getByText(/Editar Perfil/i));
 
-    // Opções de alterar foto E excluir foto devem estar presentes
-    expect(screen.getByText(/Alterar foto/i)).toBeInTheDocument();
-    expect(screen.getByText(/Excluir foto/i)).toBeInTheDocument();
+    // Opções de alterar foto E excluir foto devem estar presentes sem duplicação
+    expect(screen.getAllByText(/Alterar foto/i)).toHaveLength(1);
+    expect(screen.getAllByText(/Excluir foto/i)).toHaveLength(1);
+    expect(screen.queryByTitle('Alterar foto')).toBeNull();
+    expect(screen.queryByTitle('Excluir foto')).toBeNull();
   });
 
   test('Cancela a exclusão se o usuário não confirmar no diálogo', async () => {
@@ -266,6 +269,52 @@ describe('2. Opção de Excluir Foto de Perfil no Frontend (Perfil.js)', () => {
     });
 
     expect(localStorage.getItem('foto')).toBeNull();
+  });
+
+  test('IFEsporte/Profile.js: Mantém apenas os dois botões abaixo da foto sem ícones sobrepostos', async () => {
+    localStorage.setItem('tipo', 'treinador');
+    localStorage.setItem('foto', 'data:image/png;base64,coachphoto');
+
+    global.fetch = jest.fn().mockImplementation((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ mensagem: 'Foto de perfil excluída com sucesso', foto: '' })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          _id: 'coach123',
+          nome: 'Prof. Carlos Silva',
+          email: 'carlos@ifesporte.edu.br',
+          foto: 'data:image/png;base64,coachphoto'
+        })
+      });
+    });
+
+    render(<CoachProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Prof. Carlos Silva')).toBeInTheDocument();
+    });
+
+    // Apenas um botão "Alterar foto" e um botão "Excluir foto", sem os antigos botões circulares sobre a foto
+    expect(screen.getAllByText(/Alterar foto/i)).toHaveLength(1);
+    expect(screen.getAllByText(/Excluir foto/i)).toHaveLength(1);
+    expect(screen.queryByTitle('Alterar foto')).toBeNull();
+    expect(screen.queryByTitle('Excluir foto')).toBeNull();
+
+    window.confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByText(/Excluir foto/i));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Foto de perfil excluída com sucesso/i)).toBeInTheDocument();
+    });
+
+    // Após excluir a foto, resta apenas o botão "Adicionar foto"
+    expect(screen.getAllByText(/Adicionar foto/i)).toHaveLength(1);
+    expect(screen.queryByText(/Excluir foto/i)).toBeNull();
   });
 });
 

@@ -337,39 +337,7 @@ const Perfil = () => {
                      </div>
                    )}
                    {isEditing && (
-                     <>
-                       <label 
-                         htmlFor="fotoInput" 
-                         title={profileData.foto ? "Alterar foto" : "Adicionar foto"}
-                         style={{
-                           position: 'absolute', bottom: '0', right: profileData.foto ? '44px' : '0',
-                           background: 'var(--primary)', color: '#fff',
-                           width: '36px', height: '36px', borderRadius: '50%',
-                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                           cursor: 'pointer', boxShadow: 'var(--shadow-sm)', border: '2px solid #fff'
-                         }}
-                       >
-                         <Camera size={18} />
-                       </label>
-                       {profileData.foto && (
-                         <button
-                           type="button"
-                           title="Excluir foto"
-                           onClick={handlePhotoDelete}
-                           style={{
-                             position: 'absolute', bottom: '0', right: '0',
-                             background: 'var(--error, #ef4444)', color: '#fff',
-                             width: '36px', height: '36px', borderRadius: '50%',
-                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                             cursor: 'pointer', boxShadow: 'var(--shadow-sm)', border: '2px solid #fff',
-                             padding: 0
-                           }}
-                         >
-                           <Trash2 size={18} />
-                         </button>
-                       )}
-                       <input type="file" id="fotoInput" className="d-none" accept="image/*" onChange={handlePhotoChange} />
-                     </>
+                     <input type="file" id="fotoInput" className="d-none" accept="image/*" onChange={handlePhotoChange} />
                    )}
                  </div>
 
